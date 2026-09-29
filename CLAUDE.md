@@ -12,8 +12,10 @@ voor stap opnieuw en netjes opgebouwd.
   lokale testconfig.
 - **Fase 2 — Claude-setup: klaar (2026-09-29).** Dit bestand, skills,
   agent, `tests/rooktest.md`.
-- **Fase 3 — datamodel + beveiliging:** nog te doen, op basis van het
-  materiaal uit Claude Projects.
+- **Fase 3 — datamodel + beveiliging:** schema toegepast en beveiliging
+  getest (2026-09-29). Nog te doen: foto's kiezen en uploaden, de 4 reizen
+  uit de overdracht als data invoeren. Europa 2026 volgt later uit een
+  Excel van de gebruiker.
 - **Fase 4 — app opbouwen:** eerst een volledige functie-inventaris van
   de Claude Projects-versie (er mag bij het overzetten niets verloren
   gaan), dan scherm voor scherm: mockup → bouwen → rooktest.
@@ -54,6 +56,29 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   krijgt RLS met policies op basis van `auth.uid()` en lidmaatschap van
   een reis: je ziet alleen eigen of met jou gedeelde reizen. Zie de skill
   `supabase-wijziging`.
+- **Datamodel** (migratie `20260929000002`): `reizen`, `dagen`, `stops`,
+  `route_punten`, `verblijven`, `activiteiten`, `budget_posten`, `fotos`,
+  `leden`. Rollen via `reis.leden`: `bewerker` (schrijven) en `kijker`
+  (lezen); wie niet in `leden` staat ziet niets. Leden alleen via
+  SQL/dashboard toevoegen, niet via de app. Hulpfuncties voor de policies
+  staan in schema `reis_intern` (bewust niet in de Data API).
+- **Dagen:** echte datums (`datum_van`/`datum_tot`) waar bekend; de app
+  maakt daar het label van. Alleen zonder datums een vrij `wanneer_label`.
+- **Reisinhoud nooit in git.** Seed-data (accommodaties, bedragen, route)
+  gaat rechtstreeks de database in, niet als migratie of bestand in de
+  publieke repo. Bronmateriaal staat in `bron/` (gitignored).
+
+## Foto's
+
+- De foto's uit de claude.ai-versie waren verzonnen (ook de credits) —
+  niets daarvan overnemen.
+- Bron: Wikimedia Commons (of eigen foto's). Fotograaf en licentie komen
+  uit de Commons-metadata, nooit zelf invullen. Credit-vorm:
+  "Foto: naam / Wikimedia Commons, CC BY-SA 4.0".
+- Per plek het hoofddoel of herkenbaarste beeld; verblijven krijgen een
+  sfeerfoto van de plaats met `is_sfeerbeeld = true`.
+- Commons-titels kunnen fout zijn: elke gekozen foto zelf bekijken vóór
+  gebruik. De gebruiker kiest via `bron/fotokeuze/index.html`.
 
 ## Deploy
 
