@@ -57,11 +57,14 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
 
 ## Deploy
 
-Nog te bepalen. Let op: GitHub Pages op een **private** repo vereist een
-betaald GitHub-abonnement. Opties op het moment dat er iets te deployen
-valt: repo publiek maken (code zichtbaar, data blijft beschermd door RLS),
-GitHub Pro, of een gratis host die private repo's ondersteunt (bijv.
-Cloudflare Pages of Netlify).
+Gelijk aan fcp16-2: **GitHub Pages**, "Deploy from a branch" (`main`,
+map `/`), zonder eigen workflowbestand — elke push naar `main` publiceert
+automatisch. Daarvoor is de repo bewust **publiek** (keuze 2026-09-29;
+gratis GitHub-account ondersteunt Pages alleen op publieke repo's).
+Gevolg: alles in git is openbaar. Daarom nooit keys (behalve de
+publishable key in de app-code zelf), gezinsgegevens of testdata met
+echte gegevens committen — de data zelf blijft beschermd door RLS.
+Pages wordt aangezet zodra de eerste `index.html` op `main` staat.
 
 ## Werkwijze-afspraken
 
