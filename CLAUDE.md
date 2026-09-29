@@ -12,10 +12,11 @@ voor stap opnieuw en netjes opgebouwd.
   lokale testconfig.
 - **Fase 2 — Claude-setup: klaar (2026-09-29).** Dit bestand, skills,
   agent, `tests/rooktest.md`.
-- **Fase 3 — datamodel + beveiliging:** schema toegepast en beveiliging
-  getest (2026-09-29). Nog te doen: foto's kiezen en uploaden, de 4 reizen
-  uit de overdracht als data invoeren. Europa 2026 volgt later uit een
-  Excel van de gebruiker.
+- **Fase 3 — datamodel + beveiliging: klaar (2026-09-29).** Schema
+  toegepast en beveiliging getest; 29 foto's in bucket `reis-fotos` met
+  credits in `reis.fotos`; de 4 reizen uit de overdracht (Noord-Spanje,
+  Japan, Zuid-Korea, Thailand) ingevoerd en tegen de bron gecontroleerd.
+  Europa 2026 volgt later uit een Excel van de gebruiker.
 - **Fase 4 — app opbouwen:** eerst een volledige functie-inventaris van
   de Claude Projects-versie (er mag bij het overzetten niets verloren
   gaan), dan scherm voor scherm: mockup → bouwen → rooktest.
@@ -64,6 +65,12 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   staan in schema `reis_intern` (bewust niet in de Data API).
 - **Dagen:** echte datums (`datum_van`/`datum_tot`) waar bekend; de app
   maakt daar het label van. Alleen zonder datums een vrij `wanneer_label`.
+- **Elke locatie is een plek** (besluit gebruiker 2026-09-29): elke
+  bestemming van een reis krijgt een eigen stop (StopFeature) met foto,
+  niet alleen een dag of routepunt.
+- **Bron van waarheid voor cijfers:** de Excel van de gebruiker, niet de
+  oude claude.ai-versie. Die las bij Thailand de Excel-kolom Prijs
+  (euro) ten onrechte als reistijd in minuten.
 - **Reisinhoud nooit in git.** Seed-data (accommodaties, bedragen, route)
   gaat rechtstreeks de database in, niet als migratie of bestand in de
   publieke repo. Bronmateriaal staat in `bron/` (gitignored).
