@@ -13,13 +13,20 @@ voor stap opnieuw en netjes opgebouwd.
 - **Fase 2 — Claude-setup: klaar (2026-09-29).** Dit bestand, skills,
   agent, `tests/rooktest.md`.
 - **Fase 3 — datamodel + beveiliging: klaar (2026-09-29).** Schema
-  toegepast en beveiliging getest; 29 foto's in bucket `reis-fotos` met
-  credits in `reis.fotos`; de 4 reizen uit de overdracht (Noord-Spanje,
-  Japan, Zuid-Korea, Thailand) ingevoerd en tegen de bron gecontroleerd.
-  Europa 2026 volgt later uit een Excel van de gebruiker.
-- **Fase 4 — app opbouwen:** eerst een volledige functie-inventaris van
-  de Claude Projects-versie (er mag bij het overzetten niets verloren
-  gaan), dan scherm voor scherm: mockup → bouwen → rooktest.
+  toegepast en beveiliging getest; 36 foto's in bucket `reis-fotos` met
+  credits in `reis.fotos` (elke stop heeft een foto); de 4 reizen uit de
+  overdracht (Noord-Spanje, Japan, Zuid-Korea, Thailand) ingevoerd en
+  tegen de bron gecontroleerd. Europa 2026 volgt later uit een Excel van
+  de gebruiker.
+- **Fase 4 — app opbouwen: bezig.** Eerst een volledige functie-inventaris
+  van de Claude Projects-versie (er mag bij het overzetten niets verloren
+  gaan), dan scherm voor scherm: mockup → bouwen → rooktest. Mockup van
+  inloggen, startscherm en reispagina staat in `bron/mockup/` (lokaal,
+  met echte data, dus niet in git).
+
+**Bij de start van een sessie:** lees ook `.claude/overdracht.md`
+(gitignored) — daarin staan de actuele stand, de open vragen en de
+afspraken uit eerdere sessies.
 
 ## Structuur
 
@@ -71,6 +78,13 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
 - **Bron van waarheid voor cijfers:** de Excel van de gebruiker, niet de
   oude claude.ai-versie. Die las bij Thailand de Excel-kolom Prijs
   (euro) ten onrechte als reistijd in minuten.
+- **Excel per reis** (besluit gebruiker 2026-09-29): de gebruiker maakt
+  voor elke reis een Excel zoals die van Thailand; wat daarin staat wordt
+  de werkelijkheid en vervangt schattingen en budgetplafonds. De Excels
+  zelf staan in `bron/` en gaan nooit in git. Uploaden/inlezen
+  wordt een aparte functie, later.
+- **Onbekend is "?", niet "nee":** een kenmerk dat niet is ingevuld
+  (`null`, bijv. ontbijt of zwembad) toont de app als "?".
 - **Reisinhoud nooit in git.** Seed-data (accommodaties, bedragen, route)
   gaat rechtstreeks de database in, niet als migratie of bestand in de
   publieke repo. Bronmateriaal staat in `bron/` (gitignored).
@@ -84,6 +98,12 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   "Foto: naam / Wikimedia Commons, CC BY-SA 4.0".
 - Per plek het hoofddoel of herkenbaarste beeld; verblijven krijgen een
   sfeerfoto van de plaats met `is_sfeerbeeld = true`.
+- **Credit met links (CC-eis):** de credit bij een foto linkt naar de
+  Commons-pagina (`fotos.bron_url`) én naar de licentietekst (afgeleid
+  uit de licentie aan het eind van `fotos.bron`, bijv. "CC BY 2.0" of
+  "CC0"), beide in een nieuw tabblad. Geen herkenbare CC-licentie (bijv.
+  eigen foto): dan geen licentielink. Elke foto
+  op een kaart zonder credit staat op dezelfde reispagina ook mét credit.
 - Commons-titels kunnen fout zijn: elke gekozen foto zelf bekijken vóór
   gebruik. De gebruiker kiest via `bron/fotokeuze/index.html`.
 
