@@ -23,8 +23,10 @@ voor stap opnieuw en netjes opgebouwd.
   gaan), dan scherm voor scherm: mockup → bouwen → rooktest. Basis is de
   ontwerpvariant **Nevel** (`bron/mockup/nevel.*`, lokaal met echte data,
   dus niet in git); de eerste mockup (`index.html`/`mockup.js` daar) is
-  vervallen. Nevel heeft alleen een reispagina; inloggen en startscherm
-  krijgen eerst nog een mockup in Nevel-stijl.
+  vervallen. De echte app staat er (2026-09-30): inloggen, startscherm
+  en reispagina uit Supabase, direct in Nevel-stijl gebouwd (geen extra
+  mockups, besluit gebruiker). Volgt: tdd, `sw.js`/manifest, Pages,
+  account van de gebruiker.
 
 **Bij de start van een sessie:** lees ook `.claude/overdracht.md`
 (gitignored) — daarin staan de actuele stand, de open vragen en de
@@ -32,32 +34,48 @@ afspraken uit eerdere sessies.
 
 ## Structuur
 
-Nog geen app-bestanden. Beoogde opzet, gelijk aan fcp16-2:
+Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
 
-- `index.html` — de app
-- `app.js` — gedeelde logica (auth, Supabase-datalaag); alle
-  Supabase-lees/schrijfacties als gedeelde functies hier, niet los per
-  pagina. Rechtstreeks via de REST-API (`sbFetch`/`sbWrite` en de
-  auth-REST-API, zoals fcp16-2), zonder supabase-js (besluit gebruiker
-  2026-09-30)
-- een eigen CSS-bestand met thema-variabelen (palet Nevel; voorlopig
+- `index.html` — laadt alles; adres `./` = startscherm, `?reis=<slug>` =
+  reispagina
+- `app.js` — gedeelde logica: auth (inloggen, sessie verversen,
+  uitloggen, wachtwoord instellen na uitnodigingslink) en de
+  Supabase-datalaag (`sbFetch`/`sbWrite`, `haalReizen`, `haalReis`,
+  ondertekende foto-URL's). Alle Supabase-lees/schrijfacties als gedeelde
+  functies hier, niet in de schermen. Rechtstreeks via de REST-API,
+  zonder supabase-js (besluit gebruiker 2026-09-30)
+- `opmaak.js` — pure tekstfuncties (datums, bedragen, nachten, reistijd,
+  fotocredit); onbekend wordt "?"
+- `schermen.js` — de schermen (ontwerp Nevel): inloggen, wachtwoord
+  instellen, startscherm, reispagina
+- `thema.css` — alle kleur- en maatvariabelen (palet Nevel; voorlopig
   alleen licht — donker is geparkeerd, besluit gebruiker 2026-09-30;
-  design-check toetst tot die tijd alleen licht)
-- het designsysteem "Reisgids" (componenten als `window.Reisgids`),
-  gemaakt met Claude Design voor de gebruiker, dus eigen werk en mag in
-  de repo. Het is lokaal gepatcht (zie `.claude/overdracht.md`); die
-  patches gaan mee in de app-kopie
-- `manifest.json`, `sw.js` — PWA-installatie en offline gebruik
+  design-check toetst tot die tijd alleen licht). `app.css` — stijl van
+  de schermen (prefix `nv-`), alleen variabelen, geen losse kleuren
+- `ds/bundle.js`, `ds/bundle.css` — het designsysteem "Reisgids"
+  (componenten als `window.Reisgids`, prefix `rg-`), gemaakt met Claude
+  Design voor de gebruiker, dus eigen werk. Lokaal gepatcht (patches 1–6,
+  zie `.claude/overdracht.md`); nooit overschrijven met een ongepatchte
+  versie
+- nog te maken: `manifest.json`, `sw.js` — PWA-installatie en offline
+  gebruik
 - `supabase/migrations/` — alle schemawijzigingen als SQL-bestand
 - `tests/rooktest.md` — handmatige checklist met kernflows
+- lokaal testen zonder account: `bron/apptest/` (gitignored) vangt de
+  Supabase-aanroepen op en antwoordt uit de lokale datakopie
 
 Werk deze lijst bij zodra er echte bestanden bijkomen.
 
 ## Supabase
 
 - Project: **Casa-Toscana** (gedeeld met andere apps van de gebruiker).
-  URL en publishable key staan in `.claude/lokale-testconfig.md`
-  (gitignored) — nooit in git, docs of commit-berichten.
+  Project-URL en publishable key staan bewust in `app.js` (besluit
+  gebruiker 2026-09-30): zonder die twee werkt de app op GitHub Pages
+  niet, ze zijn bedoeld om openbaar te zijn en schema `reis` is
+  afgeschermd door RLS. Verder nergens (geen docs, geen
+  commit-berichten); lokaal ook in `.claude/lokale-testconfig.md`. De
+  secret/service_role-key nooit in git, docs of code. Gevolg, bewust
+  geaccepteerd: de open tabellen in `public` worden daarmee vindbaar.
 - De reis-app gebruikt **uitsluitend schema `reis`**. Het schema `public`
   bevat koffie- en sporttabellen van andere apps: nooit lezen, wijzigen of
   verwijderen. Die staan bewust (nog) open; dat is een aparte kwestie,
@@ -91,7 +109,10 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   die twee keer in de route staat: het hoeveelste bezoek bepaalt welke
   dag (in `volgorde`) erbij hoort.
 - **Dagen:** echte datums (`datum_van`/`datum_tot`) waar bekend; de app
-  maakt daar het label van. Alleen zonder datums een vrij `wanneer_label`.
+  maakt daar het label van. Zonder datums toont de app "Datum ?" (of
+  `stops.nachten_label`); `wanneer_label` wordt niet getoond, want dat
+  bevat nu alleen het aantal nachten en dat staat al als chip (besluit
+  gebruiker 2026-09-30).
 - **Elke locatie is een plek** (besluit gebruiker 2026-09-29): elke
   bestemming van een reis krijgt een eigen stop (StopFeature) met foto,
   niet alleen een dag of routepunt.
@@ -106,6 +127,9 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
 - **Onbekend is "?", niet "nee":** een kenmerk dat niet is ingevuld
   (`null`, bijv. ontbijt of zwembad) toont de app als "?". Ook een
   onbekend bedrag (bijv. `budget_posten.totaal`) is `null` → "?", nooit 0.
+  Uitzondering: `budget_posten.betaald` leeg betekent "bedrag bekend,
+  nog niets betaald" en telt dus als € 0 betaald (besluit gebruiker
+  2026-09-30).
 - **Zoekprofiel is geen reisinhoud** (besluit gebruiker 2026-09-30): de
   zoekcriteria voor verblijven (kolom `reizen.randvoorwaarden`: max per
   nacht, minimale beoordeling, kamers, zwembad) zijn het uitgangspunt bij
@@ -142,8 +166,10 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   Commons-pagina (`fotos.bron_url`) én naar de licentietekst (afgeleid
   uit de licentie aan het eind van `fotos.bron`, bijv. "CC BY 2.0" of
   "CC0"), beide in een nieuw tabblad. Geen herkenbare CC-licentie (bijv.
-  eigen foto): dan geen licentielink. Elke foto
-  op een kaart zonder credit staat op dezelfde reispagina ook mét credit.
+  eigen foto): dan geen licentielink. Zo min mogelijk credits in beeld
+  (besluit gebruiker 2026-09-30): een foto op een kaart of tegel zonder
+  credit is genoeg als hij op dezelfde reispagina ergens mét credit te
+  zien is, bijv. de plekfoto in het plek-paneel (per tabblad).
 - Commons-titels kunnen fout zijn: elke gekozen foto zelf bekijken vóór
   gebruik. De gebruiker kiest via `bron/fotokeuze/index.html`.
 

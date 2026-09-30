@@ -1,0 +1,51 @@
+/* Thema van de reis-app: de tokens van het designsysteem "Reisgids" met
+   het palet "Nevel" (koel, mistig blauwgroen). Alleen hier staan
+   kleurwaarden; componenten en app.css gebruiken alleen deze variabelen.
+   Voorlopig alleen licht (besluit gebruiker 2026-09-30; donker geparkeerd). */
+:root{
+  color-scheme: light;
+  /* palet Nevel */
+  --paper: #eef3f3;
+  --paper-raised: #fafcfc;
+  --sand: #dce8ea;
+  --line: #c9d8db;
+  --line-strong: #6e8a90;
+  --ink: #16323a;
+  --ink-muted: #4d6a71;
+  --lagoon: #1f5f6b;
+  --lagoon-soft: #d3e6e9;
+  --on-lagoon: #ffffff;
+  --terracotta: #9a4a2e;
+  --terracotta-soft: #f2e1d8;
+  --sun: #b9852a;
+  --scrim: #061418;
+  --on-photo: #f7fbfb;
+  --focus-ring: #1f5f6b;
+  --shadow-card: 0 1px 2px rgba(22,50,58,0.06), 0 12px 32px rgba(22,50,58,0.10);
+  /* statuskleuren (designsysteem) */
+  --status-betaald: #1c6a43;
+  --status-betaald-soft: #dcefe3;
+  --status-geboekt: #1d5689;
+  --status-geboekt-soft: #dde9f6;
+  --status-optie: #7f5200;
+  --status-optie-soft: #f7e8c8;
+  --status-open: #a3441c;
+  --status-open-soft: #f5dfd2;
+  /* maten en letters (designsysteem) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+  --space-9: 112px;
+  --radius-sm: 6px;
+  --radius-md: 14px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+  --font-display: 'Instrument Serif', serif;
+  --font-sans: 'Figtree', sans-serif;
+  --font-hand: 'Caveat', cursive;
+}
