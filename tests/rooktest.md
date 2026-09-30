@@ -5,27 +5,60 @@ architectuurwijziging, Supabase-wijziging, deploy) af te vinken in de
 echte app. Vervangt geen automatische tests, maar vangt de flows die
 het meest pijn doen als ze breken.
 
+Automatisch vooraf: `tests/opmaak.html` openen (via een lokale server of
+op GitHub Pages) — alle tests groen.
+
 Datum: ____________  Wijziging getest: ____________
+Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
 
 ## Kernflows
 
-_Nog in te vullen zodra de functie-inventaris uit Claude Projects klaar
-is. Denk aan: inloggen, reis aanmaken, reis delen met een gezinslid,
-dag/onderdeel toevoegen, en "vandaag" bekijken onderweg._
+- [ ] **Inloggen** — met een leeg veld of een fout wachtwoord: een
+      Nederlandse melding, geen Engelse servertekst. Met het juiste
+      wachtwoord: het startscherm.
+- [ ] **Startscherm** — alle reizen, gegroepeerd in "Nog te gaan" en
+      "Al gemaakt", met kaartfoto. Onbekend aantal nachten = "?".
+- [ ] **Reispagina** — tik op een reis: foto bovenaan met credit;
+      Overzicht, Programma, Slapen, Doen en Kosten zijn er alle vijf (ook
+      als een onderdeel nog leeg is).
+- [ ] **Plek kiezen** — een tegel in het overzicht opent het programma
+      bij die plek; de tabbladen en ← / → wisselen van plek.
+- [ ] **Links** — een fotocredit opent de Commons-pagina en de licentie
+      in een nieuw tabblad; een verblijf met link opent de website.
+- [ ] **Onbekend is "?"** — geen datum = "Datum ?"; onbekend ontbijt,
+      zwembad, beoordeling of prijs = "?"; een onbekend kostentotaal geeft
+      "+ ?" en "rest ?", nooit € 0.
+- [ ] **Uitloggen** — terug naar het inlogscherm; herladen blijft op het
+      inlogscherm.
+- [ ] **Uitnodiging** — (alleen bij een nieuw account) de link uit de
+      mail opent "Wachtwoord instellen"; daarna ingelogd.
 
-- [ ] **Inloggen** — een gezinslid logt in en ziet alleen eigen/gedeelde
-      reizen.
+## Beveiliging
+
+- [ ] Niet ingelogd: `?reis=<slug>` toont het inlogscherm, geen data.
+- [ ] Ingelogd als lid: alle reizen zichtbaar.
+- [ ] Ingelogd, maar geen lid (`reis.leden`): geen enkele reis zichtbaar.
+
+## Onderweg (PWA)
+
+- [ ] **Installeren** — "Toevoegen aan beginscherm" geeft het icoon en
+      de naam "Reizen"; de app opent zonder adresbalk.
+- [ ] **Offline** — een reis één keer online openen, dan vliegtuigmodus
+      aan en de app opnieuw openen: dezelfde reis is leesbaar, met foto's,
+      en je blijft ingelogd. Een reis die nog nooit geopend was geeft een
+      duidelijke melding "Geen verbinding".
+- [ ] **Uitloggen wist offline data** — na uitloggen (offline) is geen
+      reis meer te openen.
+- [ ] **Nieuwe versie** — na een deploy (CACHE opgehoogd) laadt de app
+      bij de eerste keer openen de nieuwe versie (de pagina herlaadt zich
+      één keer vanzelf).
 
 ## Aandachtspunten
 
-- [ ] Een niet-gedeelde reis is níet zichtbaar voor een ander gezinslid.
 - [ ] Belangrijkste info zichtbaar zonder scrollen (telefoon, portrait én
-      landscape).
-- [ ] Werkt zonder internetverbinding (laatst geladen reis blijft
-      leesbaar).
+      landscape); geen horizontale scrollbalk.
+- [ ] Tablet en desktop: kaarten in 2–3 kolommen, niets uitgerekt.
 - [ ] Geen console-errors tijdens bovenstaande flows.
-- [ ] PWA-update opgepikt na wijziging (versienummer in `sw.js`
-      opgehoogd, nieuwe versie laadt na herladen).
 
 ## Resultaat
 

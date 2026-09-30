@@ -34,9 +34,18 @@ function saveAuthSession(s) {
   zetOpslag('reis_refresh_token', AUTH_REFRESH_TOKEN);
   zetOpslag('reis_expires_at', String(AUTH_EXPIRES_AT));
 }
+// Offline bewaarde reisdata en foto's (sw.js, zelfde namen als DATA en FOTOS
+// daar) horen bij de sessie: weg bij uitloggen of een geweigerde sessie. De
+// service worker krijgt ook een bericht, zodat een verzoek dat nog loopt de
+// data niet alsnog terugzet.
+const DATA_CACHES = ['reis-app-data', 'reis-app-fotos'];
 function clearAuthSession() {
   AUTH_ACCESS_TOKEN = ''; AUTH_REFRESH_TOKEN = ''; AUTH_EXPIRES_AT = 0;
   zetOpslag('reis_access_token', ''); zetOpslag('reis_refresh_token', ''); zetOpslag('reis_expires_at', '');
+  const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
+  if (sw) sw.postMessage({ type: 'wis-data' });
+  if (!window.caches) return Promise.resolve();
+  return Promise.all(DATA_CACHES.map(n => caches.delete(n).catch(() => {})));
 }
 function isIngelogd() { return !!(AUTH_ACCESS_TOKEN || AUTH_REFRESH_TOKEN); }
 
@@ -103,7 +112,7 @@ function authMelding(status, j, standaard) {
 }
 async function signOut() {
   const token = AUTH_ACCESS_TOKEN;
-  clearAuthSession();
+  await clearAuthSession();
   // Alleen dit apparaat uitloggen (scope=local), niet ook de telefoon of laptop ernaast.
   if (token) { try { await fetch(SB_URL + '/auth/v1/logout?scope=local', { method: 'POST', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + token } }); } catch (e) { /* offline: lokaal is hij toch weg */ } }
 }

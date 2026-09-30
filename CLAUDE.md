@@ -25,8 +25,9 @@ voor stap opnieuw en netjes opgebouwd.
   dus niet in git); de eerste mockup (`index.html`/`mockup.js` daar) is
   vervallen. De echte app staat er (2026-09-30): inloggen, startscherm
   en reispagina uit Supabase, direct in Nevel-stijl gebouwd (geen extra
-  mockups, besluit gebruiker). Volgt: tdd, `sw.js`/manifest, Pages,
-  account van de gebruiker.
+  mockups, besluit gebruiker). Ook klaar: tests voor `opmaak.js`,
+  `sw.js`/manifest (offline), lettertypes zelf meegeleverd. Volgt:
+  Pages aan, account van de gebruiker, rooktest als echt lid.
 
 **Bij de start van een sessie:** lees ook `.claude/overdracht.md`
 (gitignored) — daarin staan de actuele stand, de open vragen en de
@@ -45,7 +46,8 @@ Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
   functies hier, niet in de schermen. Rechtstreeks via de REST-API,
   zonder supabase-js (besluit gebruiker 2026-09-30)
 - `opmaak.js` — pure tekstfuncties (datums, bedragen, nachten, reistijd,
-  fotocredit); onbekend wordt "?"
+  fotocredit) en `budgetRegel` (kostenpost → categorie); onbekend wordt
+  "?"
 - `schermen.js` — de schermen (ontwerp Nevel): inloggen, wachtwoord
   instellen, startscherm, reispagina
 - `thema.css` — alle kleur- en maatvariabelen (palet Nevel; voorlopig
@@ -57,12 +59,29 @@ Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
   Design voor de gebruiker, dus eigen werk. Lokaal gepatcht (patches 1–6,
   zie `.claude/overdracht.md`); nooit overschrijven met een ongepatchte
   versie
-- nog te maken: `manifest.json`, `sw.js` — PWA-installatie en offline
-  gebruik
+- `manifest.json`, `iconen/` — installeren op het beginscherm
+- `sw.js` — offline: app-bestanden uit de cache (CACHE-versie), reisdata
+  netwerk-eerst met de laatst opgehaalde versie als terugval, foto's
+  bewaard op opslagpad (de ondertekende URL wisselt). Alle caches
+  beginnen met `reis-app-`: op GitHub Pages delen de apps van de
+  gebruiker één domein en dus één cache-opslag (en localStorage) —
+  nooit caches of sleutels van een ander voorvoegsel aanraken. Data- en
+  fotocache worden bij uitloggen gewist (`app.js`, `DATA_CACHES`). Een
+  vervangen foto krijgt een nieuw opslagpad (de cache kijkt alleen naar
+  het pad). Registratie en manifest zijn relatief, dus scope `/reis-app/`
+  op Pages. `#eef3f3` in `manifest.json` en `index.html` (theme-color)
+  moet gelijk blijven aan `--paper` in `thema.css`
+- `fonts/` — Instrument Serif, Figtree en Caveat zelf meegeleverd (OFL,
+  subsets latin/latin-ext; besluit gebruiker 2026-09-30: geen Google
+  Fonts, werkt offline)
 - `supabase/migrations/` — alle schemawijzigingen als SQL-bestand
+- `tests/opmaak.html` — tests (in de browser) voor `opmaak.js` en de
+  "?"-logica van de kosten- en verblijfkaarten; alleen verzonnen waarden
 - `tests/rooktest.md` — handmatige checklist met kernflows
 - lokaal testen zonder account: `bron/apptest/` (gitignored) vangt de
-  Supabase-aanroepen op en antwoordt uit de lokale datakopie
+  Supabase-aanroepen op en antwoordt uit de lokale datakopie; met
+  `?sw=1` draait die stub in de service worker (`sw-test.js`,
+  gitignored) zodat de echte cachelogica van `sw.js` getest wordt
 
 Werk deze lijst bij zodra er echte bestanden bijkomen.
 

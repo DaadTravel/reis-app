@@ -355,9 +355,7 @@
           h('span', { className: 'nv-label' }, 'Kosten'),
           h('h2', { className: 'nv-kop' }, kop.title || 'Wat het kost'),
           kop.intro && h('p', { className: 'nv-tekst nv-muted' }, kop.intro)),
-        p.budget.length ? h(G.BudgetSummary, { categories: p.budget.map(function (b) {
-          return { label: b.label, total: b.totaal != null ? Number(b.totaal) : null, paid: b.betaald != null ? Number(b.betaald) : undefined, detail: b.detail || undefined };
-        }), note: r.budget_notitie || undefined }) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen kosten bekend.' })));
+        p.budget.length ? h(G.BudgetSummary, { categories: p.budget.map(O.budgetRegel), note: r.budget_notitie || undefined }) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen kosten bekend.' })));
   }
 
   // Elke reis dezelfde onderdelen, ook als er (nog) niets in staat.

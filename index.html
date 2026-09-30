@@ -6,9 +6,10 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#eef3f3">
 <title>Onze reizen</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;500;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="iconen/icoon-192.png">
+<link rel="apple-touch-icon" href="iconen/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/lettertypes.css">
 <link rel="stylesheet" href="thema.css">
 <link rel="stylesheet" href="ds/bundle.css">
 <link rel="stylesheet" href="app.css">
@@ -22,5 +23,18 @@
 <script src="opmaak.js"></script>
 <script src="app.js"></script>
 <script src="schermen.js"></script>
+<script>
+// Service worker (offline). Neemt een nieuwe versie het over, dan één keer
+// herladen zodat alle bestanden van dezelfde versie zijn — niet als er net
+// iets ingetypt wordt (dan de volgende keer openen).
+if ('serviceWorker' in navigator) {
+  var hadVersie = !!navigator.serviceWorker.controller, herladen = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    var bezig = [].some.call(document.querySelectorAll('input'), function (i) { return i.value; });
+    if (hadVersie && !herladen && !bezig) { herladen = true; location.reload(); }
+  });
+  navigator.serviceWorker.register('sw.js').catch(function () { /* zonder offline verder */ });
+}
+</script>
 </body>
 </html>

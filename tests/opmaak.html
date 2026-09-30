@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tests opmaak</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; margin: 16px; background: #fff; color: #111; }
+  li.goed { color: #1a7f37; } li.fout { color: #b3261e; font-weight: 600; }
+  #som { font-size: 18px; font-weight: 700; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" integrity="sha512-8Q6Y9XnTbOE+JNvjBQwJ2H8S+UV4uA6hiRykhdtIyDYZ2TprdNmWOUaKdGzOhyr4dCyk287OejbPvwl7lrfqrQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" integrity="sha512-MOCpqoRoisCTwJ8vQQiciZv0qcpROCidek3GTFS6KTk2+y7munJIlKCVkFCYY+p3ErYFXCjmFjnfTTRSC1OHWQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<!-- Tests voor opmaak.js en de "?"-logica van de designsysteemcomponenten.
+     Openen via een lokale server (bijv. http://localhost:8766/tests/opmaak.html).
+     Alleen verzonnen voorbeeldwaarden, geen reisinhoud. -->
+<p id="som">Bezig…</p>
+<ul id="lijst"></ul>
+<script src="../ds/bundle.js"></script>
+<script src="../opmaak.js"></script>
+<script>
+(function () {
+  var uitslag = [];
+  function test(naam, verwacht, fn) {
+    var werkelijk;
+    try { werkelijk = fn(); } catch (e) { werkelijk = 'FOUT: ' + e.message; }
+    var ok = JSON.stringify(verwacht) === JSON.stringify(werkelijk);
+    uitslag.push({ naam: naam, ok: ok, verwacht: verwacht, werkelijk: werkelijk });
+  }
+  // Rendert een Reisgids-component en geeft de zichtbare tekst terug.
+  function tekst(comp, props) {
+    var div = document.createElement('div'), root = ReactDOM.createRoot(div);
+    ReactDOM.flushSync(function () { root.render(React.createElement(window.Reisgids[comp], props)); });
+    var t = div.textContent.replace(/\s+/g, ' ').trim();
+    root.unmount();
+    return t;
+  }
+  var O = window.Opmaak || {};
+
+  // --- Datums (UTC, dus onafhankelijk van de tijdzone van het toestel) ---
+  test('dagLabel: één dag', 'za 5 jan', function () { return O.dagLabel('2030-01-05'); });
+  test('dagLabel: tot = van is één dag', 'za 5 jan', function () { return O.dagLabel('2030-01-05', '2030-01-05'); });
+  test('dagLabel: periode in één maand', 'za 5 – ma 7 jan', function () { return O.dagLabel('2030-01-05', '2030-01-07'); });
+  test('dagLabel: over de maandgrens', 'do 31 jan – za 2 feb', function () { return O.dagLabel('2030-01-31', '2030-02-02'); });
+  test('dagLabel: over de jaargrens', 'di 31 dec – do 2 jan', function () { return O.dagLabel('2030-12-31', '2031-01-02'); });
+  test('dagLabel: juni voluit', 'ma 10 juni', function () { return O.dagLabel('2030-06-10'); });
+  test('dagLabel: juli voluit', 'ma 1 juli', function () { return O.dagLabel('2030-07-01'); });
+  test('dagLabel: maart is mrt', 'vr 1 mrt', function () { return O.dagLabel('2030-03-01'); });
+  test('dagLabel: schrikkeldag', 'zo 29 feb', function () { return O.dagLabel('2032-02-29'); });
+  test('langeDatum', '1 maart', function () { return O.langeDatum('2030-03-01'); });
+  test('kortDatum', '1 mrt', function () { return O.kortDatum('2030-03-01'); });
+  test('kortDatum: juni afgekort', '10 jun', function () { return O.kortDatum('2030-06-10'); });
+
+  // --- Bedragen en aantallen: onbekend is "?", nooit 0 ---
+  test('euro: duizendtallen', '€ 1.500', function () { return O.euro(1500); });
+  test('euro: afgerond op hele euro', '€ 1.235', function () { return O.euro(1234.5); });
+  test('euro: nul blijft nul', '€ 0', function () { return O.euro(0); });
+  test('prijsTekst: null is ?', '€ ?', function () { return O.prijsTekst(null); });
+  test('prijsTekst: undefined is ?', '€ ?', function () { return O.prijsTekst(undefined); });
+  test('prijsTekst: 0 is bekend', '€ 0', function () { return O.prijsTekst(0); });
+  test('nachtenTekst: null', '? nachten', function () { return O.nachtenTekst(null); });
+  test('nachtenTekst: 1', '1 nacht', function () { return O.nachtenTekst(1); });
+  test('nachtenTekst: 0', '0 nachten', function () { return O.nachtenTekst(0); });
+  test('nachtenTekst: 3', '3 nachten', function () { return O.nachtenTekst(3); });
+
+  // --- Reistijd ---
+  test('reistijd: null', '?', function () { return O.reistijd(null); });
+  test('reistijd: null met benadering', '?', function () { return O.reistijd(null, true); });
+  test('reistijd: minuten', '40 min', function () { return O.reistijd(40); });
+  test('reistijd: 0', '0 min', function () { return O.reistijd(0); });
+  test('reistijd: heel uur', '1u', function () { return O.reistijd(60); });
+  test('reistijd: uur en minuten', '1u35', function () { return O.reistijd(95); });
+  test('reistijd: minuten met voorloopnul', '1u05', function () { return O.reistijd(65); });
+  test('reistijd: benadering', '~2u', function () { return O.reistijd(120, true); });
+  test('reistijd: benadering in minuten', '~40 min', function () { return O.reistijd(40, true); });
+
+  // --- Beoordeling en namen ---
+  test('beoordelingTekst: heel getal krijgt ,0', '9,0 Booking.com', function () { return O.beoordelingTekst({ beoordeling: 9, beoordeling_bron: 'Booking.com' }); });
+  test('beoordelingTekst: zonder bron', '8,4', function () { return O.beoordelingTekst({ beoordeling: 8.4 }); });
+  test('beoordelingTekst: onbekend', undefined, function () { return O.beoordelingTekst({ beoordeling: null }); });
+  test('kortNaam: haakjes weg', 'Dorp', function () { return O.kortNaam('Dorp (aan de rivier)'); });
+  test('kortNaam: null', '?', function () { return O.kortNaam(null); });
+  test('kortNaam: leeg', '?', function () { return O.kortNaam(''); });
+
+  // --- Links en fotocredits ---
+  test('veiligeLink: https', 'https://voorbeeld.test/a', function () { return O.veiligeLink('https://voorbeeld.test/a'); });
+  test('veiligeLink: http', 'http://voorbeeld.test/', function () { return O.veiligeLink('http://voorbeeld.test/'); });
+  test('veiligeLink: javascript geweigerd', undefined, function () { return O.veiligeLink('javascript:alert(1)'); });
+  test('veiligeLink: hoofdletters JAVASCRIPT geweigerd', undefined, function () { return O.veiligeLink('JAVASCRIPT:alert(1)'); });
+  test('veiligeLink: protocol-relatief geweigerd', undefined, function () { return O.veiligeLink('//voorbeeld.test'); });
+  test('veiligeLink: null', undefined, function () { return O.veiligeLink(null); });
+  test('licentieUrl: CC BY-SA 4.0', 'https://creativecommons.org/licenses/by-sa/4.0/', function () { return O.licentieUrl('CC BY-SA 4.0'); });
+  test('licentieUrl: CC BY 2.5', 'https://creativecommons.org/licenses/by/2.5/', function () { return O.licentieUrl('CC BY 2.5'); });
+  test('licentieUrl: CC0', 'https://creativecommons.org/publicdomain/zero/1.0/', function () { return O.licentieUrl('CC0'); });
+  test('licentieUrl: eigen foto geen link', undefined, function () { return O.licentieUrl('Eigen foto'); });
+  test('licentieUrl: leeg', undefined, function () { return O.licentieUrl(undefined); });
+  test('fotoCredit: Commons', { tekst: 'Naam Fotograaf / Wikimedia Commons', href: 'https://commons.wikimedia.org/wiki/File:X.jpg', licentie: 'CC BY-SA 4.0', licentieHref: 'https://creativecommons.org/licenses/by-sa/4.0/' },
+    function () { return O.fotoCredit({ fotograaf: 'Naam Fotograaf', bron: 'Wikimedia Commons, CC BY-SA 4.0', bron_url: 'https://commons.wikimedia.org/wiki/File:X.jpg' }); });
+  test('fotoCredit: eigen foto zonder licentie', { tekst: 'Eigen foto' },
+    function () { return O.fotoCredit({ fotograaf: null, bron: 'Eigen foto', bron_url: null }); });
+  test('fotoCredit: onveilige bron-URL geen link', undefined,
+    function () { return O.fotoCredit({ fotograaf: 'A', bron: 'Wikimedia Commons, CC0', bron_url: 'javascript:x' }).href; });
+
+  // --- Kosten: budget_posten-rij → categorie (totaal leeg = ?, betaald leeg = € 0) ---
+  test('budgetRegel: alles bekend', { label: 'Vluchten', total: 1200, paid: 300, detail: 'retour' },
+    function () { return O.budgetRegel({ label: 'Vluchten', totaal: 1200, betaald: 300, detail: 'retour' }); });
+  test('budgetRegel: totaal leeg blijft onbekend (null)', { label: 'Eten', total: null, paid: 0 },
+    function () { return O.budgetRegel({ label: 'Eten', totaal: null, betaald: null, detail: null }); });
+  test('budgetRegel: betaald leeg telt als 0', { label: 'Huur', total: 500, paid: 0 },
+    function () { return O.budgetRegel({ label: 'Huur', totaal: 500, betaald: null }); });
+  test('budgetRegel: 0 is bekend, niet onbekend', { label: 'Museum', total: 0, paid: 0 },
+    function () { return O.budgetRegel({ label: 'Museum', totaal: 0, betaald: 0 }); });
+  test('budgetRegel: getal als tekst wordt getal', { label: 'Auto', total: 350.5, paid: 100 },
+    function () { return O.budgetRegel({ label: 'Auto', totaal: '350.5', betaald: '100' }); });
+
+  // --- Kostenoverzicht (BudgetSummary) ---
+  function bs(cats) { return tekst('BudgetSummary', { categories: cats }); }
+  test('Kosten: alles bekend, niets betaald', true, function () {
+    var t = bs([{ label: 'A', total: 600, paid: 0 }, { label: 'B', total: 400, paid: 0 }]);
+    return t.indexOf('€ 1.000') > -1 && t.indexOf('€ 0 betaald · € 1.000 open') > -1;
+  });
+  test('Kosten: één totaal onbekend geeft "+ ?" en "rest ?"', true, function () {
+    var t = bs([{ label: 'A', total: 600, paid: 100 }, { label: 'B', total: null, paid: 0 }]);
+    return t.indexOf('€ 600 + ?') > -1 && t.indexOf('€ 100 betaald · rest ?') > -1 && t.indexOf('B€ ?') > -1;
+  });
+  test('Kosten: alle totalen onbekend is "€ ?"', true, function () {
+    var t = bs([{ label: 'A', total: null, paid: 0 }]);
+    return /Totaal€ \?/.test(t) && t.indexOf('rest ?') > -1;
+  });
+  test('Kosten: volledig betaald', true, function () {
+    return bs([{ label: 'A', total: 500, paid: 500 }]).indexOf('Volledig betaald') > -1;
+  });
+  test('Kosten: onbekend totaal is nooit volledig betaald', false, function () {
+    return bs([{ label: 'A', total: 500, paid: 500 }, { label: 'B', total: null, paid: 0 }]).indexOf('Volledig betaald') > -1;
+  });
+
+  // --- Verblijfkaart (StayCard): leeg is "?", false is "nee" ---
+  test('Verblijf: onbekende kenmerken zijn ?', true, function () {
+    var t = tekst('StayCard', { name: 'Hotel', place: 'Dorp' });
+    return ['Ontbijt ?', 'Zwembad ?', 'Beoordeling ?', 'Kamers ?', '€ ?'].every(function (s) { return t.indexOf(s) > -1; });
+  });
+  test('Verblijf: false is nee, true is ja', true, function () {
+    var t = tekst('StayCard', { name: 'Hotel', place: 'Dorp', breakfast: false, pool: true, rooms: 1, price: 90 });
+    return ['Ontbijt nee', 'Zwembad ja', '1 kamer', '€ 90'].every(function (s) { return t.indexOf(s) > -1; });
+  });
+
+  // --- Uitslag tonen ---
+  var goed = uitslag.filter(function (u) { return u.ok; }).length;
+  document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');
+  var lijst = document.getElementById('lijst');
+  uitslag.forEach(function (u) {
+    var li = document.createElement('li');
+    li.className = u.ok ? 'goed' : 'fout';
+    li.textContent = (u.ok ? '✓ ' : '✗ ') + u.naam + (u.ok ? '' : ' — verwacht ' + JSON.stringify(u.verwacht) + ', kreeg ' + JSON.stringify(u.werkelijk));
+    lijst.appendChild(li);
+  });
+  window.TESTUITSLAG = { goed: goed, totaal: uitslag.length, mislukt: uitslag.filter(function (u) { return !u.ok; }) };
+})();
+</script>
+</body>
+</html>

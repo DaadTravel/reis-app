@@ -42,6 +42,12 @@
     if (v.beoordeling == null) return undefined;
     return Number(v.beoordeling).toLocaleString('nl-NL', { minimumFractionDigits: 1 }) + (v.beoordeling_bron ? ' ' + v.beoordeling_bron : '');
   }
+  // budget_posten-rij → categorie voor BudgetSummary. Totaal leeg = onbekend (null → "?");
+  // betaald leeg = bedrag bekend, nog niets betaald (€ 0; besluit gebruiker 2026-09-30).
+  function budgetRegel(b) {
+    return { label: b.label, total: b.totaal != null ? Number(b.totaal) : null,
+      paid: b.betaald != null ? Number(b.betaald) : 0, detail: b.detail || undefined };
+  }
   // "Dorp (aan de rivier)" → "Dorp".
   function kortNaam(naam) { return String(naam || '?').split(' (')[0]; }
 
@@ -63,5 +69,6 @@
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
-    licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink };
+    licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
+    budgetRegel: budgetRegel };
 })();
