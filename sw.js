@@ -1,9 +1,9 @@
 // Service worker: installeerbaar en onderweg zonder bereik te gebruiken.
 // Verhoog CACHE bij elke wijziging aan de app (CLAUDE.md), anders blijft
 // de oude versie in gebruik.
-const CACHE = 'reis-app-v1';
-// Op GitHub Pages delen de apps van de gebruiker één domein en dus één
-// cache-opslag: alleen caches met dit voorvoegsel zijn van de reis-app.
+const CACHE = 'reis-app-v2';
+// De app heeft een eigen domein (daadtravel.github.io), maar voor de
+// zekerheid ruimt hij alleen caches met dit voorvoegsel op.
 const VOORVOEGSEL = 'reis-app-';
 // Data en foto's blijven bewaard bij een nieuwe versie; app.js wist ze bij
 // uitloggen (zelfde namen als DATA_CACHES daar).

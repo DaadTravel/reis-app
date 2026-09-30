@@ -63,9 +63,8 @@ Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
 - `sw.js` — offline: app-bestanden uit de cache (CACHE-versie), reisdata
   netwerk-eerst met de laatst opgehaalde versie als terugval, foto's
   bewaard op opslagpad (de ondertekende URL wisselt). Alle caches
-  beginnen met `reis-app-`: op GitHub Pages delen de apps van de
-  gebruiker één domein en dus één cache-opslag (en localStorage) —
-  nooit caches of sleutels van een ander voorvoegsel aanraken. Data- en
+  beginnen met `reis-app-` en alleen die worden opgeruimd (eigen domein,
+  zie Deploy, maar voor de zekerheid). Data- en
   fotocache worden bij uitloggen gewist (`app.js`, `DATA_CACHES`). Een
   vervangen foto krijgt een nieuw opslagpad (de cache kijkt alleen naar
   het pad). Registratie en manifest zijn relatief, dus scope `/reis-app/`
@@ -194,14 +193,23 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
 
 ## Deploy
 
-Gelijk aan fcp16-2: **GitHub Pages**, "Deploy from a branch" (`main`,
-map `/`), zonder eigen workflowbestand — elke push naar `main` publiceert
-automatisch. Daarvoor is de repo bewust **publiek** (keuze 2026-09-29;
-gratis GitHub-account ondersteunt Pages alleen op publieke repo's).
-Gevolg: alles in git is openbaar. Daarom nooit keys (behalve de
-publishable key in de app-code zelf), gezinsgegevens of testdata met
-echte gegevens committen — de data zelf blijft beschermd door RLS.
-Pages wordt aangezet zodra de eerste `index.html` op `main` staat.
+**GitHub Pages**, "Deploy from a branch" (`main`, map `/`), zonder eigen
+workflowbestand — elke push naar `main` publiceert automatisch. Daarvoor
+is de repo bewust **publiek** (keuze 2026-09-29; gratis GitHub
+ondersteunt Pages alleen op publieke repo's). Gevolg: alles in git is
+openbaar. Daarom nooit keys (behalve de publishable key in de app-code
+zelf), gezinsgegevens of testdata met echte gegevens committen — de data
+zelf blijft beschermd door RLS.
+
+**Eigen domein, geen technische relatie met andere apps** (besluit
+gebruiker 2026-09-30): de repo staat in de organisatie **DaadTravel**
+(`github.com/DaadTravel/reis-app`), dus de app draait op
+`daadtravel.github.io/reis-app/` — niet op `daadwerkelijk.github.io`,
+waar fcp16-2, sport en Cafe-Toscane draaien. Een browser deelt
+cache-opslag, localStorage, service workers en toestemmingen per domein;
+zo deelt de reis-app daar niets mee. Nooit terugzetten naar het
+persoonlijke account. Het Supabase-project Casa-Toscana blijft wel
+gedeeld (bewuste keuze, zie Supabase).
 
 ## Werkwijze-afspraken
 
