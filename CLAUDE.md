@@ -69,7 +69,8 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `leden`. Rollen via `reis.leden`: `bewerker` (schrijven) en `kijker`
   (lezen); wie niet in `leden` staat ziet niets. Leden alleen via
   SQL/dashboard toevoegen, niet via de app. Hulpfuncties voor de policies
-  staan in schema `reis_intern` (bewust niet in de Data API).
+  staan in schema `reis_intern` (bewust niet in de Data API). Latere
+  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0008`.
 - **Dagen:** echte datums (`datum_van`/`datum_tot`) waar bekend; de app
   maakt daar het label van. Alleen zonder datums een vrij `wanneer_label`.
 - **Elke locatie is een plek** (besluit gebruiker 2026-09-29): elke
@@ -84,7 +85,27 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   zelf staan in `bron/` en gaan nooit in git. Uploaden/inlezen
   wordt een aparte functie, later.
 - **Onbekend is "?", niet "nee":** een kenmerk dat niet is ingevuld
-  (`null`, bijv. ontbijt of zwembad) toont de app als "?".
+  (`null`, bijv. ontbijt of zwembad) toont de app als "?". Ook een
+  onbekend bedrag (bijv. `budget_posten.totaal`) is `null` → "?", nooit 0.
+- **Zoekprofiel is geen reisinhoud** (besluit gebruiker 2026-09-30): de
+  zoekcriteria voor verblijven (kolom `reizen.randvoorwaarden`: max per
+  nacht, minimale beoordeling, kamers, zwembad) zijn het uitgangspunt bij
+  het zóeken naar verblijven. De kolom blijft bestaan, maar de reispagina
+  toont geen sectie Randvoorwaarden. Max per nacht en
+  beoordeling zijn zoekfilters; kamers en zwembad zijn sterke wensen,
+  geen eisen. Matcht niets, dan zoeken waar te verruimen. Een plafond
+  (bijv. nachten × max per nacht) is nooit een bedrag in de kosten: alleen
+  echt ingegeven bedragen tellen.
+- **Per verblijf in het overzicht** (besluit gebruiker 2026-09-30):
+  `beoordeling` (0–10) met `beoordeling_bron` en `beoordeeld_op`; bron is
+  eerst de Excel van de reis, anders Booking.com via de connector in
+  Claude (de app zelf kan geen connectoren aanroepen). Plus
+  `kamerindeling` (vaste lijst: 2 kamers apart, gezinskamer, appartement
+  met 2 slaapkamers, anders + `kamerindeling_toelichting`) naast ontbijt
+  en zwembad. Een beoordeling zonder bron en datum weigert de database
+  (migratie `…0008`). Een beoordeling is een momentopname: eenmaal
+  vastgelegd niet bijwerken naar een nieuwer cijfer. Bij een nieuw veld
+  meteen invullen waar een bron beschikbaar is.
 - **Reisinhoud nooit in git.** Seed-data (accommodaties, bedragen, route)
   gaat rechtstreeks de database in, niet als migratie of bestand in de
   publieke repo. Bronmateriaal staat in `bron/` (gitignored).
