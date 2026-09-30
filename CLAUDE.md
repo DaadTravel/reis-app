@@ -20,9 +20,11 @@ voor stap opnieuw en netjes opgebouwd.
   de gebruiker.
 - **Fase 4 — app opbouwen: bezig.** Eerst een volledige functie-inventaris
   van de Claude Projects-versie (er mag bij het overzetten niets verloren
-  gaan), dan scherm voor scherm: mockup → bouwen → rooktest. Mockup van
-  inloggen, startscherm en reispagina staat in `bron/mockup/` (lokaal,
-  met echte data, dus niet in git).
+  gaan), dan scherm voor scherm: mockup → bouwen → rooktest. Basis is de
+  ontwerpvariant **Nevel** (`bron/mockup/nevel.*`, lokaal met echte data,
+  dus niet in git); de eerste mockup (`index.html`/`mockup.js` daar) is
+  vervallen. Nevel heeft alleen een reispagina; inloggen en startscherm
+  krijgen eerst nog een mockup in Nevel-stijl.
 
 **Bij de start van een sessie:** lees ook `.claude/overdracht.md`
 (gitignored) — daarin staan de actuele stand, de open vragen en de
@@ -35,9 +37,16 @@ Nog geen app-bestanden. Beoogde opzet, gelijk aan fcp16-2:
 - `index.html` — de app
 - `app.js` — gedeelde logica (auth, Supabase-datalaag); alle
   Supabase-lees/schrijfacties als gedeelde functies hier, niet los per
-  pagina
-- een eigen CSS-bestand met thema-variabelen (kleurthema's nog te
-  bepalen; minstens licht en donker)
+  pagina. Rechtstreeks via de REST-API (`sbFetch`/`sbWrite` en de
+  auth-REST-API, zoals fcp16-2), zonder supabase-js (besluit gebruiker
+  2026-09-30)
+- een eigen CSS-bestand met thema-variabelen (palet Nevel; voorlopig
+  alleen licht — donker is geparkeerd, besluit gebruiker 2026-09-30;
+  design-check toetst tot die tijd alleen licht)
+- het designsysteem "Reisgids" (componenten als `window.Reisgids`),
+  gemaakt met Claude Design voor de gebruiker, dus eigen werk en mag in
+  de repo. Het is lokaal gepatcht (zie `.claude/overdracht.md`); die
+  patches gaan mee in de app-kopie
 - `manifest.json`, `sw.js` — PWA-installatie en offline gebruik
 - `supabase/migrations/` — alle schemawijzigingen als SQL-bestand
 - `tests/rooktest.md` — handmatige checklist met kernflows
@@ -54,23 +63,33 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   verwijderen. Die staan bewust (nog) open; dat is een aparte kwestie,
   niet iets om vanuit dit project te "fixen".
 - Schema `reis` is toegevoegd aan de Exposed schemas van de Data API.
-  Client-side dus altijd met schema `reis` werken (bijv.
-  `supabase.createClient(url, key, { db: { schema: 'reis' } })`).
+  Client-side dus altijd met schema `reis` werken: bij de REST-API de
+  headers `Accept-Profile: reis` (lezen) en `Content-Profile: reis`
+  (schrijven).
 - Inloggen (auth) is gedeeld met de andere apps in het project; dat is een
   bewuste, geaccepteerde keuze. Hetzelfde geldt voor gedeelde back-ups en
   pauzeren.
 - **Beveiliging vanaf dag 1:** `anon` heeft geen toegang tot schema
   `reis` (migratie `20260929000001_reis_schema_basis.sql`). Elke tabel
-  krijgt RLS met policies op basis van `auth.uid()` en lidmaatschap van
-  een reis: je ziet alleen eigen of met jou gedeelde reizen. Zie de skill
-  `supabase-wijziging`.
+  krijgt RLS met policies op basis van `auth.uid()` en lidmaatschap via
+  `reis.leden`. Dat lidmaatschap geldt voor álle reizen (het is één
+  gezin): een lid ziet alle reizen, wie geen lid is ziet niets. Delen per
+  reis bestaat (nog) niet. Zie de skill `supabase-wijziging`.
 - **Datamodel** (migratie `20260929000002`): `reizen`, `dagen`, `stops`,
   `route_punten`, `verblijven`, `activiteiten`, `budget_posten`, `fotos`,
   `leden`. Rollen via `reis.leden`: `bewerker` (schrijven) en `kijker`
   (lezen); wie niet in `leden` staat ziet niets. Leden alleen via
   SQL/dashboard toevoegen, niet via de app. Hulpfuncties voor de policies
   staan in schema `reis_intern` (bewust niet in de Data API). Latere
-  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0008`.
+  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0009`.
+- **Koppel op ID, nooit op naam:** dagen, routepunten, verblijven en
+  activiteiten hangen via `stop_id` aan hun plek (migratie `…0009`).
+  Leeg is bewust: Vertrek/Thuis en vlucht- of reisdagen ("A → B") —
+  behalve als plek B geen eigen dag heeft, dan hoort die reisdag bij B.
+  De database dwingt nog niet af dat de plek bij dezelfde reis hoort; de
+  app moet dat zelf bewaken. Een plek
+  die twee keer in de route staat: het hoeveelste bezoek bepaalt welke
+  dag (in `volgorde`) erbij hoort.
 - **Dagen:** echte datums (`datum_van`/`datum_tot`) waar bekend; de app
   maakt daar het label van. Alleen zonder datums een vrij `wanneer_label`.
 - **Elke locatie is een plek** (besluit gebruiker 2026-09-29): elke
