@@ -309,6 +309,18 @@ commit/push: de agent `code-controleur` laten meekijken.
   adressen of andere persoonlijke gezinsgegevens op buiten de app zelf
   (dus ook niet in documentatie, logs, testdata of commit-berichten).
   Testen gebeurt met verzonnen dummy-data.
+- **Praktische boekingsgegevens horen wél in de app** (besluit gebruiker
+  2026-10-01): adres, telefoon, e-mail en boekingscode van verblijven,
+  ritten en excursies, zodat onderweg snel contact te zoeken is. Alleen
+  in schema `reis` achter RLS (leden), nooit in git, docs of logs, en
+  niet in een latere deelversie. Paspoort-/ID- en betaalgegevens blijven
+  buiten de app.
+- **Bedragen zijn deelbaar** (besluit gebruiker 2026-10-01): de kosten van
+  een reis mogen in een latere deelversie (scenario 3) zichtbaar zijn.
+- **Weer** (besluit gebruiker 2026-10-01): graag actueel (verwachting)
+  voor de data waarop we op een plek zijn, als dat haalbaar is. Vraagt
+  coördinaten per plek; een externe weerdienst krijgt alleen
+  coördinaten en datums, nooit gegevens van het gezin.
 
 ## Sessiebeheer
 
