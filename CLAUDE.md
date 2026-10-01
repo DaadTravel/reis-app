@@ -26,8 +26,10 @@ voor stap opnieuw en netjes opgebouwd.
   vervallen. De echte app staat er (2026-09-30): inloggen, startscherm
   en reispagina uit Supabase, direct in Nevel-stijl gebouwd (geen extra
   mockups, besluit gebruiker). Ook klaar: tests voor `opmaak.js`,
-  `sw.js`/manifest (offline), lettertypes zelf meegeleverd. Volgt:
-  Pages aan, account van de gebruiker, rooktest als echt lid.
+  `sw.js`/manifest (offline), lettertypes zelf meegeleverd. Live op
+  `daadtravel.github.io/reis-app/`; gebruiker is lid (bewerker) en de
+  rooktest als lid is geslaagd (2026-09-30). Geparkeerd: foto's te hoog
+  op een telefoon in landscape.
 
 **Bij de start van een sessie:** lees ook `.claude/overdracht.md`
 (gitignored) — daarin staan de actuele stand, de open vragen en de

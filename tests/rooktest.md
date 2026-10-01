@@ -21,6 +21,11 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
 - [ ] **Reispagina** — tik op een reis: foto bovenaan met credit;
       Overzicht, Programma, Slapen, Doen en Kosten zijn er alle vijf (ook
       als een onderdeel nog leeg is).
+- [ ] **Tijdlijn** — in het reisoverzicht staan datum, plaatsnaam, nachten
+      en reistijd bij elke plek op dezelfde hoogte, ook als een naam over
+      twee regels loopt (bijv. Picos de Europa); vertrek/thuis in dezelfde
+      letter als de plekken; zijwaarts swipen werkt. Eén keer op een
+      iPhone bekijken (subgrid: iOS 16+).
 - [ ] **Plek kiezen** — een tegel in het overzicht opent het programma
       bij die plek; de tabbladen en ← / → wisselen van plek.
 - [ ] **Links** — een fotocredit opent de Commons-pagina en de licentie

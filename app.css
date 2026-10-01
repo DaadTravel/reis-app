@@ -56,8 +56,11 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-citaat .nv-label { color: var(--on-photo); margin-top: var(--space-5); letter-spacing: .3em; }
 
 /* ---------- reisoverzicht ---------- */
-.nv-tijdlijn { list-style: none; margin: 0 0 var(--space-7); padding: 0 0 var(--space-3); display: flex; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
-.nv-tijdlijn li { flex: 1 0 128px; scroll-snap-align: start; position: relative; padding: var(--space-5) var(--space-3) 0 0; }
+/* Raster met vaste rijen (datum, naam, nachten, reis) die elke plek deelt
+   (subgrid): een naam over twee regels duwt bij álle plekken de nachten
+   omlaag, zodat ze op één hoogte blijven (besluit gebruiker 2026-10-01). */
+.nv-tijdlijn { list-style: none; margin: 0 0 var(--space-7); padding: 0 0 var(--space-3); display: grid; grid-auto-flow: column; grid-auto-columns: minmax(min-content, 1fr); grid-template-rows: repeat(4, auto); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+.nv-tijdlijn li { grid-row: span 4; display: grid; grid-template-rows: subgrid; min-width: 128px; box-sizing: border-box; scroll-snap-align: start; position: relative; padding: var(--space-5) var(--space-3) 0 0; }
 .nv-tijdlijn li::before { content: ""; position: absolute; top: 5px; left: 0; right: 0; border-top: 1px solid var(--line-strong); }
 .nv-tijdlijn li:last-child::before { right: auto; width: 12px; }
 .nv-tijdlijn li::after { content: ""; position: absolute; top: 0; left: 0; width: 11px; height: 11px; border-radius: 50%; background: var(--sand); border: 2px solid var(--lagoon); box-sizing: border-box; }
@@ -124,8 +127,8 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-tijdlijn__reis { margin-top: var(--space-2); font-size: 12px; color: var(--ink-muted); font-style: italic; }
 .nv-tijdlijn__reis .rg-icon { vertical-align: -2px; margin-right: 4px; color: var(--lagoon); }
 .nv-tijdlijn__check { display: block; font-style: normal; font-weight: 700; font-size: 11px; color: var(--terracotta); }
+/* Vertrek/thuis: alleen een dichte stip; naam in dezelfde letter als de plekken. */
 .nv-tijdlijn li.is-thuis::after { background: var(--lagoon); }
-.nv-tijdlijn li.is-thuis .nv-tijdlijn__naam { font-size: 18px; color: var(--ink-muted); }
 
 /* ---------- vast skelet: lege onderwerpen ---------- */
 .nv-leeg { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3); margin: 0; padding: var(--space-5) var(--space-4); border: 1px dashed var(--line-strong); border-radius: var(--radius-md); font-size: 15px; text-align: center; }
