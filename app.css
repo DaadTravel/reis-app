@@ -95,9 +95,6 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-plek__wanneer { display: block; font-family: var(--font-display); font-style: italic; font-size: 28px; color: var(--lagoon); margin: var(--space-1) 0 var(--space-4); }
 .nv-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); list-style: none; margin: 0 0 var(--space-5); padding: 0; }
 .nv-chips li { font-size: 13px; font-weight: 600; padding: 6px var(--space-3); border-radius: var(--radius-pill); background: var(--paper-raised); border: 1px solid var(--line); }
-.nv-lijst { list-style: none; margin: var(--space-5) 0; padding: 0; }
-.nv-lijst li { position: relative; padding: var(--space-2) 0 var(--space-2) var(--space-5); border-top: 1px solid var(--line); font-size: 16px; line-height: 1.5; }
-.nv-lijst li::before { content: ""; position: absolute; left: 2px; top: 1.05em; width: 7px; height: 7px; border-radius: 50%; background: var(--lagoon); }
 .nv-logistiek { display: flex; gap: var(--space-3); align-items: flex-start; margin: var(--space-5) 0; padding: var(--space-4); border-radius: var(--radius-md); background: var(--lagoon-soft); font-size: 15px; line-height: 1.55; }
 .nv-logistiek .rg-icon { flex: none; margin-top: 2px; color: var(--lagoon); }
 .nv-knop { display: inline-flex; align-items: center; gap: var(--space-2); font: inherit; font-size: 14px; font-weight: 600; color: var(--lagoon); background: none; border: 1px solid var(--line-strong); border-radius: var(--radius-pill); padding: var(--space-2) var(--space-4); cursor: pointer; text-decoration: none; }

@@ -27,12 +27,31 @@
     });
     return uit;
   }
-  var VERVOER = { car: 'Auto', plane: 'Vliegtuig', boat: 'Boot' };
+  var VERVOER = { car: 'Auto', plane: 'Vliegtuig', boat: 'Boot', bus: 'Bus', train: 'Trein' };
   // Reistijd plus prijs van een etappe. Een autorit krijgt geen prijs (brandstof/tol
   // tonen we niet); alleen echte vervoerskosten (besluit gebruiker 2026-10-01).
   function etappeTijdPrijs(l) {
     var uit = [O.reistijd(l.leg_minuten, l.leg_benadering)];
     if (l.leg_vervoer !== 'car') uit.push(prijsTekst(l.leg_prijs));
+    return uit;
+  }
+  // Alle tips van een plek in één lijst: highlights, tips van de plek en van de dag(en).
+  // Dubbel = gelijk na wegstrepen van leestekens, of het begin van een langere tip
+  // (dan blijft de langere staan). Besluit gebruiker 2026-10-01: alles in het tipskader.
+  function tipsVan(s, dagen) {
+    var alle = [].concat(s.highlights || [], s.tips || [], [].concat.apply([], dagen.map(function (x) { return x.tips || []; })));
+    var kaal = function (t) { return t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); };
+    var uit = [];
+    alle.forEach(function (t) {
+      var k = kaal(t || '');
+      if (!k) return;
+      for (var j = 0; j < uit.length; j++) {
+        var u = kaal(uit[j]);
+        if (u === k || u.indexOf(k + ' ') === 0) return;
+        if (k.indexOf(u + ' ') === 0) { uit[j] = t; return; }
+      }
+      uit.push(t);
+    });
     return uit;
   }
   // Logistiek-tekst die alleen km en reistijd herhaalt ("765 km (7u59)", "60 km · ~2 uur")
@@ -255,10 +274,8 @@
   function Programma(p) {
     var i = Math.max(0, p.stops.findIndex(function (s) { return s.id === p.plekId; }));
     var s = p.stops[i];
-    var t = React.useState(false), tipsOpen = t[0], setTipsOpen = t[1];
     var tabsRef = React.useRef(null);
     var sid = s && s.id;
-    React.useEffect(function () { setTipsOpen(false); }, [sid]);
     React.useEffect(function () {
       var rij = tabsRef.current, knop = rij && rij.querySelector('[aria-selected="true"]');
       if (!knop) return;
@@ -273,8 +290,7 @@
 
     var f = p.foto(s.foto_id);
     var dagen = dagenVan(p.dagen, s.id), d = dagen[0];
-    // Tips van de plek; alleen als die er niet zijn, die van de dag(en): ze overlappen vaak.
-    var tips = (s.tips || []).length ? s.tips : [].concat.apply([], dagen.map(function (x) { return x.tips || []; }));
+    var tips = tipsVan(s, dagen);
     var opties = p.verblijven.filter(function (x) { return x.stop_id === s.id && x.status !== 'open'; });
     function kies(id, focus) {
       p.kiesPlek(id, true);
@@ -313,12 +329,8 @@
               feiten.map(function (x, k) { return h('li', { key: k }, x[0] + ': ' + x[1]); })),
             s.lede && h('p', { className: 'nv-tekst' }, s.lede),
             d && d.beleving && d.beleving !== s.lede && h('p', { className: 'nv-tekst nv-muted' }, d.beleving),
-            (s.highlights || []).length ? h('ul', { className: 'nv-lijst' }, s.highlights.map(function (x, k) { return h('li', { key: k }, x); })) : null,
             !etappes.length && notities.length ? h('div', { className: 'nv-logistiek' }, h(G.Icon, { name: 'clock', size: 18 }), h('span', null, notities.join(' · '))) : null,
-            tips.length ? h('div', null,
-              h('button', { type: 'button', className: 'nv-knop', 'aria-expanded': tipsOpen, onClick: function () { setTipsOpen(!tipsOpen); } },
-                'Tips voor ' + kortNaam(s.naam) + ' (' + tips.length + ') ' + (tipsOpen ? '−' : '+')),
-              tipsOpen && h('div', { style: { marginTop: 'var(--space-4)' } }, h(G.TipNote, { items: tips }))) : null,
+            tips.length ? h(G.TipNote, { title: 'Tips voor ' + kortNaam(s.naam), items: tips }) : null,
             h('p', { className: 'nv-slapen' },
               h(G.StatusBadge, { status: opties.length ? 'optie' : 'open', label: opties.length ? 'Opties' : 'Nog te bepalen' }),
               opties.length ? h('span', null, opties.length + (opties.length === 1 ? ' verblijf' : ' verblijven') + ' bekeken, ' +
@@ -342,7 +354,7 @@
         var doel = ander.stop_id && ander.stop_id !== p.hier && stopOpId(p.stops, ander.stop_id);
         var delen = [VERVOER[l.leg_vervoer] || 'Vervoer ?'];
         if (l.leg_km != null) delen.push(Number(l.leg_km).toLocaleString('nl-NL') + ' km');
-        else if (l.leg_vervoer !== 'plane' && l.leg_vervoer !== 'boat') delen.push('? km');
+        else if (l.leg_vervoer === 'car') delen.push('? km');
         delen = delen.concat(etappeTijdPrijs(l));
         var inhoud = [
           h(G.Icon, { key: 'i', name: l.leg_vervoer || 'arrow', size: 18 }),

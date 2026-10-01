@@ -28,12 +28,15 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       iPhone bekijken (subgrid: iOS 16+).
 - [ ] **Plek kiezen** — een tegel in het overzicht opent het programma
       bij die plek; de tabbladen en ← / → wisselen van plek.
+- [ ] **Tips** — bij een plek één tipskader "Tips voor …", altijd open
+      (geen losse opsommingspunten en geen uitklapknop); geen tip dubbel.
 - [ ] **Onderweg** — onderaan elke plek een groen kader met aankomst
       (vorige → deze plek) en vertrek (deze plek → volgende), met vervoer,
       km, reistijd en prijs (onbekend = "?" / "€ ?"); een autorit toont
       géén prijs (ook niet in de tijdlijn), vlucht/boot/overig vervoer wel;
-      tik op een regel = naar die plek. Noord-Spanje: bij elke plek ingevuld. Chumphon (Thailand): 4
-      etappes.
+      tik op een regel = naar die plek. Bus en trein krijgen een eigen
+      icoon en naam; "? km" alleen bij een autorit. Noord-Spanje: bij
+      elke plek ingevuld. Chumphon (Thailand): 4 etappes.
 - [ ] **Links** — een fotocredit opent de Commons-pagina en de licentie
       in een nieuw tabblad; een verblijf met link opent de website.
 - [ ] **Onbekend is "?"** — geen datum = "Datum ?"; onbekend ontbijt,

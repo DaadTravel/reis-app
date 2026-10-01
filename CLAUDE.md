@@ -58,7 +58,7 @@ Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
   de schermen (prefix `nv-`), alleen variabelen, geen losse kleuren
 - `ds/bundle.js`, `ds/bundle.css` — het designsysteem "Reisgids"
   (componenten als `window.Reisgids`, prefix `rg-`), gemaakt met Claude
-  Design voor de gebruiker, dus eigen werk. Lokaal gepatcht (patches 1–6,
+  Design voor de gebruiker, dus eigen werk. Lokaal gepatcht (patches 1–7,
   zie `.claude/overdracht.md`); nooit overschrijven met een ongepatchte
   versie
 - `manifest.json`, `iconen/` — installeren op het beginscherm
@@ -119,7 +119,13 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   (lezen); wie niet in `leden` staat ziet niets. Leden alleen via
   SQL/dashboard toevoegen, niet via de app. Hulpfuncties voor de policies
   staan in schema `reis_intern` (bewust niet in de Data API). Latere
-  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0009`.
+  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0010`
+  (`…0010`: vervoer bus en trein).
+- **Tips staan alleen in `stops.tips`** (besluit gebruiker 2026-10-01):
+  één opgeschoonde lijst per plek, in de app altijd zichtbaar in het
+  tipskader. `stops.highlights` en `dagen.tips` zijn leeggemaakt en
+  worden niet meer gevuld; de app voegt ze voor de zekerheid nog wel
+  samen (zonder dubbelen).
 - **Koppel op ID, nooit op naam:** dagen, routepunten, verblijven en
   activiteiten hangen via `stop_id` aan hun plek (migratie `…0009`).
   Leeg is bewust: Vertrek/Thuis en vlucht- of reisdagen ("A → B") —
