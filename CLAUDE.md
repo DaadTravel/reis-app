@@ -35,8 +35,8 @@ voor beschrijving en beleving.
   toegepast en beveiliging getest; 36 foto's in bucket `reis-fotos` met
   credits in `reis.fotos` (elke stop heeft een foto); de 4 reizen uit de
   overdracht (Noord-Spanje, Japan, Zuid-Korea, Thailand) ingevoerd en
-  tegen de bron gecontroleerd. Europa 2026 volgt later uit een Excel van
-  de gebruiker.
+  tegen de bron gecontroleerd. Europa 2026 is later ingevoerd uit de
+  Excel van de gebruiker.
 - **Fase 4 — app opbouwen: bezig.** Eerst een volledige functie-inventaris
   van de Claude Projects-versie (er mag bij het overzetten niets verloren
   gaan), dan scherm voor scherm: mockup → bouwen → rooktest. Basis is de
@@ -102,6 +102,9 @@ Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
   Supabase-aanroepen op en antwoordt uit de lokale datakopie; met
   `?sw=1` draait die stub in de service worker (`sw-test.js`,
   gitignored) zodat de echte cachelogica van `sw.js` getest wordt
+- `bron/` (gitignored, alleen lokaal): mockup, apptest, fotokeuze, oude
+  seed-data; géén Excels (die staan in de OneDrive-map Reizen, zie
+  Supabase → Excel per reis). Reservekopie via een lokale git-hook
 
 Werk deze lijst bij zodra er echte bestanden bijkomen.
 
@@ -207,12 +210,20 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   (euro) ten onrechte als reistijd in minuten.
 - **Excel per reis** (besluit gebruiker 2026-09-29): de gebruiker maakt
   voor elke reis een Excel zoals die van Thailand; wat daarin staat wordt
-  de werkelijkheid en vervangt schattingen en budgetplafonds. De Excels
-  zelf staan in `bron/` en gaan nooit in git.
+  de werkelijkheid en vervangt schattingen en budgetplafonds. **De Excels
+  staan in de OneDrive-map Reizen van de gebruiker** (besluit 2026-10-01:
+  overal bereikbaar en niet kwijt als de laptop stukgaat; het pad staat
+  alleen in `.claude/overdracht.md`). Claude leest en schrijft daar
+  rechtstreeks: geen kopieën in `bron/`, en vóór het wijzigen nagaan of
+  het bestand openstaat (dan eerst laten sluiten, anders maakt OneDrive
+  een conflictkopie). Nooit in git. De mappen `bron/`,
+  `.claude/` en `Screenshots/` kopieert een lokale git-hook na elke commit
+  naar de submap "reis-app reserve" daar (alleen toevoegen, nooit wissen;
+  log in `.git/reserve.log`).
 - **Excel is de bron voor feiten, Claude voor tekst** (besluit gebruiker
   2026-10-01, geldt bij het samenstellen van een reis; wat onderweg in
   de app moet kunnen komt later). Sjabloon van de gebruiker:
-  `bron/Reistemplate.xltx` (opbouw van Thailand: één regel per dag,
+  `Reistemplate.xltx` in de OneDrive-map Reizen (opbouw van Thailand: één regel per dag,
   blokken Transport/Verblijf/Activiteit, totalen onderaan; Verblijf heeft
   "Via" = waar geboekt). Feiten (dagen, verblijven, kosten, tijden,
   reistijden, afstanden, status) komen uit de Excel; beschrijving, tips en
@@ -271,7 +282,8 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   meteen invullen waar een bron beschikbaar is.
 - **Reisinhoud nooit in git.** Seed-data (accommodaties, bedragen, route)
   gaat rechtstreeks de database in, niet als migratie of bestand in de
-  publieke repo. Bronmateriaal staat in `bron/` (gitignored).
+  publieke repo. Bronmateriaal staat in `bron/` (gitignored); de Excels in
+  de OneDrive-map Reizen.
 
 ## Foto's
 
