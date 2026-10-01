@@ -206,3 +206,10 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 /* Tijdlijn: pijltjes ook op de telefoon; met de muis slepen (schermen.js, sleep). */
 .nv-pijlen--altijd { display: flex; }
 @media (pointer: fine) { .nv-tijdlijn { cursor: grab; } }
+/* Plek met twee bezoeken: per bezoek datum, nachten en beleving (schermen.js, Programma). */
+.nv-bezoeken { list-style: none; margin: 0 0 var(--space-4); padding: 0; }
+.nv-bezoeken > li + li { margin-top: var(--space-3); }
+.nv-bezoeken__kop { display: block; font-size: 14px; font-weight: 600; color: var(--lagoon); }
+.nv-bezoeken .nv-tekst { margin: var(--space-1) 0 0; }
+/* Onderweg: heen- of terugreisdag onder zijn rit. */
+.nv-onderweg__dag { display: block; margin-top: 2px; font-size: 14px; color: var(--ink); }

@@ -242,6 +242,13 @@ async function haalReis(slug) {
   ['dagen', 'route_punten', 'verblijven', 'activiteiten'].forEach(t => {
     d[t].forEach(x => { if (x.stop_id && !eigen[x.stop_id]) x.stop_id = null; });
   });
+  // Idem voor het routepunt van een dag (migratie 0012); een verblijfdag moet bij een bezoek aan zijn eigen plek horen.
+  const punten = {};
+  d.route_punten.forEach(p => { punten[p.id] = p; });
+  d.dagen.forEach(x => {
+    const p = x.route_punt_id && punten[x.route_punt_id];
+    if (x.route_punt_id && (!p || (x.stop_id && p.stop_id !== x.stop_id))) x.route_punt_id = null;
+  });
   const fotoIds = [reis.hero_foto_id, reis.quote_foto_id, reis.kaart_foto_id]
     .concat(d.stops.map(s => s.foto_id), d.verblijven.map(v => v.foto_id));
   const f = await haalFotos(fotoIds);

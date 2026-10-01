@@ -119,9 +119,10 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   (lezen); wie niet in `leden` staat ziet niets. Leden alleen via
   SQL/dashboard toevoegen, niet via de app. Hulpfuncties voor de policies
   staan in schema `reis_intern` (bewust niet in de Data API). Latere
-  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0011`
+  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0012`
   (`…0010`: vervoer bus en trein; `…0011`: eigen vervoersnaam per
-  etappe, `route_punten.leg_vervoer_label`, bijv. "Privébusje").
+  etappe, `route_punten.leg_vervoer_label`, bijv. "Privébusje";
+  `…0012`: `dagen.route_punt_id`).
 - **Tips staan alleen in `stops.tips`** (besluit gebruiker 2026-10-01):
   één opgeschoonde lijst per plek, in de app altijd zichtbaar in het
   tipskader. `stops.highlights` en `dagen.tips` zijn leeggemaakt en
@@ -132,9 +133,19 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   Leeg is bewust: Vertrek/Thuis en vlucht- of reisdagen ("A → B") —
   behalve als plek B geen eigen dag heeft, dan hoort die reisdag bij B.
   De database dwingt nog niet af dat de plek bij dezelfde reis hoort; de
-  app moet dat zelf bewaken. Een plek
-  die twee keer in de route staat: het hoeveelste bezoek bepaalt welke
-  dag (in `volgorde`) erbij hoort.
+  app moet dat zelf bewaken.
+- **Dag hoort bij een bezoek** (besluit gebruiker 2026-10-01, migratie
+  `…0012`): `dagen.route_punt_id` wijst naar het routepunt van dat
+  bezoek, zodat een plek die twee keer in de route staat per bezoek een
+  eigen dag heeft. Een reisdag zonder plek (heen- of terugvlucht) wijst
+  naar het routepunt waar die rit aankomt; de app toont hem in het
+  Onderweg-kader onder die rit. Heeft geen enkele dag van een plek een
+  `route_punt_id`, dan bepaalt het hoeveelste bezoek (in `volgorde`)
+  welke dag erbij hoort. Een nieuwe dag krijgt meteen zijn
+  `route_punt_id` (de eenmalige vulling in `…0012` ging uit van alleen
+  een heen- en terugreisdag). `on delete set null`: routepunten nooit
+  verwijderen en opnieuw aanmaken, maar bijwerken, anders raken de
+  dagen stil hun koppeling kwijt.
 - **Dagen:** echte datums (`datum_van`/`datum_tot`) waar bekend; de app
   maakt daar het label van. Zonder datums toont de app "Datum ?" (of
   `stops.nachten_label`); `wanneer_label` wordt niet getoond, want dat

@@ -17,6 +17,17 @@
   function stopOpId(stops, id) { return stops.filter(function (s) { return s.id === id; })[0]; }
   // Dagen van een plek, in volgorde (koppeling via stop_id, migratie 0009).
   function dagenVan(dagen, stopId) { return dagen.filter(function (d) { return d.stop_id === stopId; }); }
+  // De dag van één bezoek (routepunt) aan een plek, via route_punt_id (migratie 0012).
+  // Nog niets gekoppeld bij die plek: het hoeveelste bezoek (keer) telt.
+  function dagVanBezoek(dagen, punt, keer) {
+    var eigen = dagenVan(dagen, punt.stop_id);
+    if (!eigen.some(function (d) { return d.route_punt_id; })) return eigen[keer];
+    return eigen.filter(function (d) { return d.route_punt_id === punt.id; })[0];
+  }
+  // Reisdag(en) zonder plek ("A → B", bijv. heen- of terugvlucht) bij de etappe die aankomt op dit routepunt.
+  function reisdagenBij(dagen, punt) {
+    return dagen.filter(function (d) { return !d.stop_id && d.route_punt_id === punt.id; });
+  }
   // Etappes van en naar een plek, uit de route; bij twee bezoeken alle vier.
   function etappesVan(route, stopId) {
     var uit = [];
@@ -289,9 +300,9 @@
           h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Eerder in de route', disabled: !randen.l, onClick: function () { schuif(-1); } }, '‹'),
           h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Verder in de route', disabled: !randen.r, onClick: function () { schuif(1); } }, '›')) : null,
         punten.length ? h('ol', { ref: randen.ref, onPointerDown: sleep, className: 'nv-tijdlijn' + (randen.l ? ' meer-links' : '') + (randen.r ? ' meer-rechts' : ''), 'aria-label': 'Route in volgorde' }, punten.map(function (x, i) {
-          // Plek die twee keer in de route staat: het hoeveelste bezoek bepaalt de dag.
+          // Plek die twee keer in de route staat: de dag van dít bezoek (route_punt_id, anders het hoeveelste bezoek).
           var keer = punten.slice(0, i).filter(function (y) { return x.stop && y.stop === x.stop; }).length;
-          var l = x.leg, d = x.stop && dagenVan(p.dagen, x.stop.id)[keer], datum = d && d.datum_van;
+          var l = x.leg, d = x.stop && (l ? dagVanBezoek(p.dagen, l, keer) : dagenVan(p.dagen, x.stop.id)[keer]), datum = d && d.datum_van;
           // Nachten van dít bezoek (route), anders die van de plek.
           var n = l && l.nachten != null ? l.nachten : x.stop ? x.stop.nachten : null;
           var nacht = nachtenTekst(n);
@@ -352,6 +363,8 @@
     }
     var vorige = p.stops[i - 1], volgende = p.stops[i + 1];
     var etappes = etappesVan(p.route, s.id);
+    // Twee keer in de route (bijv. heen en terug via dezelfde stad): per bezoek datum, nachten en beleving.
+    var bezoeken = p.route.filter(function (x) { return x.stop_id === s.id; }), meer = bezoeken.length > 1;
     var notities = dagen.map(function (x) { return x.logistiek; }).filter(etappes.length ? meerDanAfstand : Boolean);
     // Chips alleen voor wat nergens anders in het paneel staat.
     var elders = ['Nachten', 'Accommodatie'].concat(etappes.length || (d && d.logistiek) ? ['Rit ervoor'] : []);
@@ -371,11 +384,18 @@
           h('div', { className: 'nv-plek__foto' }, f.image && h('img', { src: f.image, alt: '' }), f.credit && h(G.PhotoCredit, { by: f.credit })),
           h('div', null,
             h('h3', { className: 'nv-plek__naam' }, kortNaam(s.naam)),
-            h('span', { className: 'nv-plek__wanneer' }, wanneerTekst(d, s)),
+            h('span', { className: 'nv-plek__wanneer' }, meer ? bezoeken.length + ' bezoeken' : wanneerTekst(d, s)),
             h('ul', { className: 'nv-chips' },
-              h('li', null, nachtenTekst(s.nachten)),
+              // Meer bezoeken: de nachten van alle bezoeken samen (onbekend bij één ervan = "?").
+              h('li', null, nachtenTekst(meer ? bezoeken.reduce(function (n, v) { return n == null || v.nachten == null ? null : n + v.nachten; }, 0) : s.nachten)),
               feiten.map(function (x, k) { return h('li', { key: k }, x[0] + ': ' + x[1]); })),
             s.lede && h('p', { className: 'nv-tekst' }, s.lede),
+            meer ? h('ol', { className: 'nv-bezoeken' }, bezoeken.map(function (v, k) {
+              var dv = dagVanBezoek(p.dagen, v, k);
+              return h('li', { key: v.id },
+                h('span', { className: 'nv-bezoeken__kop' }, (k + 1) + 'e bezoek · ' + wanneerTekst(dv) + ' · ' + nachtenTekst(v.nachten)),
+                dv && dv.beleving && dv.beleving !== s.lede ? h('p', { className: 'nv-tekst nv-muted' }, dv.beleving) : null);
+            })) :
             d && d.beleving && d.beleving !== s.lede && h('p', { className: 'nv-tekst nv-muted' }, d.beleving),
             !etappes.length && notities.length ? h('div', { className: 'nv-logistiek' }, h(G.Icon, { name: 'clock', size: 18 }), h('span', null, notities.join(' · '))) : null,
             tips.length ? h(G.TipNote, { title: 'Tips voor ' + kortNaam(s.naam), items: tips }) : null,
@@ -386,7 +406,7 @@
                 h('a', { href: '#slapen', onClick: function (e) { e.preventDefault(); naar('slapen'); } }, 'bekijk')) :
                 h('span', { className: 'nv-muted' }, 'Nog geen verblijf gekozen')),
             // Met route: het kader Onderweg is ook de navigatie naar de vorige/volgende plek.
-            etappes.length ? h(Onderweg, { etappes: etappes, notities: notities, stops: p.stops, hier: s.id, herinnering: p.herinnering, kies: kies }) :
+            etappes.length ? h(Onderweg, { etappes: etappes, notities: notities, dagen: p.dagen, stops: p.stops, hier: s.id, herinnering: p.herinnering, kies: kies }) :
             h('div', { className: 'nv-bladeren' },
               vorige && h('button', { type: 'button', className: 'nv-knop', onClick: function () { kies(vorige.id); } }, '← ' + kortNaam(vorige.naam)),
               volgende && h('button', { type: 'button', className: 'nv-knop', onClick: function () { kies(volgende.id); } }, kortNaam(volgende.naam) + ' →'))))));
@@ -395,11 +415,14 @@
   // Kader met de etappes van en naar een plek (van → naar, vervoer, km, reistijd, prijs behalve bij de auto).
   // Vervoer: eigen naam (leg_vervoer_label, bijv. "Privébusje") gaat voor de standaardnaam.
   // Een etappe naar/van een andere plek is een knop daarheen (besluit gebruiker 2026-10-01).
+  // Een heen- of terugreisdag (dag zonder plek) staat onder zijn rit (idem).
   function Onderweg(p) {
     return h('div', { className: 'nv-onderweg' },
       h('span', { className: 'nv-label' }, 'Onderweg'),
       p.etappes.map(function (e, k) {
         var l = e.naar, ander = e.aankomst ? e.van : e.naar;
+        // Heen- of terugreisdag bij deze rit: tijden en beleving eronder.
+        var dag = reisdagenBij(p.dagen, l).map(function (rd) { return [rd.logistiek, rd.beleving].filter(Boolean).join(' · '); }).join(' · ');
         var doel = ander.stop_id && ander.stop_id !== p.hier && stopOpId(p.stops, ander.stop_id);
         var delen = [l.leg_vervoer_label || VERVOER[l.leg_vervoer] || 'Vervoer ?'];
         if (l.leg_km != null) delen.push(Number(l.leg_km).toLocaleString('nl-NL') + ' km');
@@ -411,6 +434,7 @@
             doel ? h('span', { className: 'nv-onzichtbaar' }, e.aankomst ? 'Vorige plek: ' : 'Volgende plek: ') : null,
             h('span', { className: 'nv-onderweg__route' }, kortNaam(e.van.naam) + ' → ' + kortNaam(e.naar.naam)),
             h('span', { className: 'nv-onderweg__info' }, delen.join(' · ')),
+            dag ? h('span', { className: 'nv-onderweg__dag' }, dag) : null,
             !p.herinnering && !l.leg_geverifieerd ? h('span', { className: 'nv-tijdlijn__check' }, 'te verifiëren') : null),
           doel ? h('span', { key: 'p', className: 'nv-onderweg__pijl', 'aria-hidden': true }, e.aankomst ? '←' : '→') : null];
         return doel ?

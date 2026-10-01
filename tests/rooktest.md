@@ -40,7 +40,12 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       tik op een regel = naar die plek. Bus en trein krijgen een eigen
       icoon en naam; een eigen naam (bijv. "Privébusje") gaat voor; "? km"
       alleen bij een autorit. Noord-Spanje: bij elke plek ingevuld.
-      Chumphon (Thailand): 4 etappes.
+      Chumphon (Thailand): 4 etappes. Heen- en terugreis staan onder hun
+      rit met tijden en tekst (Thailand: bij Bangkok, eerste en laatste
+      rit).
+- [ ] **Twee bezoeken** — een plek die twee keer in de route staat
+      (Thailand: Bangkok, Chumphon) toont "2 bezoeken", per bezoek datum,
+      nachten en eigen tekst; de chip telt de nachten van beide samen.
 - [ ] **Links** — een fotocredit opent de Commons-pagina en de licentie
       in een nieuw tabblad; een verblijf met link opent de website.
 - [ ] **Onbekend is "?"** — geen datum = "Datum ?"; onbekend ontbijt,
