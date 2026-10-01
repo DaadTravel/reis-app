@@ -79,6 +79,9 @@
   // 2026-10-01): "Status ?", niet het standaardlabel "Nog te bepalen". Anders het eigen label of
   // undefined (dan kiest de badge zelf).
   function statusLabel(x) { return x.status ? x.status_label || undefined : 'Status ?'; }
+  // Verblijf in het blok Slapen (met adres en contact): geboekt, betaald of onbekend. Onbekend
+  // erbij omdat het geboekt kán zijn; dan liever zichtbaar dan onderweg het adres missen.
+  function inSlapen(v) { return v.status === 'geboekt' || v.status === 'betaald' || !v.status; }
 
   // "Dorp (aan de rivier)" → "Dorp".
   function kortNaam(naam) { return String(naam || '?').split(' (')[0]; }
@@ -103,5 +106,5 @@
     nachtenTekst: nachtenTekst, reistijd: reistijd, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
-    verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel };
+    verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen };
 })();

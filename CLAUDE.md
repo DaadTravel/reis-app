@@ -228,7 +228,17 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   checkt in op de dag waar het staat en uit op de eerstvolgende dag met
   een ander verblijf; aankomsttijd vóór vertrektijd = aankomst de dag
   erna; **lege status = onbekend** (`null`, de app toont "Status ?", niet
-  "Nog te bepalen"); één activiteit per dag is voor nu genoeg. Koppelen
+  "Nog te bepalen") — zo'n verblijf staat in het plek-paneel wél in het
+  blok Slapen (met contact), want het kan geboekt zijn (`O.inSlapen`;
+  voorlopig, gebruiker kijkt in de praktijk of dat bevalt); één
+  activiteit per dag is voor nu genoeg.
+  **Een lege Excel-cel overschrijft nooit iets in de app** (ook geen
+  status of opties die alleen in de app staan, bijv. hotelopties of
+  voorstellen); alleen ingevulde cellen tellen. Een regel met alleen een
+  bedrag (en status) onder een verblijf is een extra betaling van dat
+  verblijf (bijv. aanbetaling): `verblijven.prijs` is de som. "Via"
+  schrijven als het bedrijf (bijv. Booking) of **Direct** (niet
+  "Rechtstreeks"). Koppelen
   aan de app op dag + blok (één rit, verblijf en activiteit per dag), dus
   geen ID-kolom in de Excel. Kolom "Via" → `verblijven.geboekt_via`
   (migratie `…0014`; app: "Geboekt via …" bij het verblijf en "via …" op

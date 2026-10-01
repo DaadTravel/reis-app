@@ -403,7 +403,7 @@
     // Chips alleen voor wat nergens anders in het paneel staat.
     var elders = ['Nachten', 'Accommodatie'].concat(etappes.length || (d && d.logistiek) ? ['Rit ervoor'] : []);
     var feiten = (s.feiten || []).filter(function (x) { return elders.indexOf(x[0]) < 0; });
-    var geboekt = opties.filter(function (x) { return x.status === 'betaald' || x.status === 'geboekt'; })
+    var geboekt = opties.filter(O.inSlapen)
       // Op incheckdatum; zonder datum achteraan.
       .sort(function (a, b) { return String(a.inchecken || '9999').localeCompare(String(b.inchecken || '9999')) || a.volgorde - b.volgorde; });
     var prijzen = opties.map(function (x) { return x.prijs; }).filter(function (x) { return x != null; }).map(Number);
@@ -438,7 +438,7 @@
             d && d.beleving && d.beleving !== s.lede && h('p', { className: 'nv-tekst nv-muted' }, d.beleving),
             !etappes.length && notities.length ? h('div', { className: 'nv-logistiek' }, h(G.Icon, { name: 'clock', size: 18 }), h('span', null, notities.join(' · '))) : null,
             tips.length ? h(G.TipNote, { title: 'Tips voor ' + kortNaam(s.naam), items: tips }) : null,
-            // Geboekt: per verblijf naam, data en contact (onderweg in twee tikken). Anders de stand
+            // Geboekt of status onbekend (O.inSlapen): per verblijf naam, data en contact (onderweg in twee tikken). Anders de stand
             // van het zoeken; prijs is altijd het totaal van een verblijf (CLAUDE.md).
             geboekt.length ? h('div', { className: 'nv-verblijven' },
               h('span', { className: 'nv-label' }, 'Slapen'),
@@ -446,7 +446,7 @@
                 return h('div', { key: v.id, className: 'nv-verblijf' },
                   h('div', { className: 'nv-verblijf__kop' },
                     h('span', { className: 'nv-verblijf__naam' }, O.veiligeLink(v.link) ? h('a', { href: v.link, target: '_blank', rel: 'noopener noreferrer' }, v.naam) : v.naam),
-                    h(G.StatusBadge, { status: v.status, label: v.status_label || undefined })),
+                    h(G.StatusBadge, { status: v.status || undefined, label: O.statusLabel(v) })),
                   h('span', { className: 'nv-verblijf__wanneer' }, [O.verblijfPeriode(v), nachtenTekst(v.nachten),
                     O.tijd(v.inchecktijd) && 'inchecken ' + O.tijd(v.inchecktijd), O.tijd(v.uitchecktijd) && 'uitchecken ' + O.tijd(v.uitchecktijd)].filter(Boolean).join(' · ')),
                   // Alleen de contactvelden; de website staat al op de naam.

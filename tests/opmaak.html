@@ -173,6 +173,11 @@
   // Lege status = onbekend (lege cel in de Excel): "Status ?", niet het standaardlabel van de badge.
   test('statusLabel: lege status is "Status ?"', 'Status ?', function () { return O.statusLabel({ status: null }); });
   test('statusLabel: status zonder eigen label → standaardlabel', undefined, function () { return O.statusLabel({ status: 'geboekt' }); });
+  // Blok Slapen in het plek-paneel: geboekt, betaald én onbekend (lege status; besluit gebruiker
+  // 2026-10-01: liever zichtbaar dan onderweg het adres missen). Optie/voorstel/open niet.
+  test('inSlapen: geboekt, betaald en onbekend wel; optie, voorstel en open niet', [true, true, true, false, false, false], function () {
+    return ['geboekt', 'betaald', null, 'optie', 'voorstel', 'open'].map(function (s) { return O.inSlapen({ status: s }); });
+  });
   test('statusLabel: eigen label gaat voor', 'Nog betalen', function () { return O.statusLabel({ status: 'geboekt', status_label: 'Nog betalen' }); });
 
   // --- Uitslag tonen ---
