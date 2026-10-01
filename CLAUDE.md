@@ -119,8 +119,9 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   (lezen); wie niet in `leden` staat ziet niets. Leden alleen via
   SQL/dashboard toevoegen, niet via de app. Hulpfuncties voor de policies
   staan in schema `reis_intern` (bewust niet in de Data API). Latere
-  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0010`
-  (`…0010`: vervoer bus en trein).
+  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0011`
+  (`…0010`: vervoer bus en trein; `…0011`: eigen vervoersnaam per
+  etappe, `route_punten.leg_vervoer_label`, bijv. "Privébusje").
 - **Tips staan alleen in `stops.tips`** (besluit gebruiker 2026-10-01):
   één opgeschoonde lijst per plek, in de app altijd zichtbaar in het
   tipskader. `stops.highlights` en `dagen.tips` zijn leeggemaakt en

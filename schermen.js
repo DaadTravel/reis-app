@@ -345,6 +345,7 @@
   }
 
   // Kader met de etappes van en naar een plek (van → naar, vervoer, km, reistijd, prijs behalve bij de auto).
+  // Vervoer: eigen naam (leg_vervoer_label, bijv. "Privébusje") gaat voor de standaardnaam.
   // Een etappe naar/van een andere plek is een knop daarheen (besluit gebruiker 2026-10-01).
   function Onderweg(p) {
     return h('div', { className: 'nv-onderweg' },
@@ -352,7 +353,7 @@
       p.etappes.map(function (e, k) {
         var l = e.naar, ander = e.aankomst ? e.van : e.naar;
         var doel = ander.stop_id && ander.stop_id !== p.hier && stopOpId(p.stops, ander.stop_id);
-        var delen = [VERVOER[l.leg_vervoer] || 'Vervoer ?'];
+        var delen = [l.leg_vervoer_label || VERVOER[l.leg_vervoer] || 'Vervoer ?'];
         if (l.leg_km != null) delen.push(Number(l.leg_km).toLocaleString('nl-NL') + ' km');
         else if (l.leg_vervoer === 'car') delen.push('? km');
         delen = delen.concat(etappeTijdPrijs(l));

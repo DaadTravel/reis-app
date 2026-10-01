@@ -35,8 +35,9 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       km, reistijd en prijs (onbekend = "?" / "€ ?"); een autorit toont
       géén prijs (ook niet in de tijdlijn), vlucht/boot/overig vervoer wel;
       tik op een regel = naar die plek. Bus en trein krijgen een eigen
-      icoon en naam; "? km" alleen bij een autorit. Noord-Spanje: bij
-      elke plek ingevuld. Chumphon (Thailand): 4 etappes.
+      icoon en naam; een eigen naam (bijv. "Privébusje") gaat voor; "? km"
+      alleen bij een autorit. Noord-Spanje: bij elke plek ingevuld.
+      Chumphon (Thailand): 4 etappes.
 - [ ] **Links** — een fotocredit opent de Commons-pagina en de licentie
       in een nieuw tabblad; een verblijf met link opent de website.
 - [ ] **Onbekend is "?"** — geen datum = "Datum ?"; onbekend ontbijt,
