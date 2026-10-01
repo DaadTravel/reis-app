@@ -201,7 +201,8 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-tijdlijn.meer-links { -webkit-mask-image: linear-gradient(to left, var(--ink) calc(100% - 56px), transparent); mask-image: linear-gradient(to left, var(--ink) calc(100% - 56px), transparent); }
 .nv-tijdlijn.meer-links.meer-rechts { -webkit-mask-image: linear-gradient(to right, transparent, var(--ink) 56px, var(--ink) calc(100% - 56px), transparent); mask-image: linear-gradient(to right, transparent, var(--ink) 56px, var(--ink) calc(100% - 56px), transparent); }
 .nv-pijl:disabled { opacity: .35; cursor: default; }
-.nv-tijdlijn:focus-visible { outline: 2px solid var(--lagoon); outline-offset: -2px; }
+/* Geen kader om de tijdlijn (besluit gebruiker 2026-10-01); toetsenbord bedient hem via de pijltjes ‹ ›. Chrome maakt een scrollstrook zelf focusbaar, dus ook dan geen kader. */
+.nv-tijdlijn:focus { outline: none; }
 /* Tijdlijn: pijltjes ook op de telefoon; met de muis slepen (schermen.js, sleep). */
 .nv-pijlen--altijd { display: flex; }
 @media (pointer: fine) { .nv-tijdlijn { cursor: grab; } }

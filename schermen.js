@@ -265,7 +265,7 @@
     function sleep(e) {
       var el = randen.el; if (e.pointerType !== 'mouse' || e.button !== 0 || !el) return;
       var x0 = e.clientX, s0 = el.scrollLeft, gesleept = false;
-      e.preventDefault(); el.focus({ preventScroll: true }); // geen tekst selecteren; focus blijft wel werken
+      e.preventDefault(); // geen tekst selecteren
       function beweeg(ev) {
         var dx = ev.clientX - x0; if (Math.abs(dx) > 4 && !gesleept) { gesleept = true; el.style.scrollSnapType = 'none'; el.style.cursor = 'grabbing'; }
         if (gesleept) el.scrollLeft = s0 - dx;
@@ -288,7 +288,7 @@
         punten.length && (randen.l || randen.r) ? h('div', { className: 'nv-pijlen nv-pijlen--altijd' },
           h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Eerder in de route', disabled: !randen.l, onClick: function () { schuif(-1); } }, '‹'),
           h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Verder in de route', disabled: !randen.r, onClick: function () { schuif(1); } }, '›')) : null,
-        punten.length ? h('ol', { ref: randen.ref, tabIndex: 0, onPointerDown: sleep, className: 'nv-tijdlijn' + (randen.l ? ' meer-links' : '') + (randen.r ? ' meer-rechts' : ''), 'aria-label': 'Route in volgorde' }, punten.map(function (x, i) {
+        punten.length ? h('ol', { ref: randen.ref, onPointerDown: sleep, className: 'nv-tijdlijn' + (randen.l ? ' meer-links' : '') + (randen.r ? ' meer-rechts' : ''), 'aria-label': 'Route in volgorde' }, punten.map(function (x, i) {
           // Plek die twee keer in de route staat: het hoeveelste bezoek bepaalt de dag.
           var keer = punten.slice(0, i).filter(function (y) { return x.stop && y.stop === x.stop; }).length;
           var l = x.leg, d = x.stop && dagenVan(p.dagen, x.stop.id)[keer], datum = d && d.datum_van;
