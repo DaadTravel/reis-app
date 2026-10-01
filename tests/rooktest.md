@@ -49,6 +49,13 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       nachten, eigen tekst en eigen tips ("Tips 1e bezoek"); tegel en
       chip tonen "3 + 1 nachten". Bangkok: elk bezoek een eigen tipskader,
       geen tip in beide.
+- [ ] **Rit, verblijf, excursie** — onder elke rit datum en tijden
+      (vorm: "wo 1 jan, 22:00 → 06:00 (+1 dag)"); in het plek-paneel een
+      blok Slapen met elk geboekt verblijf, zijn data en (als ingevuld)
+      adres, telefoon, e-mail en boekingscode als tikbare links; een
+      plek met een verblijfwissel toont beide verblijven. Doen: plek,
+      datum en tijden (vorm: "Plek · wo 1 jan, 13:00–18:00"). Geen "per
+      nacht" bij opties.
 - [ ] **Links** — een fotocredit opent de Commons-pagina en de licentie
       in een nieuw tabblad; een verblijf met link opent de website.
 - [ ] **Onbekend is "?"** — geen datum = "Datum ?"; onbekend ontbijt,

@@ -213,3 +213,20 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-bezoeken .nv-tekst { margin: var(--space-1) 0 0; }
 /* Onderweg: heen- of terugreisdag onder zijn rit. */
 .nv-onderweg__dag { display: block; margin-top: 2px; font-size: 14px; color: var(--ink); }
+/* Praktische gegevens: adres, telefoon, e-mail, boekingscode (schermen.js, Contact). */
+.nv-contact { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); list-style: none; margin: var(--space-2) 0 0; padding: 0; font-size: 14px; line-height: 1.5; }
+.nv-contact a { color: var(--lagoon); font-weight: 600; overflow-wrap: anywhere; }
+/* Geboekte verblijven in het plek-paneel, per verblijf data en contact. */
+.nv-verblijven { margin: var(--space-5) 0 0; padding: var(--space-4) 0 0; border-top: 1px solid var(--line); }
+.nv-verblijven > .nv-label { display: block; margin-bottom: var(--space-2); }
+.nv-verblijf + .nv-verblijf { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--line); }
+.nv-verblijf__kop { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.nv-verblijf__naam { font-weight: 600; font-size: 16px; }
+.nv-verblijf__naam a { color: var(--lagoon); }
+.nv-verblijf__wanneer { display: block; margin-top: 2px; font-size: 14px; color: var(--ink-muted); }
+/* Contact van een rit, onder zijn rij in Onderweg (ingesprongen tot de tekst). */
+.nv-onderweg .nv-contact { margin: calc(-1 * var(--space-2)) 0 var(--space-3) calc(18px + var(--space-3)); }
+/* Activiteit met contact: de lijn onder het geheel, niet tussen rij en contact. */
+.nv-activiteit { border-bottom: 1px solid var(--line); }
+.nv-activiteit .rg-act { border-bottom: 0; }
+.nv-activiteit .nv-contact { margin: calc(-1 * var(--space-2)) 0 var(--space-3) calc(36px + var(--space-3)); }

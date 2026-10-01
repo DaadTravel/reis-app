@@ -48,6 +48,33 @@
     return { label: b.label, total: b.totaal != null ? Number(b.totaal) : null,
       paid: b.betaald != null ? Number(b.betaald) : 0, detail: b.detail || undefined };
   }
+  // Tijd uit de database ("22:10:00", lokale tijd ter plekke) → "22:10"; leeg → "".
+  function tijd(t) { return t ? String(t).slice(0, 5) : ''; }
+  // Rit (leg_*-velden van een routepunt): "di 15 jan, 22:10 → 07:05 (+1 dag)"; niets bekend → "".
+  function ritTijden(l) {
+    var v = tijd(l.leg_vertrek), a = tijd(l.leg_aankomst), plus = l.leg_aankomst_dagen;
+    var t = v && a ? v + ' → ' + a : v ? 'vertrek ' + v : a ? 'aankomst ' + a : '';
+    if (a && plus) t += ' (+' + plus + (plus === 1 ? ' dag)' : ' dagen)');
+    return [l.leg_datum ? dagLabel(l.leg_datum) : '', t].filter(Boolean).join(', ');
+  }
+  // "13:00–18:00", "vanaf 13:00" of "".
+  function tijdvak(begin, eind) {
+    var b = tijd(begin), e = tijd(eind);
+    return b && e ? b + '–' + e : b ? 'vanaf ' + b : '';
+  }
+  // Activiteit: datum + tijdvak; zonder datum de oude tekst (`wanneer`), anders "Wanneer ?".
+  function activiteitWanneer(a) {
+    if (!a.datum) return a.wanneer || 'Wanneer ?';
+    return [dagLabel(a.datum), tijdvak(a.begin_tijd, a.eind_tijd)].filter(Boolean).join(', ');
+  }
+  // Verblijf: "wo 16 – za 19 jan" (incheck- t/m uitcheckdag); onbekend → "".
+  function verblijfPeriode(v) { return v.inchecken && v.uitchecken ? dagLabel(v.inchecken, v.uitchecken) : ''; }
+  // Telefoonnummer → "tel:"-link zonder spaties en zonder "(0)" na de landcode; geen cijfers → undefined (geen link).
+  function telLink(nr) {
+    var n = String(nr || '').replace(/\(0\)/g, '').replace(/[^\d+]/g, '');
+    return /\d/.test(n) ? 'tel:' + n : undefined;
+  }
+
   // "Dorp (aan de rivier)" → "Dorp".
   function kortNaam(naam) { return String(naam || '?').split(' (')[0]; }
 
@@ -70,5 +97,6 @@
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
-    budgetRegel: budgetRegel };
+    budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
+    verblijfPeriode: verblijfPeriode, telLink: telLink };
 })();

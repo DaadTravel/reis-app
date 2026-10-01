@@ -24,11 +24,12 @@
     if (!eigen.some(function (d) { return d.route_punt_id; })) return eigen[keer];
     return eigen.filter(function (d) { return d.route_punt_id === punt.id; })[0];
   }
-  // Wat bij de rit hoort die aankomt op dit routepunt: de tijden (logistiek) van elke dag die
-  // daaraan hangt, plus de tekst van een reisdag zonder plek (heen- of terugvlucht).
+  // Wat bij de rit hoort die aankomt op dit routepunt: datum en tijden uit de rit zelf
+  // (migratie 0013), de logistiek-tekst van elke dag die daaraan hangt (nog niet omgezette
+  // reizen) en de tekst van een reisdag zonder plek (heen- of terugvlucht).
   function ritTekst(dagen, punt) {
     var bij = dagen.filter(function (d) { return d.route_punt_id === punt.id; });
-    return bij.map(function (d) { return d.logistiek; }).filter(meerDanAfstand)
+    return [O.ritTijden(punt)].concat(bij.map(function (d) { return d.logistiek; })).filter(meerDanAfstand)
       .concat(bij.filter(function (d) { return !d.stop_id && d.beleving; }).map(function (d) { return d.beleving; })).join(' · ');
   }
   // Etappes van en naar een plek, uit de route; bij twee bezoeken alle vier.
@@ -84,6 +85,21 @@
     if (d && d.datum_van) return O.dagLabel(d.datum_van, d.datum_tot);
     // wanneer_label niet: dat is nu overal het aantal nachten, en dat staat al als chip.
     return (s && s.nachten_label) || 'Datum ?';
+  }
+  // Praktische gegevens (verblijf, rit, excursie): alleen wat bekend is, als link waar dat
+  // onderweg helpt (bellen, mailen, route). Leeg → niets (geen "?": optioneel, geen kenmerk).
+  // Het adres gaat pas bij een tik naar Google Maps (alleen het adres, geen gezinsgegevens).
+  function Contact(p) {
+    var d = [];
+    if (p.ophaalpunt) d.push(h('li', { key: 'o' }, 'Ophalen: ' + p.ophaalpunt));
+    if (p.adres) d.push(h('li', { key: 'a' }, h('a', { href: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.adres),
+      target: '_blank', rel: 'noopener noreferrer' }, p.adres)));
+    var tel = O.telLink(p.telefoon), web = O.veiligeLink(p.link);
+    if (p.telefoon) d.push(h('li', { key: 't' }, tel ? h('a', { href: tel }, p.telefoon) : p.telefoon));
+    if (p.email) d.push(h('li', { key: 'e' }, h('a', { href: 'mailto:' + encodeURI(p.email) }, p.email)));
+    if (p.boekingscode) d.push(h('li', { key: 'b' }, 'Boekingscode ', h('strong', null, p.boekingscode)));
+    if (web) d.push(h('li', { key: 'l' }, h('a', { href: web, target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Website' + (p.naam ? ' van ' + p.naam : '') }, 'Website')));
+    return d.length ? h('ul', { className: 'nv-contact' }, d) : null;
   }
   function naar(id) { var el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   function reisUrl(slug) { return '?reis=' + encodeURIComponent(slug); }
@@ -386,6 +402,9 @@
     // Chips alleen voor wat nergens anders in het paneel staat.
     var elders = ['Nachten', 'Accommodatie'].concat(etappes.length || (d && d.logistiek) ? ['Rit ervoor'] : []);
     var feiten = (s.feiten || []).filter(function (x) { return elders.indexOf(x[0]) < 0; });
+    var geboekt = opties.filter(function (x) { return x.status === 'betaald' || x.status === 'geboekt'; })
+      // Op incheckdatum; zonder datum achteraan.
+      .sort(function (a, b) { return String(a.inchecken || '9999').localeCompare(String(b.inchecken || '9999')) || a.volgorde - b.volgorde; });
     var prijzen = opties.map(function (x) { return x.prijs; }).filter(function (x) { return x != null; }).map(Number);
 
     return h('section', { className: 'nv-blok', id: 'programma' },
@@ -418,10 +437,24 @@
             d && d.beleving && d.beleving !== s.lede && h('p', { className: 'nv-tekst nv-muted' }, d.beleving),
             !etappes.length && notities.length ? h('div', { className: 'nv-logistiek' }, h(G.Icon, { name: 'clock', size: 18 }), h('span', null, notities.join(' · '))) : null,
             tips.length ? h(G.TipNote, { title: 'Tips voor ' + kortNaam(s.naam), items: tips }) : null,
+            // Geboekt: per verblijf naam, data en contact (onderweg in twee tikken). Anders de stand
+            // van het zoeken; prijs is altijd het totaal van een verblijf (CLAUDE.md).
+            geboekt.length ? h('div', { className: 'nv-verblijven' },
+              h('span', { className: 'nv-label' }, 'Slapen'),
+              geboekt.map(function (v) {
+                return h('div', { key: v.id, className: 'nv-verblijf' },
+                  h('div', { className: 'nv-verblijf__kop' },
+                    h('span', { className: 'nv-verblijf__naam' }, O.veiligeLink(v.link) ? h('a', { href: v.link, target: '_blank', rel: 'noopener noreferrer' }, v.naam) : v.naam),
+                    h(G.StatusBadge, { status: v.status, label: v.status_label || undefined })),
+                  h('span', { className: 'nv-verblijf__wanneer' }, [O.verblijfPeriode(v), nachtenTekst(v.nachten),
+                    O.tijd(v.inchecktijd) && 'inchecken ' + O.tijd(v.inchecktijd), O.tijd(v.uitchecktijd) && 'uitchecken ' + O.tijd(v.uitchecktijd)].filter(Boolean).join(' · ')),
+                  // Alleen de contactvelden; de website staat al op de naam.
+                  h(Contact, { adres: v.adres, telefoon: v.telefoon, email: v.email, boekingscode: v.boekingscode }));
+              })) :
             h('p', { className: 'nv-slapen' },
               h(G.StatusBadge, { status: opties.length ? 'optie' : 'open', label: opties.length ? 'Opties' : 'Nog te bepalen' }),
               opties.length ? h('span', null, opties.length + (opties.length === 1 ? ' verblijf' : ' verblijven') + ' bekeken, ' +
-                (prijzen.length ? 'vanaf ' + O.euro(Math.min.apply(null, prijzen)) + ' per nacht' : 'prijs ?') + ' · ',
+                (prijzen.length ? 'vanaf ' + O.euro(Math.min.apply(null, prijzen)) : 'prijs ?') + ' · ',
                 h('a', { href: '#slapen', onClick: function (e) { e.preventDefault(); naar('slapen'); } }, 'bekijk')) :
                 h('span', { className: 'nv-muted' }, 'Nog geen verblijf gekozen')),
             // Met route: het kader Onderweg is ook de navigatie naar de vorige/volgende plek.
@@ -457,9 +490,11 @@
             dag ? h('span', { className: 'nv-onderweg__dag' }, dag) : null,
             !p.herinnering && !l.leg_geverifieerd ? h('span', { className: 'nv-tijdlijn__check' }, 'te verifiëren') : null),
           doel ? h('span', { key: 'p', className: 'nv-onderweg__pijl', 'aria-hidden': true }, e.aankomst ? '←' : '→') : null];
-        return doel ?
-          h('button', { key: k, type: 'button', className: 'nv-onderweg__rij', onClick: function () { p.kies(doel.id); } }, inhoud) :
-          h('div', { key: k, className: 'nv-onderweg__rij' }, inhoud);
+        // Contact van de rit (bijv. busje) los onder de rij: een link mag niet in een knop.
+        var contact = h(Contact, { telefoon: l.leg_telefoon, email: l.leg_email, boekingscode: l.leg_boekingscode });
+        return h(React.Fragment, { key: k }, doel ?
+          h('button', { type: 'button', className: 'nv-onderweg__rij', onClick: function () { p.kies(doel.id); } }, inhoud) :
+          h('div', { className: 'nv-onderweg__rij' }, inhoud), contact);
       }),
       p.notities.length ? h('p', { className: 'nv-onderweg__notitie' }, h(G.Icon, { name: 'clock', size: 16 }), h('span', null, p.notities.join(' · '))) : null);
   }
@@ -501,8 +536,13 @@
           h('h2', { className: 'nv-kop' }, kop.title || (p.herinnering ? 'Wat we deden' : 'Op het verlanglijstje')),
           kop.intro && h('p', { className: 'nv-tekst nv-muted' }, kop.intro)),
         p.activiteiten.length ? p.activiteiten.map(function (x) {
-          return h(G.ActivityRow, { key: x.id, name: x.naam, when: x.wanneer || 'Wanneer ?', price: x.prijs != null ? Number(x.prijs) : '€ ?',
-            note: x.notitie || undefined, status: x.status || undefined, statusLabel: x.status_label || undefined, icon: x.icoon || undefined });
+          // Met datum (migratie 0013): plek + datum + tijden; anders de oude tekst `wanneer`.
+          var s = x.datum && stopOpId(p.stops, x.stop_id);
+          return h('div', { key: x.id, className: 'nv-activiteit' },
+            h(G.ActivityRow, { name: x.naam, when: [s && kortNaam(s.naam), O.activiteitWanneer(x)].filter(Boolean).join(' · '),
+              price: x.prijs != null ? Number(x.prijs) : '€ ?',
+              note: x.notitie || undefined, status: x.status || undefined, statusLabel: x.status_label || undefined, icon: x.icoon || undefined }),
+            h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, boekingscode: x.boekingscode, link: x.link, naam: x.naam }));
         }) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen activiteiten gekozen.' })));
   }
 

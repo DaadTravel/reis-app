@@ -147,6 +147,30 @@
     return ['Ontbijt nee', 'Zwembad ja', '1 kamer', '€ 90'].every(function (s) { return t.indexOf(s) > -1; });
   });
 
+  // --- Rit, verblijf en excursie uit vaste velden (tijden zoals Postgres ze geeft: "22:10:00") ---
+  test('tijd: seconden weg', '22:10', function () { return O.tijd('22:10:00'); });
+  test('tijd: leeg is leeg', '', function () { return O.tijd(null); });
+  test('ritTijden: vertrek en aankomst', '08:30 → 12:00', function () { return O.ritTijden({ leg_vertrek: '08:30:00', leg_aankomst: '12:00:00', leg_aankomst_dagen: 0 }); });
+  test('ritTijden: aankomst de dag erna', '22:10 → 07:05 (+1 dag)', function () { return O.ritTijden({ leg_vertrek: '22:10:00', leg_aankomst: '07:05:00', leg_aankomst_dagen: 1 }); });
+  test('ritTijden: alleen aankomst', 'aankomst 08:45', function () { return O.ritTijden({ leg_vertrek: null, leg_aankomst: '08:45:00', leg_aankomst_dagen: 0 }); });
+  test('ritTijden: alleen vertrek', 'vertrek 22:10', function () { return O.ritTijden({ leg_vertrek: '22:10:00', leg_aankomst: null }); });
+  test('ritTijden: met datum', 'di 15 jan, 22:10 → 07:05 (+1 dag)', function () { return O.ritTijden({ leg_datum: '2030-01-15', leg_vertrek: '22:10:00', leg_aankomst: '07:05:00', leg_aankomst_dagen: 1 }); });
+  test('ritTijden: niets bekend is leeg', '', function () { return O.ritTijden({}); });
+  test('tijdvak: begin en eind', '13:00–18:00', function () { return O.tijdvak('13:00:00', '18:00:00'); });
+  test('tijdvak: alleen begin', 'vanaf 13:00', function () { return O.tijdvak('13:00:00', null); });
+  test('tijdvak: niets', '', function () { return O.tijdvak(null, null); });
+  test('activiteitWanneer: datum en tijden', 'do 17 jan, 13:00–18:00', function () { return O.activiteitWanneer({ datum: '2030-01-17', begin_tijd: '13:00:00', eind_tijd: '18:00:00' }); });
+  test('activiteitWanneer: alleen datum', 'za 19 jan', function () { return O.activiteitWanneer({ datum: '2030-01-19' }); });
+  test('activiteitWanneer: geen datum, wel tekst', 'ergens in jan', function () { return O.activiteitWanneer({ wanneer: 'ergens in jan' }); });
+  test('activiteitWanneer: niets is ?', 'Wanneer ?', function () { return O.activiteitWanneer({}); });
+  test('verblijfPeriode: in en uit', 'wo 16 – za 19 jan', function () { return O.verblijfPeriode({ inchecken: '2030-01-16', uitchecken: '2030-01-19' }); });
+  test('verblijfPeriode: onbekend is leeg', '', function () { return O.verblijfPeriode({ inchecken: null }); });
+  test('telLink: spaties weg, plus blijft', 'tel:+31201234567', function () { return O.telLink('+31 20 123 45 67'); });
+  test('ritTijden: twee dagen later is meervoud', '22:00 → 06:00 (+2 dagen)', function () { return O.ritTijden({ leg_vertrek: '22:00:00', leg_aankomst: '06:00:00', leg_aankomst_dagen: 2 }); });
+  test('telLink: (0) na landcode valt weg', 'tel:+31201234567', function () { return O.telLink('+31 (0)20 123 45 67'); });
+  test('telLink: zonder cijfers geen link', undefined, function () { return O.telLink('zie mail'); });
+  test('telLink: leeg is undefined', undefined, function () { return O.telLink(''); });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');

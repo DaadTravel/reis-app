@@ -141,7 +141,24 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   aanvullingen op het datamodel: zie migraties `…0005` t/m `…0012`
   (`…0010`: vervoer bus en trein; `…0011`: eigen vervoersnaam per
   etappe, `route_punten.leg_vervoer_label`, bijv. "Privébusje";
-  `…0012`: `dagen.route_punt_id`).
+  `…0012`: `dagen.route_punt_id`; `…0013`: vaste velden, zie hieronder).
+- **Vaste velden in plaats van tekst** (migratie `…0013`, besluit
+  gebruiker 2026-10-01). Rit: `route_punten.leg_datum` (vertrekdag),
+  `leg_vertrek`/`leg_aankomst` (lokale tijd), `leg_aankomst_dagen` (1 =
+  aankomst de dag erna) en contact `leg_telefoon`/`leg_email`/
+  `leg_boekingscode`. Verblijf: `route_punt_id` (het bezoek; een bezoek
+  kan meer verblijven hebben), `inchecken`/`uitchecken` (datums),
+  `inchecktijd`/`uitchecktijd`, `adres`, `telefoon`, `email`,
+  `boekingscode`. Activiteit: `route_punt_id`, `datum`,
+  `begin_tijd`/`eind_tijd`, `ophaalpunt`, `link`, `telefoon`, `email`,
+  `boekingscode`; `wanneer` (tekst) alleen nog als terugval zonder datum.
+  Tijden niet meer in `dagen.logistiek` zetten; die blijft voor wat geen
+  veld heeft (bijv. een verblijfwissel). Leeg contact toont de app niet
+  (optioneel, geen "?"). Thailand is omgezet; de andere reizen nog niet.
+  **`verblijven.prijs` is altijd het totaal van dat verblijf** (alle
+  nachten samen, ook bij opties; besluit gebruiker 2026-10-01). Een prijs
+  per nacht bij invoer eerst omrekenen met `nachten`. Nog niet omgezet:
+  de vier Tokyo-opties van Japan (staan per nacht, zonder `nachten`).
 - **Tips staan alleen in `stops.tips`** (besluit gebruiker 2026-10-01):
   één opgeschoonde lijst per plek, in de app altijd zichtbaar in het
   tipskader. `stops.highlights` is leeggemaakt en wordt niet meer
