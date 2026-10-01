@@ -75,6 +75,11 @@
     return /\d/.test(n) ? 'tel:' + n : undefined;
   }
 
+  // Label voor een StatusBadge. Lege status = onbekend (lege cel in de Excel, besluit gebruiker
+  // 2026-10-01): "Status ?", niet het standaardlabel "Nog te bepalen". Anders het eigen label of
+  // undefined (dan kiest de badge zelf).
+  function statusLabel(x) { return x.status ? x.status_label || undefined : 'Status ?'; }
+
   // "Dorp (aan de rivier)" → "Dorp".
   function kortNaam(naam) { return String(naam || '?').split(' (')[0]; }
 
@@ -98,5 +103,5 @@
     nachtenTekst: nachtenTekst, reistijd: reistijd, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
-    verblijfPeriode: verblijfPeriode, telLink: telLink };
+    verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel };
 })();

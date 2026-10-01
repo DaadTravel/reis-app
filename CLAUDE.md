@@ -138,10 +138,11 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   (lezen); wie niet in `leden` staat ziet niets. Leden alleen via
   SQL/dashboard toevoegen, niet via de app. Hulpfuncties voor de policies
   staan in schema `reis_intern` (bewust niet in de Data API). Latere
-  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0012`
+  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0014`
   (`…0010`: vervoer bus en trein; `…0011`: eigen vervoersnaam per
   etappe, `route_punten.leg_vervoer_label`, bijv. "Privébusje";
-  `…0012`: `dagen.route_punt_id`; `…0013`: vaste velden, zie hieronder).
+  `…0012`: `dagen.route_punt_id`; `…0013`: vaste velden, zie hieronder;
+  `…0014`: `verblijven.geboekt_via`).
 - **Vaste velden in plaats van tekst** (migratie `…0013`, besluit
   gebruiker 2026-10-01). Rit: `route_punten.leg_datum` (vertrekdag),
   `leg_vertrek`/`leg_aankomst` (lokale tijd), `leg_aankomst_dagen` (1 =
@@ -207,8 +208,32 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
 - **Excel per reis** (besluit gebruiker 2026-09-29): de gebruiker maakt
   voor elke reis een Excel zoals die van Thailand; wat daarin staat wordt
   de werkelijkheid en vervangt schattingen en budgetplafonds. De Excels
-  zelf staan in `bron/` en gaan nooit in git. Uploaden/inlezen
-  wordt een aparte functie, later.
+  zelf staan in `bron/` en gaan nooit in git.
+- **Excel is de bron voor feiten, Claude voor tekst** (besluit gebruiker
+  2026-10-01, geldt bij het samenstellen van een reis; wat onderweg in
+  de app moet kunnen komt later). Sjabloon van de gebruiker:
+  `bron/Reistemplate.xltx` (opbouw van Thailand: één regel per dag,
+  blokken Transport/Verblijf/Activiteit, totalen onderaan; Verblijf heeft
+  "Via" = waar geboekt). Feiten (dagen, verblijven, kosten, tijden,
+  reistijden, afstanden, status) komen uit de Excel; beschrijving, tips en
+  beleving schrijft Claude en het inlezen raakt die nooit. Contact en
+  boekingscodes staan (nog) niet in het sjabloon. **Inlezen doet Claude**,
+  niet de app: Excel lezen, de wijzigingen per rij laten zien, pas na
+  akkoord wegschrijven. **Activiteiten:** Claude stelt ideeën voor
+  (status `voorstel`, alleen in de app) bij een verblijf/plek, eventueel
+  met een beoogde dag; de datum is pas echt als de gebruiker hem in de
+  Excel zet (status optie/geboekt/betaald) — vanaf dan is de Excel de baas
+  over datum, tijd, prijs en status, de omschrijving blijft van Claude.
+  Zo leest Claude de Excel (bevestigd door de gebruiker): een verblijf
+  checkt in op de dag waar het staat en uit op de eerstvolgende dag met
+  een ander verblijf; aankomsttijd vóór vertrektijd = aankomst de dag
+  erna; **lege status = onbekend** (`null`, de app toont "Status ?", niet
+  "Nog te bepalen"); één activiteit per dag is voor nu genoeg. Koppelen
+  aan de app op dag + blok (één rit, verblijf en activiteit per dag), dus
+  geen ID-kolom in de Excel. Kolom "Via" → `verblijven.geboekt_via`
+  (migratie `…0014`; app: "Geboekt via …" bij het verblijf en "via …" op
+  de verblijfkaart). "Via" als route (Japan "Via Nagoya") is iets anders
+  en staat nog in `logistiek`.
 - **Onbekend is "?", niet "nee":** een kenmerk dat niet is ingevuld
   (`null`, bijv. ontbijt of zwembad) toont de app als "?". Ook een
   onbekend bedrag (bijv. `budget_posten.totaal`) is `null` → "?", nooit 0.

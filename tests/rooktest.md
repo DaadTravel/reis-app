@@ -55,7 +55,9 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       adres, telefoon, e-mail en boekingscode als tikbare links; een
       plek met een verblijfwissel toont beide verblijven. Doen: plek,
       datum en tijden (vorm: "Plek · wo 1 jan, 13:00–18:00"). Geen "per
-      nacht" bij opties.
+      nacht" bij opties. Een verblijf met "Via" ingevuld toont "Geboekt
+      via …" in het blok Slapen en "· via …" op de verblijfkaart. Een
+      verblijf of activiteit zonder status toont "Status ?".
 - [ ] **Links** — een fotocredit opent de Commons-pagina en de licentie
       in een nieuw tabblad; een verblijf met link opent de website.
 - [ ] **Onbekend is "?"** — geen datum = "Datum ?"; onbekend ontbijt,

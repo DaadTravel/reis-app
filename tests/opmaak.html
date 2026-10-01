@@ -170,6 +170,10 @@
   test('telLink: (0) na landcode valt weg', 'tel:+31201234567', function () { return O.telLink('+31 (0)20 123 45 67'); });
   test('telLink: zonder cijfers geen link', undefined, function () { return O.telLink('zie mail'); });
   test('telLink: leeg is undefined', undefined, function () { return O.telLink(''); });
+  // Lege status = onbekend (lege cel in de Excel): "Status ?", niet het standaardlabel van de badge.
+  test('statusLabel: lege status is "Status ?"', 'Status ?', function () { return O.statusLabel({ status: null }); });
+  test('statusLabel: status zonder eigen label → standaardlabel', undefined, function () { return O.statusLabel({ status: 'geboekt' }); });
+  test('statusLabel: eigen label gaat voor', 'Nog betalen', function () { return O.statusLabel({ status: 'geboekt', status_label: 'Nog betalen' }); });
 
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;

@@ -97,6 +97,7 @@
     var tel = O.telLink(p.telefoon), web = O.veiligeLink(p.link);
     if (p.telefoon) d.push(h('li', { key: 't' }, tel ? h('a', { href: tel }, p.telefoon) : p.telefoon));
     if (p.email) d.push(h('li', { key: 'e' }, h('a', { href: 'mailto:' + encodeURI(p.email) }, p.email)));
+    if (p.via) d.push(h('li', { key: 'v' }, 'Geboekt via ' + p.via));
     if (p.boekingscode) d.push(h('li', { key: 'b' }, 'Boekingscode ', h('strong', null, p.boekingscode)));
     if (web) d.push(h('li', { key: 'l' }, h('a', { href: web, target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Website' + (p.naam ? ' van ' + p.naam : '') }, 'Website')));
     return d.length ? h('ul', { className: 'nv-contact' }, d) : null;
@@ -449,7 +450,7 @@
                   h('span', { className: 'nv-verblijf__wanneer' }, [O.verblijfPeriode(v), nachtenTekst(v.nachten),
                     O.tijd(v.inchecktijd) && 'inchecken ' + O.tijd(v.inchecktijd), O.tijd(v.uitchecktijd) && 'uitchecken ' + O.tijd(v.uitchecktijd)].filter(Boolean).join(' · ')),
                   // Alleen de contactvelden; de website staat al op de naam.
-                  h(Contact, { adres: v.adres, telefoon: v.telefoon, email: v.email, boekingscode: v.boekingscode }));
+                  h(Contact, { adres: v.adres, telefoon: v.telefoon, email: v.email, via: v.geboekt_via, boekingscode: v.boekingscode }));
               })) :
             h('p', { className: 'nv-slapen' },
               h(G.StatusBadge, { status: opties.length ? 'optie' : 'open', label: opties.length ? 'Opties' : 'Nog te bepalen' }),
@@ -519,11 +520,12 @@
         heeft ? h('div', { className: 'nv-rij', ref: rij, tabIndex: 0, 'aria-label': 'Verblijven, veeg voor meer' }, p.verblijven.map(function (v) {
           var s = stopOpId(p.stops, v.stop_id);
           return h(G.StayCard, A(p.foto(v.foto_id), { key: v.id, name: v.naam, place: kortNaam(v.plaats || (s && s.naam) || '?'),
-            nights: nachtenTekst(v.nachten), price: v.prijs != null ? Number(v.prijs) : '€ ?',
+            nights: [nachtenTekst(v.nachten), v.geboekt_via && 'via ' + v.geboekt_via].filter(Boolean).join(' · '),
+            price: v.prijs != null ? Number(v.prijs) : '€ ?',
             breakfast: v.ontbijt == null ? undefined : v.ontbijt, pool: v.zwembad == null ? undefined : v.zwembad,
             rooms: v.kamers == null ? undefined : v.kamers,
             layout: (v.kamerindeling === 'anders' && v.kamerindeling_toelichting) || KAMERINDELING[v.kamerindeling],
-            rating: O.beoordelingTekst(v), status: v.status || undefined, statusLabel: v.status_label || undefined, href: O.veiligeLink(v.link) }));
+            rating: O.beoordelingTekst(v), status: v.status || undefined, statusLabel: O.statusLabel(v), href: O.veiligeLink(v.link) }));
         })) : null));
   }
 
@@ -541,7 +543,7 @@
           return h('div', { key: x.id, className: 'nv-activiteit' },
             h(G.ActivityRow, { name: x.naam, when: [s && kortNaam(s.naam), O.activiteitWanneer(x)].filter(Boolean).join(' · '),
               price: x.prijs != null ? Number(x.prijs) : '€ ?',
-              note: x.notitie || undefined, status: x.status || undefined, statusLabel: x.status_label || undefined, icon: x.icoon || undefined }),
+              note: x.notitie || undefined, status: x.status || undefined, statusLabel: O.statusLabel(x), icon: x.icoon || undefined }),
             h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, boekingscode: x.boekingscode, link: x.link, naam: x.naam }));
         }) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen activiteiten gekozen.' })));
   }
