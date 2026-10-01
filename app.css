@@ -196,3 +196,12 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-voet .nv-knop { color: var(--ink-muted); }
 .nv-status__knoppen { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin: 0; }
 .nv-melding--los { margin: var(--space-4) 0; }
+/* Tijdlijn: vervaagt aan de kant waar nog plekken buiten beeld staan (schermen.js, useRanden). Masker: alleen de dekking telt, de kleur niet. */
+.nv-tijdlijn.meer-rechts { -webkit-mask-image: linear-gradient(to right, var(--ink) calc(100% - 56px), transparent); mask-image: linear-gradient(to right, var(--ink) calc(100% - 56px), transparent); }
+.nv-tijdlijn.meer-links { -webkit-mask-image: linear-gradient(to left, var(--ink) calc(100% - 56px), transparent); mask-image: linear-gradient(to left, var(--ink) calc(100% - 56px), transparent); }
+.nv-tijdlijn.meer-links.meer-rechts { -webkit-mask-image: linear-gradient(to right, transparent, var(--ink) 56px, var(--ink) calc(100% - 56px), transparent); mask-image: linear-gradient(to right, transparent, var(--ink) 56px, var(--ink) calc(100% - 56px), transparent); }
+.nv-pijl:disabled { opacity: .35; cursor: default; }
+.nv-tijdlijn:focus-visible { outline: 2px solid var(--lagoon); outline-offset: -2px; }
+/* Tijdlijn: pijltjes ook op de telefoon; met de muis slepen (schermen.js, sleep). */
+.nv-pijlen--altijd { display: flex; }
+@media (pointer: fine) { .nv-tijdlijn { cursor: grab; } }

@@ -24,8 +24,11 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
 - [ ] **Tijdlijn** — in het reisoverzicht staan datum, plaatsnaam, nachten
       en reistijd bij elke plek op dezelfde hoogte, ook als een naam over
       twee regels loopt (bijv. Picos de Europa); vertrek/thuis in dezelfde
-      letter als de plekken; zijwaarts swipen werkt. Eén keer op een
-      iPhone bekijken (subgrid: iOS 16+).
+      letter als de plekken; zijwaarts swipen werkt. Staat er meer buiten
+      beeld, dan vervaagt die kant en staan er pijltjes ‹ › (ook op de
+      telefoon); met de muis slepen werkt, en loslaten na slepen opent
+      niets. Thailand loopt door tot en met Bangkok en Thuis. Eén keer
+      op een iPhone bekijken (subgrid: iOS 16+).
 - [ ] **Plek kiezen** — een tegel in het overzicht opent het programma
       bij die plek; de tabbladen en ← / → wisselen van plek.
 - [ ] **Tips** — bij een plek één tipskader "Tips voor …", altijd open

@@ -229,18 +229,66 @@
       f.credit && h(G.PhotoCredit, { by: f.credit }));
   }
 
+  // Zijwaartse strook: houdt bij of er links/rechts nog iets buiten beeld staat (voor vervaging en pijltjes).
+  // Geeft { ref, el, l, r }: ref aan de strook hangen; el is de strook zelf (of null zolang die er niet is).
+  function useRanden() {
+    var e = React.useState(null), el = e[0], setEl = e[1];
+    var s = React.useState({ l: false, r: false }), randen = s[0], setRanden = s[1];
+    function meet() {
+      if (!el) return;
+      var l = el.scrollLeft > 2, r = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+      setRanden(function (o) { return o.l === l && o.r === r ? o : { l: l, r: r }; });
+    }
+    // Na elke weergave meten (inhoud kan veranderen), vóór het tekenen: geen verspringen.
+    React.useLayoutEffect(meet);
+    React.useEffect(function () {
+      if (!el) return;
+      // Opnieuw meten bij een andere breedte en zodra de lettertypes er zijn (namen worden dan breder).
+      var ro = window.ResizeObserver ? new ResizeObserver(meet) : null;
+      if (ro) ro.observe(el); else window.addEventListener('resize', meet);
+      if (document.fonts) document.fonts.ready.then(meet);
+      el.addEventListener('scroll', meet, { passive: true });
+      return function () { el.removeEventListener('scroll', meet); if (ro) ro.disconnect(); else window.removeEventListener('resize', meet); };
+    }, [el]);
+    return { ref: setEl, el: el, l: randen.l, r: randen.r };
+  }
+
   function Overzicht(p) {
     var r = p.reis;
+    var randen = useRanden();
+    function schuif(n) { var el = randen.el; if (el) el.scrollBy({ left: n * el.clientWidth * 0.8, behavior: 'smooth' }); }
     // Tijdlijn volgt de route (met heen- en terugreis); zonder route de plekken.
     var punten = p.route.length ? p.route.map(function (x) {
       return { naam: x.naam, stop: stopOpId(p.stops, x.stop_id), leg: x };
     }) : p.stops.map(function (s) { return { naam: s.naam, stop: s }; });
+    // Slepen met de muis (vinger en touchpad scrollen vanzelf); na slepen geen klik doorlaten.
+    function sleep(e) {
+      var el = randen.el; if (e.pointerType !== 'mouse' || e.button !== 0 || !el) return;
+      var x0 = e.clientX, s0 = el.scrollLeft, gesleept = false;
+      e.preventDefault(); el.focus({ preventScroll: true }); // geen tekst selecteren; focus blijft wel werken
+      function beweeg(ev) {
+        var dx = ev.clientX - x0; if (Math.abs(dx) > 4 && !gesleept) { gesleept = true; el.style.scrollSnapType = 'none'; el.style.cursor = 'grabbing'; }
+        if (gesleept) el.scrollLeft = s0 - dx;
+      }
+      function los() {
+        window.removeEventListener('pointermove', beweeg); window.removeEventListener('pointerup', los); window.removeEventListener('pointercancel', los);
+        el.style.scrollSnapType = ''; el.style.cursor = '';
+        if (!gesleept) return;
+        function stop(ev) { ev.stopPropagation(); ev.preventDefault(); }
+        window.addEventListener('click', stop, true);
+        setTimeout(function () { window.removeEventListener('click', stop, true); }, 0);
+      }
+      window.addEventListener('pointermove', beweeg); window.addEventListener('pointerup', los); window.addEventListener('pointercancel', los);
+    }
     return h('section', { className: 'nv-blok nv-blok--zand', id: 'overzicht' },
       h('div', { className: 'nv-wrap' },
         h('div', { className: 'nv-kopblok' },
           h('span', { className: 'nv-label' }, 'Reisoverzicht'),
           h('h2', { className: 'nv-kop' }, h('em', null, nachtenTekst(r.nachten)), ', ' + p.stops.length + (p.stops.length === 1 ? ' plek' : ' plekken'))),
-        punten.length ? h('ol', { className: 'nv-tijdlijn', 'aria-label': 'Route in volgorde' }, punten.map(function (x, i) {
+        punten.length && (randen.l || randen.r) ? h('div', { className: 'nv-pijlen nv-pijlen--altijd' },
+          h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Eerder in de route', disabled: !randen.l, onClick: function () { schuif(-1); } }, '‹'),
+          h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Verder in de route', disabled: !randen.r, onClick: function () { schuif(1); } }, '›')) : null,
+        punten.length ? h('ol', { ref: randen.ref, tabIndex: 0, onPointerDown: sleep, className: 'nv-tijdlijn' + (randen.l ? ' meer-links' : '') + (randen.r ? ' meer-rechts' : ''), 'aria-label': 'Route in volgorde' }, punten.map(function (x, i) {
           // Plek die twee keer in de route staat: het hoeveelste bezoek bepaalt de dag.
           var keer = punten.slice(0, i).filter(function (y) { return x.stop && y.stop === x.stop; }).length;
           var l = x.leg, d = x.stop && dagenVan(p.dagen, x.stop.id)[keer], datum = d && d.datum_van;
