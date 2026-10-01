@@ -17,6 +17,22 @@
   function stopOpId(stops, id) { return stops.filter(function (s) { return s.id === id; })[0]; }
   // Dagen van een plek, in volgorde (koppeling via stop_id, migratie 0009).
   function dagenVan(dagen, stopId) { return dagen.filter(function (d) { return d.stop_id === stopId; }); }
+  // Etappes van en naar een plek, uit de route; bij twee bezoeken alle vier.
+  function etappesVan(route, stopId) {
+    var uit = [];
+    route.forEach(function (x, k) {
+      if (x.stop_id !== stopId) return;
+      if (k > 0) uit.push({ van: route[k - 1], naar: x, aankomst: true });
+      if (k < route.length - 1) uit.push({ van: x, naar: route[k + 1], aankomst: false });
+    });
+    return uit;
+  }
+  var VERVOER = { car: 'Auto', plane: 'Vliegtuig', boat: 'Boot' };
+  // Logistiek-tekst die alleen km en reistijd herhaalt ("765 km (7u59)", "60 km · ~2 uur")
+  // staat al in de etappes; alleen tonen als er meer in staat (tijden, overstap).
+  function meerDanAfstand(t) {
+    return !!t && !!t.replace(/~?\s*\d+([.,]\d+)?\s*(km|uur|min|u\d*)(?![\w:])|vanaf\s+\S+|daarna|[()·,~]/gi, '').trim();
+  }
   function wanneerTekst(d, s) {
     if (d && d.datum_van) return O.dagLabel(d.datum_van, d.datum_tot);
     // wanneer_label niet: dat is nu overal het aantal nachten, en dat staat al als chip.
@@ -264,8 +280,10 @@
       kies(p.stops[(i + n + p.stops.length) % p.stops.length].id, true);
     }
     var vorige = p.stops[i - 1], volgende = p.stops[i + 1];
+    var etappes = etappesVan(p.route, s.id);
+    var notities = dagen.map(function (x) { return x.logistiek; }).filter(etappes.length ? meerDanAfstand : Boolean);
     // Chips alleen voor wat nergens anders in het paneel staat.
-    var elders = ['Nachten', 'Accommodatie'].concat(d && d.logistiek ? ['Rit ervoor'] : []);
+    var elders = ['Nachten', 'Accommodatie'].concat(etappes.length || (d && d.logistiek) ? ['Rit ervoor'] : []);
     var feiten = (s.feiten || []).filter(function (x) { return elders.indexOf(x[0]) < 0; });
     var prijzen = opties.map(function (x) { return x.prijs; }).filter(function (x) { return x != null; }).map(Number);
 
@@ -289,7 +307,7 @@
             s.lede && h('p', { className: 'nv-tekst' }, s.lede),
             d && d.beleving && d.beleving !== s.lede && h('p', { className: 'nv-tekst nv-muted' }, d.beleving),
             (s.highlights || []).length ? h('ul', { className: 'nv-lijst' }, s.highlights.map(function (x, k) { return h('li', { key: k }, x); })) : null,
-            d && d.logistiek && h('div', { className: 'nv-logistiek' }, h(G.Icon, { name: 'clock', size: 18 }), h('span', null, d.logistiek)),
+            !etappes.length && notities.length ? h('div', { className: 'nv-logistiek' }, h(G.Icon, { name: 'clock', size: 18 }), h('span', null, notities.join(' · '))) : null,
             tips.length ? h('div', null,
               h('button', { type: 'button', className: 'nv-knop', 'aria-expanded': tipsOpen, onClick: function () { setTipsOpen(!tipsOpen); } },
                 'Tips voor ' + kortNaam(s.naam) + ' (' + tips.length + ') ' + (tipsOpen ? '−' : '+')),
@@ -300,9 +318,38 @@
                 (prijzen.length ? 'vanaf ' + O.euro(Math.min.apply(null, prijzen)) + ' per nacht' : 'prijs ?') + ' · ',
                 h('a', { href: '#slapen', onClick: function (e) { e.preventDefault(); naar('slapen'); } }, 'bekijk')) :
                 h('span', { className: 'nv-muted' }, 'Nog geen verblijf gekozen')),
+            // Met route: het kader Onderweg is ook de navigatie naar de vorige/volgende plek.
+            etappes.length ? h(Onderweg, { etappes: etappes, notities: notities, stops: p.stops, hier: s.id, herinnering: p.herinnering, kies: kies }) :
             h('div', { className: 'nv-bladeren' },
               vorige && h('button', { type: 'button', className: 'nv-knop', onClick: function () { kies(vorige.id); } }, '← ' + kortNaam(vorige.naam)),
               volgende && h('button', { type: 'button', className: 'nv-knop', onClick: function () { kies(volgende.id); } }, kortNaam(volgende.naam) + ' →'))))));
+  }
+
+  // Kader met de etappes van en naar een plek (van → naar, vervoer, km, reistijd, prijs).
+  // Een etappe naar/van een andere plek is een knop daarheen (besluit gebruiker 2026-10-01).
+  function Onderweg(p) {
+    return h('div', { className: 'nv-onderweg' },
+      h('span', { className: 'nv-label' }, 'Onderweg'),
+      p.etappes.map(function (e, k) {
+        var l = e.naar, ander = e.aankomst ? e.van : e.naar;
+        var doel = ander.stop_id && ander.stop_id !== p.hier && stopOpId(p.stops, ander.stop_id);
+        var delen = [VERVOER[l.leg_vervoer] || 'Vervoer ?'];
+        if (l.leg_km != null) delen.push(Number(l.leg_km).toLocaleString('nl-NL') + ' km');
+        else if (l.leg_vervoer !== 'plane' && l.leg_vervoer !== 'boat') delen.push('? km');
+        delen.push(O.reistijd(l.leg_minuten, l.leg_benadering), prijsTekst(l.leg_prijs));
+        var inhoud = [
+          h(G.Icon, { key: 'i', name: l.leg_vervoer || 'arrow', size: 18 }),
+          h('span', { key: 't', className: 'nv-onderweg__tekst' },
+            doel ? h('span', { className: 'nv-onzichtbaar' }, e.aankomst ? 'Vorige plek: ' : 'Volgende plek: ') : null,
+            h('span', { className: 'nv-onderweg__route' }, kortNaam(e.van.naam) + ' → ' + kortNaam(e.naar.naam)),
+            h('span', { className: 'nv-onderweg__info' }, delen.join(' · ')),
+            !p.herinnering && !l.leg_geverifieerd ? h('span', { className: 'nv-tijdlijn__check' }, 'te verifiëren') : null),
+          doel ? h('span', { key: 'p', className: 'nv-onderweg__pijl', 'aria-hidden': true }, e.aankomst ? '←' : '→') : null];
+        return doel ?
+          h('button', { key: k, type: 'button', className: 'nv-onderweg__rij', onClick: function () { p.kies(doel.id); } }, inhoud) :
+          h('div', { key: k, className: 'nv-onderweg__rij' }, inhoud);
+      }),
+      p.notities.length ? h('p', { className: 'nv-onderweg__notitie' }, h(G.Icon, { name: 'clock', size: 16 }), h('span', null, p.notities.join(' · '))) : null);
   }
 
   var KAMERINDELING = { twee_kamers_apart: '2 kamers apart', gezinskamer: 'Gezinskamer',

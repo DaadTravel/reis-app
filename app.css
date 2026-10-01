@@ -105,6 +105,22 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-slapen a { color: var(--lagoon); font-weight: 600; }
 .nv-bladeren { display: flex; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-7); }
 .nv-bladeren .nv-knop:only-child { margin-left: auto; }
+/* Onderweg: etappes van/naar de plek, tevens vorige/volgende plek (zelfde groen als .nv-logistiek). */
+.nv-onderweg { margin-top: var(--space-6); padding: var(--space-3) var(--space-4) var(--space-2); border-radius: var(--radius-md); background: var(--lagoon-soft); }
+.nv-onderweg > .nv-label { display: block; margin-bottom: var(--space-1); }
+.nv-onderweg__rij { display: flex; align-items: center; gap: var(--space-3); width: 100%; padding: var(--space-3) 0; font: inherit; color: inherit; text-align: left; background: none; border: 0; border-top: 1px solid var(--line); }
+.nv-onderweg > .nv-label + .nv-onderweg__rij { border-top: 0; }
+button.nv-onderweg__rij { cursor: pointer; }
+.nv-onderweg__rij > .rg-icon { flex: none; color: var(--lagoon); }
+.nv-onderweg__tekst { flex: 1; min-width: 0; }
+.nv-onderweg__route { display: block; font-size: 15px; font-weight: 600; }
+.nv-onderweg__info { display: block; font-size: 14px; color: var(--ink-muted); }
+.nv-onderweg__pijl { flex: none; font-size: 20px; color: var(--lagoon); }
+button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus-visible .nv-onderweg__route { color: var(--lagoon); text-decoration: underline; }
+.nv-onderweg__notitie { display: flex; gap: var(--space-2); align-items: flex-start; margin: 0; padding: var(--space-3) 0 var(--space-2); border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-muted); }
+/* Alleen voor schermlezers. */
+.nv-onzichtbaar { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.nv-onderweg__notitie .rg-icon { flex: none; margin-top: 2px; color: var(--lagoon); }
 
 /* ---------- verblijven: veegrij ---------- */
 .nv-rij { display: flex; gap: var(--space-4); overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--space-4); padding: var(--space-2) var(--space-4) var(--space-5); margin: 0 calc(-1 * var(--space-4)); scrollbar-width: none; }
