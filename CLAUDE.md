@@ -154,11 +154,12 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `boekingscode`; `wanneer` (tekst) alleen nog als terugval zonder datum.
   Tijden niet meer in `dagen.logistiek` zetten; die blijft voor wat geen
   veld heeft (bijv. een verblijfwissel). Leeg contact toont de app niet
-  (optioneel, geen "?"). Thailand is omgezet; de andere reizen nog niet.
+  (optioneel, geen "?"). Alle reizen omgezet: Thailand met tijden; Japan,
+  Korea, Noord-Spanje en Europa 2026 met vertrekdagen en verblijven met
+  in/uit (tijden nog onbekend).
   **`verblijven.prijs` is altijd het totaal van dat verblijf** (alle
   nachten samen, ook bij opties; besluit gebruiker 2026-10-01). Een prijs
-  per nacht bij invoer eerst omrekenen met `nachten`. Nog niet omgezet:
-  de vier Tokyo-opties van Japan (staan per nacht, zonder `nachten`).
+  per nacht bij invoer eerst omrekenen met `nachten`.
 - **Tips staan alleen in `stops.tips`** (besluit gebruiker 2026-10-01):
   één opgeschoonde lijst per plek, in de app altijd zichtbaar in het
   tipskader. `stops.highlights` is leeggemaakt en wordt niet meer
