@@ -125,9 +125,16 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `…0012`: `dagen.route_punt_id`).
 - **Tips staan alleen in `stops.tips`** (besluit gebruiker 2026-10-01):
   één opgeschoonde lijst per plek, in de app altijd zichtbaar in het
-  tipskader. `stops.highlights` en `dagen.tips` zijn leeggemaakt en
-  worden niet meer gevuld; de app voegt ze voor de zekerheid nog wel
-  samen (zonder dubbelen).
+  tipskader. `stops.highlights` is leeggemaakt en wordt niet meer
+  gevuld; de app voegt hem voor de zekerheid nog wel samen (zonder
+  dubbelen). **Uitzondering, tips per bezoek** (besluit gebruiker
+  2026-10-01): staat een plek meer dan eens in de route en hoort een tip
+  bij één bezoek (bijv. een stad bij aankomst en vlak voor vertrek), dan
+  staat die in `dagen.tips` van de dag van dat bezoek; de
+  app toont hem in het blok van dat bezoek. `stops.tips` houdt dan alleen
+  wat bij elk bezoek geldt. Bij een plek met één bezoek blijft
+  `dagen.tips` leeg. Tegel en chip tonen de nachten per bezoek
+  ("3 + 1 nachten").
 - **Koppel op ID, nooit op naam:** dagen, routepunten, verblijven en
   activiteiten hangen via `stop_id` aan hun plek (migratie `…0009`).
   Leeg is bewust: Vertrek/Thuis en vlucht- of reisdagen ("A → B") —

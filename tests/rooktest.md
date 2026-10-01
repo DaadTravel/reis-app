@@ -33,6 +33,7 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       bij die plek; de tabbladen en ← / → wisselen van plek.
 - [ ] **Tips** — bij een plek één tipskader "Tips voor …", altijd open
       (geen losse opsommingspunten en geen uitklapknop); geen tip dubbel.
+      Bij twee bezoeken: zie hieronder.
 - [ ] **Onderweg** — onderaan elke plek een groen kader met aankomst
       (vorige → deze plek) en vertrek (deze plek → volgende), met vervoer,
       km, reistijd en prijs (onbekend = "?" / "€ ?"); een autorit toont
@@ -45,7 +46,9 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       rit).
 - [ ] **Twee bezoeken** — een plek die twee keer in de route staat
       (Thailand: Bangkok, Chumphon) toont "2 bezoeken", per bezoek datum,
-      nachten en eigen tekst; de chip telt de nachten van beide samen.
+      nachten, eigen tekst en eigen tips ("Tips 1e bezoek"); tegel en
+      chip tonen "3 + 1 nachten". Bangkok: elk bezoek een eigen tipskader,
+      geen tip in beide.
 - [ ] **Links** — een fotocredit opent de Commons-pagina en de licentie
       in een nieuw tabblad; een verblijf met link opent de website.
 - [ ] **Onbekend is "?"** — geen datum = "Datum ?"; onbekend ontbijt,

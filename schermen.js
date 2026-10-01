@@ -38,6 +38,12 @@
     });
     return uit;
   }
+  // Nachten van een plek; twee keer in de route = per bezoek ("3 + 1 nachten"), onbekend = "?".
+  function nachtenPlek(route, s) {
+    var bezoeken = route.filter(function (x) { return x.stop_id === s.id; });
+    if (bezoeken.length < 2) return nachtenTekst(s.nachten);
+    return bezoeken.map(function (v) { return v.nachten == null ? '?' : v.nachten; }).join(' + ') + ' nachten';
+  }
   var VERVOER = { car: 'Auto', plane: 'Vliegtuig', boat: 'Boot', bus: 'Bus', train: 'Trein' };
   // Reistijd plus prijs van een etappe. Een autorit krijgt geen prijs (brandstof/tol
   // tonen we niet); alleen echte vervoerskosten (besluit gebruiker 2026-10-01).
@@ -46,7 +52,8 @@
     if (l.leg_vervoer !== 'car') uit.push(prijsTekst(l.leg_prijs));
     return uit;
   }
-  // Alle tips van een plek in één lijst: highlights, tips van de plek en van de dag(en).
+  // Alle tips van een plek in één lijst: highlights, tips van de plek en van de dag(en)
+  // (bij een plek met meer bezoeken alleen de plek; de dagtips staan dan per bezoek).
   // Dubbel = gelijk na wegstrepen van leestekens, of het begin van een langere tip
   // (dan blijft de langere staan). Besluit gebruiker 2026-10-01: alles in het tipskader.
   function tipsVan(s, dagen) {
@@ -326,7 +333,7 @@
             f.image && h('img', { src: f.image, alt: '' }),
             h('span', { className: 'nv-tegel__tekst' },
               h('span', { className: 'nv-tegel__naam' }, kortNaam(s.naam)),
-              h('span', { className: 'nv-tegel__meer' }, nachtenTekst(s.nachten) + ' →')));
+              h('span', { className: 'nv-tegel__meer' }, nachtenPlek(p.route, s) + ' →')));
         }))));
   }
 
@@ -349,7 +356,6 @@
 
     var f = p.foto(s.foto_id);
     var dagen = dagenVan(p.dagen, s.id), d = dagen[0];
-    var tips = tipsVan(s, dagen);
     var opties = p.verblijven.filter(function (x) { return x.stop_id === s.id && x.status !== 'open'; });
     function kies(id, focus) {
       p.kiesPlek(id, true);
@@ -365,6 +371,11 @@
     var etappes = etappesVan(p.route, s.id);
     // Twee keer in de route (bijv. heen en terug via dezelfde stad): per bezoek datum, nachten en beleving.
     var bezoeken = p.route.filter(function (x) { return x.stop_id === s.id; }), meer = bezoeken.length > 1;
+    // Tips: dagen.tips hoort bij één bezoek (besluit gebruiker 2026-10-01), dus bij meer
+    // bezoeken in het blok van dat bezoek; het tipskader houdt dan stops.tips plus de tips
+    // van een dag die aan geen bezoek hangt (niets stil weglaten).
+    var bezoekDagen = bezoeken.map(function (v, k) { return dagVanBezoek(p.dagen, v, k); });
+    var tips = tipsVan(s, meer ? dagen.filter(function (x) { return bezoekDagen.indexOf(x) < 0; }) : dagen);
     var notities = dagen.map(function (x) { return x.logistiek; }).filter(etappes.length ? meerDanAfstand : Boolean);
     // Chips alleen voor wat nergens anders in het paneel staat.
     var elders = ['Nachten', 'Accommodatie'].concat(etappes.length || (d && d.logistiek) ? ['Rit ervoor'] : []);
@@ -387,14 +398,16 @@
             h('span', { className: 'nv-plek__wanneer' }, meer ? bezoeken.length + ' bezoeken' : wanneerTekst(d, s)),
             h('ul', { className: 'nv-chips' },
               // Meer bezoeken: de nachten van alle bezoeken samen (onbekend bij één ervan = "?").
-              h('li', null, nachtenTekst(meer ? bezoeken.reduce(function (n, v) { return n == null || v.nachten == null ? null : n + v.nachten; }, 0) : s.nachten)),
+              h('li', null, nachtenPlek(p.route, s)),
               feiten.map(function (x, k) { return h('li', { key: k }, x[0] + ': ' + x[1]); })),
             s.lede && h('p', { className: 'nv-tekst' }, s.lede),
             meer ? h('ol', { className: 'nv-bezoeken' }, bezoeken.map(function (v, k) {
-              var dv = dagVanBezoek(p.dagen, v, k);
+              // Wat al in het algemene tipskader staat niet nog eens per bezoek.
+              var dv = bezoekDagen[k], eigen = dv ? tipsVan({}, [dv]).filter(function (t) { return tips.indexOf(t) < 0; }) : [];
               return h('li', { key: v.id },
                 h('span', { className: 'nv-bezoeken__kop' }, (k + 1) + 'e bezoek · ' + wanneerTekst(dv) + ' · ' + nachtenTekst(v.nachten)),
-                dv && dv.beleving && dv.beleving !== s.lede ? h('p', { className: 'nv-tekst nv-muted' }, dv.beleving) : null);
+                dv && dv.beleving && dv.beleving !== s.lede ? h('p', { className: 'nv-tekst nv-muted' }, dv.beleving) : null,
+                eigen.length ? h(G.TipNote, { title: 'Tips ' + (k + 1) + 'e bezoek', items: eigen }) : null);
             })) :
             d && d.beleving && d.beleving !== s.lede && h('p', { className: 'nv-tekst nv-muted' }, d.beleving),
             !etappes.length && notities.length ? h('div', { className: 'nv-logistiek' }, h(G.Icon, { name: 'clock', size: 18 }), h('span', null, notities.join(' · '))) : null,
