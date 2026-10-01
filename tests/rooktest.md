@@ -30,8 +30,9 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       bij die plek; de tabbladen en ← / → wisselen van plek.
 - [ ] **Onderweg** — onderaan elke plek een groen kader met aankomst
       (vorige → deze plek) en vertrek (deze plek → volgende), met vervoer,
-      km, reistijd en prijs (onbekend = "?"); tik op een regel = naar die
-      plek. Noord-Spanje: bij elke plek ingevuld. Chumphon (Thailand): 4
+      km, reistijd en prijs (onbekend = "?" / "€ ?"); een autorit toont
+      géén prijs (ook niet in de tijdlijn), vlucht/boot/overig vervoer wel;
+      tik op een regel = naar die plek. Noord-Spanje: bij elke plek ingevuld. Chumphon (Thailand): 4
       etappes.
 - [ ] **Links** — een fotocredit opent de Commons-pagina en de licentie
       in een nieuw tabblad; een verblijf met link opent de website.

@@ -28,6 +28,13 @@
     return uit;
   }
   var VERVOER = { car: 'Auto', plane: 'Vliegtuig', boat: 'Boot' };
+  // Reistijd plus prijs van een etappe. Een autorit krijgt geen prijs (brandstof/tol
+  // tonen we niet); alleen echte vervoerskosten (besluit gebruiker 2026-10-01).
+  function etappeTijdPrijs(l) {
+    var uit = [O.reistijd(l.leg_minuten, l.leg_benadering)];
+    if (l.leg_vervoer !== 'car') uit.push(prijsTekst(l.leg_prijs));
+    return uit;
+  }
   // Logistiek-tekst die alleen km en reistijd herhaalt ("765 km (7u59)", "60 km · ~2 uur")
   // staat al in de etappes; alleen tonen als er meer in staat (tijden, overstap).
   function meerDanAfstand(t) {
@@ -231,7 +238,7 @@
             h('span', { className: 'nv-tijdlijn__nacht' }, nacht),
             i > 0 && l ? h('span', { className: 'nv-tijdlijn__reis' },
               h(G.Icon, { name: l.leg_vervoer || 'reis', size: 14 }),
-              O.reistijd(l.leg_minuten, l.leg_benadering) + ' · ' + prijsTekst(l.leg_prijs),
+              etappeTijdPrijs(l).join(' · '),
               onzeker ? h('span', { className: 'nv-tijdlijn__check' }, 'te verifiëren') : null) : null);
         })) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen route.' }),
         // Elke plek een sfeertegel (besluit gebruiker 2026-09-29).
@@ -325,7 +332,7 @@
               volgende && h('button', { type: 'button', className: 'nv-knop', onClick: function () { kies(volgende.id); } }, kortNaam(volgende.naam) + ' →'))))));
   }
 
-  // Kader met de etappes van en naar een plek (van → naar, vervoer, km, reistijd, prijs).
+  // Kader met de etappes van en naar een plek (van → naar, vervoer, km, reistijd, prijs behalve bij de auto).
   // Een etappe naar/van een andere plek is een knop daarheen (besluit gebruiker 2026-10-01).
   function Onderweg(p) {
     return h('div', { className: 'nv-onderweg' },
@@ -336,7 +343,7 @@
         var delen = [VERVOER[l.leg_vervoer] || 'Vervoer ?'];
         if (l.leg_km != null) delen.push(Number(l.leg_km).toLocaleString('nl-NL') + ' km');
         else if (l.leg_vervoer !== 'plane' && l.leg_vervoer !== 'boat') delen.push('? km');
-        delen.push(O.reistijd(l.leg_minuten, l.leg_benadering), prijsTekst(l.leg_prijs));
+        delen = delen.concat(etappeTijdPrijs(l));
         var inhoud = [
           h(G.Icon, { key: 'i', name: l.leg_vervoer || 'arrow', size: 18 }),
           h('span', { key: 't', className: 'nv-onderweg__tekst' },
