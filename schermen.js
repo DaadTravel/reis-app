@@ -24,9 +24,12 @@
     if (!eigen.some(function (d) { return d.route_punt_id; })) return eigen[keer];
     return eigen.filter(function (d) { return d.route_punt_id === punt.id; })[0];
   }
-  // Reisdag(en) zonder plek ("A → B", bijv. heen- of terugvlucht) bij de etappe die aankomt op dit routepunt.
-  function reisdagenBij(dagen, punt) {
-    return dagen.filter(function (d) { return !d.stop_id && d.route_punt_id === punt.id; });
+  // Wat bij de rit hoort die aankomt op dit routepunt: de tijden (logistiek) van elke dag die
+  // daaraan hangt, plus de tekst van een reisdag zonder plek (heen- of terugvlucht).
+  function ritTekst(dagen, punt) {
+    var bij = dagen.filter(function (d) { return d.route_punt_id === punt.id; });
+    return bij.map(function (d) { return d.logistiek; }).filter(meerDanAfstand)
+      .concat(bij.filter(function (d) { return !d.stop_id && d.beleving; }).map(function (d) { return d.beleving; })).join(' · ');
   }
   // Etappes van en naar een plek, uit de route; bij twee bezoeken alle vier.
   function etappesVan(route, stopId) {
@@ -376,7 +379,10 @@
     // van een dag die aan geen bezoek hangt (niets stil weglaten).
     var bezoekDagen = bezoeken.map(function (v, k) { return dagVanBezoek(p.dagen, v, k); });
     var tips = tipsVan(s, meer ? dagen.filter(function (x) { return bezoekDagen.indexOf(x) < 0; }) : dagen);
-    var notities = dagen.map(function (x) { return x.logistiek; }).filter(etappes.length ? meerDanAfstand : Boolean);
+    // Tijden staan onder hun rit; alleen wat aan geen getoonde rit hangt blijft een losse notitie.
+    var notities = dagen.filter(function (x) {
+      return !etappes.some(function (e) { return e.naar.id === x.route_punt_id; });
+    }).map(function (x) { return x.logistiek; }).filter(etappes.length ? meerDanAfstand : Boolean);
     // Chips alleen voor wat nergens anders in het paneel staat.
     var elders = ['Nachten', 'Accommodatie'].concat(etappes.length || (d && d.logistiek) ? ['Rit ervoor'] : []);
     var feiten = (s.feiten || []).filter(function (x) { return elders.indexOf(x[0]) < 0; });
@@ -428,14 +434,15 @@
   // Kader met de etappes van en naar een plek (van → naar, vervoer, km, reistijd, prijs behalve bij de auto).
   // Vervoer: eigen naam (leg_vervoer_label, bijv. "Privébusje") gaat voor de standaardnaam.
   // Een etappe naar/van een andere plek is een knop daarheen (besluit gebruiker 2026-10-01).
-  // Een heen- of terugreisdag (dag zonder plek) staat onder zijn rit (idem).
+  // De tijden van elke dag staan onder de rit die op zijn routepunt aankomt; bij een heen- of
+  // terugreisdag (dag zonder plek) ook de tekst (idem).
   function Onderweg(p) {
     return h('div', { className: 'nv-onderweg' },
       h('span', { className: 'nv-label' }, 'Onderweg'),
       p.etappes.map(function (e, k) {
         var l = e.naar, ander = e.aankomst ? e.van : e.naar;
-        // Heen- of terugreisdag bij deze rit: tijden en beleving eronder.
-        var dag = reisdagenBij(p.dagen, l).map(function (rd) { return [rd.logistiek, rd.beleving].filter(Boolean).join(' · '); }).join(' · ');
+        // Tijden van deze rit (en bij een heen- of terugreisdag ook de tekst) eronder.
+        var dag = ritTekst(p.dagen, l);
         var doel = ander.stop_id && ander.stop_id !== p.hier && stopOpId(p.stops, ander.stop_id);
         var delen = [l.leg_vervoer_label || VERVOER[l.leg_vervoer] || 'Vervoer ?'];
         if (l.leg_km != null) delen.push(Number(l.leg_km).toLocaleString('nl-NL') + ' km');

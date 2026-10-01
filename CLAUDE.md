@@ -6,6 +6,25 @@ tussen de gezinsleden. Zelfde architectuur en werkwijze als het project
 fcp16-2. Oorspronkelijk opgebouwd in Claude Projects; wordt hier stap
 voor stap opnieuw en netjes opgebouwd.
 
+## Doel: drie scenario's (besluit gebruiker 2026-10-01)
+
+De meetlat voor elke keuze in de app:
+
+1. **Voorbereiden** — een duidelijk en leuk overzicht van een reis.
+   Nieuwe informatie moet eenvoudig in de app landen en bijgewerkt
+   worden; bijvangst: de familie kijkt mee met de voortgang.
+2. **Onderweg** — actueel zien waar we zijn, de tips en ideeën voor dat
+   moment, en praktische info (accommodatie, wat lokaal te regelen,
+   bijv. excursies). Op de telefoon, ook offline.
+3. **Achteraf delen** — vrienden en familie die interesse hebben, de
+   reis laten zien als inspiratie om zelf te organiseren. Bestaat nog
+   niet: vraagt een eigen deelmodel (nu ziet wie geen lid is niets).
+
+Daaruit volgt: informatie hoort in vaste onderdelen van een
+reis-template (rit met tijden, verblijf, excursie, tip, weer, status)
+die de app functioneel toont, niet als losse tekst. Vrije tekst alleen
+voor beschrijving en beleving.
+
 ## Status
 
 - **Fase 1 — infra: klaar (2026-09-29).** GitHub-repo, Supabase-schema,
@@ -145,8 +164,11 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `…0012`): `dagen.route_punt_id` wijst naar het routepunt van dat
   bezoek, zodat een plek die twee keer in de route staat per bezoek een
   eigen dag heeft. Een reisdag zonder plek (heen- of terugvlucht) wijst
-  naar het routepunt waar die rit aankomt; de app toont hem in het
-  Onderweg-kader onder die rit. Heeft geen enkele dag van een plek een
+  naar het routepunt waar die rit aankomt. In het Onderweg-kader staan
+  de tijden (`logistiek`) van elke dag onder de rit die op zijn
+  routepunt aankomt, bij een reisdag zonder plek ook de `beleving`; wat
+  aan geen getoonde rit hangt (bijv. het eerste routepunt) blijft een
+  losse notitie. Heeft geen enkele dag van een plek een
   `route_punt_id`, dan bepaalt het hoeveelste bezoek (in `volgorde`)
   welke dag erbij hoort. Een nieuwe dag krijgt meteen zijn
   `route_punt_id` (de eenmalige vulling in `…0012` ging uit van alleen
