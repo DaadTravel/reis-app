@@ -180,6 +180,42 @@
   });
   test('statusLabel: eigen label gaat voor', 'Nog betalen', function () { return O.statusLabel({ status: 'geboekt', status_label: 'Nog betalen' }); });
 
+  // Feiten van een reis (besluit gebruiker 2026-10-02): periode uit de reisdatums, route-km opgeteld
+  // uit de autoritten, gereden km (achteraf van de teller) apart. Verzonnen waarden.
+  test('periodeKort: over twee maanden', '13 jul – 5 aug', function () { return O.periodeKort('2030-07-13', '2030-08-05'); });
+  test('periodeKort: binnen één maand', '7 – 30 jul', function () { return O.periodeKort('2030-07-07', '2030-07-30'); });
+  test('routeKm: som van de autoritten, andere ritten tellen niet', 650, function () {
+    return O.routeKm([{ leg_vervoer: 'car', leg_km: 400 }, { leg_vervoer: 'plane', leg_km: 900 }, { leg_vervoer: 'car', leg_km: 250 }, { leg_vervoer: null, leg_km: null }]);
+  });
+  test('routeKm: een autorit zonder km → onbekend (null), nooit te laag', null, function () {
+    return O.routeKm([{ leg_vervoer: 'car', leg_km: 400 }, { leg_vervoer: 'car', leg_km: null }]);
+  });
+  test('routeKm: geen autoritten → undefined', undefined, function () { return O.routeKm([{ leg_vervoer: 'plane', leg_km: 900 }]); });
+  var auto = [{ leg_vervoer: 'car', leg_km: 1200 }, { leg_vervoer: 'car', leg_km: 800 }];
+  test('reisFeiten: periode uit de datums vervangt de kalendertekst', [['calendar', '13 jul – 5 aug'], ['sun', 'warm']], function () {
+    return O.reisFeiten({ start_datum: '2030-07-13', eind_datum: '2030-08-05', feiten: [['calendar', '~3 weken'], ['sun', 'warm']] }, []);
+  });
+  test('reisFeiten: zonder kalenderfeit maar met datums komt de periode vooraan', [['calendar', '7 – 30 jul'], ['plane', 'retour']], function () {
+    return O.reisFeiten({ start_datum: '2030-07-07', eind_datum: '2030-07-30', feiten: [['plane', 'retour']] }, []);
+  });
+  test('reisFeiten: zonder datums blijft de kalendertekst', [['calendar', '~3 weken']], function () {
+    return O.reisFeiten({ feiten: [['calendar', '~3 weken']] }, []);
+  });
+  test('reisFeiten: auto krijgt route-km', [['car', 'roadtrip · 2.000 km route']], function () {
+    return O.reisFeiten({ feiten: [['car', 'roadtrip']] }, auto);
+  });
+  test('reisFeiten: auto met gereden km', [['car', 'roadtrip · 2.000 km route · 2.345 km gereden']], function () {
+    return O.reisFeiten({ feiten: [['car', 'roadtrip']], km_gereden: 2345 }, auto);
+  });
+  test('reisFeiten: onbekende route-km → "? km route"', [['car', 'roadtrip · ? km route']], function () {
+    return O.reisFeiten({ feiten: [['car', 'roadtrip']] }, [{ leg_vervoer: 'car', leg_km: null }]);
+  });
+  test('reisFeiten: gereden km ook zonder autoritten in de route', [['car', 'roadtrip · 2.345 km gereden']], function () {
+    return O.reisFeiten({ feiten: [['car', 'roadtrip']], km_gereden: 2345 }, []);
+  });
+  test('periodeKort: zelfde maand in een ander jaar', '5 jan 2030 – 10 jan 2031', function () { return O.periodeKort('2030-01-05', '2031-01-10'); });
+  test('reisFeiten: geen feiten en geen datums → lege lijst', [], function () { return O.reisFeiten({}, []); });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');

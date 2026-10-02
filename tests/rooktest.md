@@ -21,6 +21,9 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
 - [ ] **Reispagina** — tik op een reis: foto bovenaan met credit;
       Overzicht, Programma, Slapen, Doen en Kosten zijn er alle vijf (ook
       als een onderdeel nog leeg is).
+- [ ] **Feiten van de reis** — onder "De reis" de periode uit de reisdatums
+      (bijv. "13 jul – 5 aug"); bij een autoreis "roadtrip · … km route" en,
+      als ingevuld, "· … km gereden". Past op een telefoon zonder horizontale scrollbalk.
 - [ ] **Tijdlijn** — in het reisoverzicht staan datum, plaatsnaam, nachten
       en reistijd bij elke plek op dezelfde hoogte, ook als een naam over
       twee regels loopt (bijv. Picos de Europa); vertrek/thuis in dezelfde

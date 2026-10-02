@@ -250,13 +250,14 @@
     var kandidaten = [r.kaart_foto_id].concat(p.stops.map(function (s) { return s.foto_id; }));
     var f = p.foto(kandidaten.filter(function (id) { return id && bezet.indexOf(id) < 0; })[0] || r.hero_foto_id);
     var kop = (r.secties && r.secties.plekken) || {};
+    var feiten = O.reisFeiten(r, p.route || []);
     return h('section', { className: 'nv-intro', id: 'reis' },
       h('div', { className: 'nv-intro__foto' }, f.image && h('img', { src: f.image, alt: '' }), f.credit && h(G.PhotoCredit, { by: f.credit })),
       h('div', { className: 'nv-intro__tekst' },
         h('span', { className: 'nv-label' }, 'De reis'),
         h('h2', { className: 'nv-kop' }, kop.title || r.titel),
         r.lede && h('p', { className: 'nv-tekst' }, r.lede),
-        (r.feiten || []).length ? h('ul', { className: 'nv-feiten' }, r.feiten.map(function (x, i) {
+        feiten.length ? h('ul', { className: 'nv-feiten' }, feiten.map(function (x, i) {
           return h('li', { key: i }, h(G.Icon, { name: x[0], size: 18 }), x[1]);
         })) : null));
   }

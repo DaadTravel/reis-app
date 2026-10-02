@@ -83,6 +83,40 @@
   // erbij omdat het geboekt kán zijn; dan liever zichtbaar dan onderweg het adres missen.
   function inSlapen(v) { return v.status === 'geboekt' || v.status === 'betaald' || !v.status; }
 
+  // Periode van een reis zonder weekdag: "13 jul – 5 aug", binnen één maand "7 – 30 jul".
+  function periodeKort(van, tot) {
+    var a = lees(van), b = lees(tot);
+    if (a.getUTCFullYear() !== b.getUTCFullYear()) return kortDatum(van) + ' ' + a.getUTCFullYear() + ' – ' + kortDatum(tot) + ' ' + b.getUTCFullYear();
+    var begin = a.getUTCMonth() === b.getUTCMonth() ? String(a.getUTCDate()) : kortDatum(van);
+    return begin + ' – ' + kortDatum(tot);
+  }
+  // Route-km: som van de autoritten (leg_km, van verblijf naar verblijf). Een autorit zonder km →
+  // null (onbekend, nooit een te laag totaal); geen autoritten → undefined.
+  function routeKm(route) {
+    var auto = route.filter(function (l) { return l.leg_vervoer === 'car'; });
+    if (!auto.length) return undefined;
+    if (auto.some(function (l) { return l.leg_km == null; })) return null;
+    return auto.reduce(function (som, l) { return som + Number(l.leg_km); }, 0);
+  }
+  // Feiten bovenaan een reis (besluit gebruiker 2026-10-02). De periode komt uit de reisdatums; bij de
+  // auto komen de route-km erbij en, als ingevuld, de gereden km (achteraf van de teller, inclusief
+  // ritjes ter plekke). Overige feiten (vlucht, weer) blijven tekst.
+  function reisFeiten(reis, route) {
+    var getal = function (n) { return Number(n).toLocaleString('nl-NL'); };
+    var periode = reis.start_datum && reis.eind_datum ? periodeKort(reis.start_datum, reis.eind_datum) : null;
+    var rk = routeKm(route);
+    var uit = (reis.feiten || []).map(function (f) {
+      if (f[0] === 'calendar' && periode) return ['calendar', periode];
+      if (f[0] === 'car' && (rk !== undefined || reis.km_gereden)) {
+        return ['car', [f[1], rk !== undefined && (rk == null ? '?' : getal(rk)) + ' km route',
+          reis.km_gereden && getal(reis.km_gereden) + ' km gereden'].filter(Boolean).join(' · ')];
+      }
+      return f;
+    });
+    if (periode && !uit.some(function (f) { return f[0] === 'calendar'; })) uit.unshift(['calendar', periode]);
+    return uit;
+  }
+
   // "Dorp (aan de rivier)" → "Dorp".
   function kortNaam(naam) { return String(naam || '?').split(' (')[0]; }
 
@@ -106,5 +140,6 @@
     nachtenTekst: nachtenTekst, reistijd: reistijd, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
-    verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen };
+    verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,
+    periodeKort: periodeKort, routeKm: routeKm, reisFeiten: reisFeiten };
 })();

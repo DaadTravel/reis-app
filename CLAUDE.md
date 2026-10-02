@@ -67,8 +67,9 @@ Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
   functies hier, niet in de schermen. Rechtstreeks via de REST-API,
   zonder supabase-js (besluit gebruiker 2026-09-30)
 - `opmaak.js` — pure tekstfuncties (datums, bedragen, nachten, reistijd,
-  fotocredit) en `budgetRegel` (kostenpost → categorie); onbekend wordt
-  "?"
+  fotocredit, rit- en verblijftijden, status) en afleidingen: `budgetRegel`
+  (kostenpost → categorie), `reisFeiten` (periode, route-km, gereden km);
+  onbekend wordt "?"
 - `schermen.js` — de schermen (ontwerp Nevel): inloggen, wachtwoord
   instellen, startscherm, reispagina
 - `thema.css` — alle kleur- en maatvariabelen (palet Nevel; voorlopig
@@ -141,12 +142,12 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   (lezen); wie niet in `leden` staat ziet niets. Leden alleen via
   SQL/dashboard toevoegen, niet via de app. Hulpfuncties voor de policies
   staan in schema `reis_intern` (bewust niet in de Data API). Latere
-  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0015`
+  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0016`
   (`…0010`: vervoer bus en trein; `…0011`: eigen vervoersnaam per
   etappe, `route_punten.leg_vervoer_label`, bijv. "Privébusje";
   `…0012`: `dagen.route_punt_id`; `…0013`: vaste velden, zie hieronder;
   `…0014`: `verblijven.geboekt_via`; `…0015`: `leg_geboekt_via` en
-  `leg_adres` bij een rit, `geboekt_via` bij een activiteit).
+  `leg_adres` bij een rit, `geboekt_via` bij een activiteit; `…0016`: `reizen.km_gereden`).
 - **Vaste velden in plaats van tekst** (migratie `…0013`, besluit
   gebruiker 2026-10-01). Rit: `route_punten.leg_datum` (vertrekdag),
   `leg_vertrek`/`leg_aankomst` (lokale tijd), `leg_aankomst_dagen` (1 =
@@ -240,7 +241,11 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   Maps (alleen het adres). **Cel "Reis" (N3): Idee / Gekozen** — reizen
   kunnen alternatieven in dezelfde periode zijn; Gekozen →
   `reizen.status` geboekt (betaald blijft betaald), Idee → voorstel, leeg
-  verandert niets. **Inlezen doet Claude**,
+  verandert niets. **Cel "Gereden km" (O3)** → `reizen.km_gereden`: achteraf van de
+  teller, van vertrek tot thuis inclusief ritjes ter plekke (restaurant,
+  tour, boodschappen; besluit gebruiker 2026-10-02). Iets anders dan de
+  route-km (som van `leg_km` van de autoritten), die rekent de app zelf
+  uit. Brandstof en literprijs vult de gebruiker zelf in de Excel in. **Inlezen doet Claude**,
   niet de app: Excel lezen, de wijzigingen per rij laten zien, pas na
   akkoord wegschrijven. **Activiteiten:** Claude stelt ideeën voor
   (status `voorstel`, alleen in de app) bij een verblijf/plek, eventueel
@@ -267,6 +272,12 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   (migratie `…0014`; app: "Geboekt via …" bij het verblijf en "via …" op
   de verblijfkaart). "Via" als route (Japan "Via Nagoya") is iets anders
   en staat nog in `logistiek`.
+- **Feiten bovenaan een reis worden afgeleid** (besluit gebruiker
+  2026-10-02, `O.reisFeiten`): de periode komt uit `reizen.start_datum`/
+  `eind_datum`; bij het feit "car" zet de app de route-km (onbekend als
+  één autorit geen km heeft: "? km route") en de gereden km erachter.
+  In `reizen.feiten` dus geen datums of km als tekst; vlucht en weer
+  blijven (nog) tekst.
 - **Onbekend is "?", niet "nee":** een kenmerk dat niet is ingevuld
   (`null`, bijv. ontbijt of zwembad) toont de app als "?". Ook een
   onbekend bedrag (bijv. `budget_posten.totaal`) is `null` → "?", nooit 0.
