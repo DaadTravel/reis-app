@@ -52,11 +52,13 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
 - [ ] **Rit, verblijf, excursie** — onder elke rit datum en tijden
       (vorm: "wo 1 jan, 22:00 → 06:00 (+1 dag)"); in het plek-paneel een
       blok Slapen met elk geboekt verblijf (of status onbekend), zijn data en (als ingevuld)
-      adres, telefoon, e-mail en boekingscode als tikbare links; een
+      adres, telefoon en e-mail als tikbare links en de boekingscode; een
       plek met een verblijfwissel toont beide verblijven. Doen: plek,
       datum en tijden (vorm: "Plek · wo 1 jan, 13:00–18:00"). Geen "per
       nacht" bij opties. Een verblijf met "Via" ingevuld toont "Geboekt
-      via …" in het blok Slapen en "· via …" op de verblijfkaart. Een
+      via …" in het blok Slapen en "· via …" op de verblijfkaart; een rit
+      en een excursie tonen "Geboekt via …" en (als ingevuld) "Vertrek: …" of
+      "Ophalen: …". Een tik op een adres, vertrekpunt of ophaalpunt opent Google Maps. Een
       verblijf of activiteit zonder status toont "Status ?"; zo'n verblijf
       staat in het plek-paneel in het blok Slapen, net als een geboekt.
 - [ ] **Links** — een fotocredit opent de Commons-pagina en de licentie

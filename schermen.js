@@ -89,11 +89,15 @@
   // Praktische gegevens (verblijf, rit, excursie): alleen wat bekend is, als link waar dat
   // onderweg helpt (bellen, mailen, route). Leeg → niets (geen "?": optioneel, geen kenmerk).
   // Het adres gaat pas bij een tik naar Google Maps (alleen het adres, geen gezinsgegevens).
+  function kaartLink(adres) {
+    return h('a', { href: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(adres),
+      target: '_blank', rel: 'noopener noreferrer' }, adres);
+  }
   function Contact(p) {
     var d = [];
-    if (p.ophaalpunt) d.push(h('li', { key: 'o' }, 'Ophalen: ' + p.ophaalpunt));
-    if (p.adres) d.push(h('li', { key: 'a' }, h('a', { href: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.adres),
-      target: '_blank', rel: 'noopener noreferrer' }, p.adres)));
+    if (p.ophaalpunt) d.push(h('li', { key: 'o' }, 'Ophalen: ', kaartLink(p.ophaalpunt)));
+    if (p.vertrekpunt) d.push(h('li', { key: 'w' }, 'Vertrek: ', kaartLink(p.vertrekpunt)));
+    if (p.adres) d.push(h('li', { key: 'a' }, kaartLink(p.adres)));
     var tel = O.telLink(p.telefoon), web = O.veiligeLink(p.link);
     if (p.telefoon) d.push(h('li', { key: 't' }, tel ? h('a', { href: tel }, p.telefoon) : p.telefoon));
     if (p.email) d.push(h('li', { key: 'e' }, h('a', { href: 'mailto:' + encodeURI(p.email) }, p.email)));
@@ -492,7 +496,7 @@
             !p.herinnering && !l.leg_geverifieerd ? h('span', { className: 'nv-tijdlijn__check' }, 'te verifiëren') : null),
           doel ? h('span', { key: 'p', className: 'nv-onderweg__pijl', 'aria-hidden': true }, e.aankomst ? '←' : '→') : null];
         // Contact van de rit (bijv. busje) los onder de rij: een link mag niet in een knop.
-        var contact = h(Contact, { telefoon: l.leg_telefoon, email: l.leg_email, boekingscode: l.leg_boekingscode });
+        var contact = h(Contact, { vertrekpunt: l.leg_adres, telefoon: l.leg_telefoon, email: l.leg_email, via: l.leg_geboekt_via, boekingscode: l.leg_boekingscode });
         return h(React.Fragment, { key: k }, doel ?
           h('button', { type: 'button', className: 'nv-onderweg__rij', onClick: function () { p.kies(doel.id); } }, inhoud) :
           h('div', { className: 'nv-onderweg__rij' }, inhoud), contact);
@@ -544,7 +548,7 @@
             h(G.ActivityRow, { name: x.naam, when: [s && kortNaam(s.naam), O.activiteitWanneer(x)].filter(Boolean).join(' · '),
               price: x.prijs != null ? Number(x.prijs) : '€ ?',
               note: x.notitie || undefined, status: x.status || undefined, statusLabel: O.statusLabel(x), icon: x.icoon || undefined }),
-            h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, boekingscode: x.boekingscode, link: x.link, naam: x.naam }));
+            h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, via: x.geboekt_via, boekingscode: x.boekingscode, link: x.link, naam: x.naam }));
         }) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen activiteiten gekozen.' })));
   }
 

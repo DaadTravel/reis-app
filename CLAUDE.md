@@ -141,11 +141,12 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   (lezen); wie niet in `leden` staat ziet niets. Leden alleen via
   SQL/dashboard toevoegen, niet via de app. Hulpfuncties voor de policies
   staan in schema `reis_intern` (bewust niet in de Data API). Latere
-  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0014`
+  aanvullingen op het datamodel: zie migraties `…0005` t/m `…0015`
   (`…0010`: vervoer bus en trein; `…0011`: eigen vervoersnaam per
   etappe, `route_punten.leg_vervoer_label`, bijv. "Privébusje";
   `…0012`: `dagen.route_punt_id`; `…0013`: vaste velden, zie hieronder;
-  `…0014`: `verblijven.geboekt_via`).
+  `…0014`: `verblijven.geboekt_via`; `…0015`: `leg_geboekt_via` en
+  `leg_adres` bij een rit, `geboekt_via` bij een activiteit).
 - **Vaste velden in plaats van tekst** (migratie `…0013`, besluit
   gebruiker 2026-10-01). Rit: `route_punten.leg_datum` (vertrekdag),
   `leg_vertrek`/`leg_aankomst` (lokale tijd), `leg_aankomst_dagen` (1 =
@@ -227,8 +228,19 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   blokken Transport/Verblijf/Activiteit, totalen onderaan; Verblijf heeft
   "Via" = waar geboekt). Feiten (dagen, verblijven, kosten, tijden,
   reistijden, afstanden, status) komen uit de Excel; beschrijving, tips en
-  beleving schrijft Claude en het inlezen raakt die nooit. Contact en
-  boekingscodes staan (nog) niet in het sjabloon. **Inlezen doet Claude**,
+  beleving schrijft Claude en het inlezen raakt die nooit. **Tabblad
+  Contact** (besluit gebruiker 2026-10-02): één regel per boeking, Datum |
+  Blok (Transport/Verblijf/Activiteit) | Via | Adres | Telefoon | E-mail |
+  Boekingsnr; koppelt op datum + blok. De gebruiker kiest zelf wat erin
+  komt (geen bevestigingsmails plakken: daarin staan ook gegevens die niet
+  in de app horen). Adres → `verblijven.adres`, `route_punten.leg_adres`
+  (vertrekpunt) of `activiteiten.ophaalpunt`; Via → `geboekt_via`
+  (`leg_geboekt_via` bij een rit) en gaat vóór de kolom Via in het
+  hoofdblad. In de app opent een adres of ophaalpunt bij een tik Google
+  Maps (alleen het adres). **Cel "Reis" (N3): Idee / Gekozen** — reizen
+  kunnen alternatieven in dezelfde periode zijn; Gekozen →
+  `reizen.status` geboekt (betaald blijft betaald), Idee → voorstel, leeg
+  verandert niets. **Inlezen doet Claude**,
   niet de app: Excel lezen, de wijzigingen per rij laten zien, pas na
   akkoord wegschrijven. **Activiteiten:** Claude stelt ideeën voor
   (status `voorstel`, alleen in de app) bij een verblijf/plek, eventueel
