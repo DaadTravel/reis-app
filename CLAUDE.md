@@ -335,6 +335,24 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   Uitzondering: `budget_posten.betaald` leeg betekent "bedrag bekend,
   nog niets betaald" en telt dus als € 0 betaald (besluit gebruiker
   2026-09-30).
+- **Kosten: vaste opzet per reis** (besluit gebruiker 2026-10-04). Zolang
+  er niets geboekt is, schat Claude per reis zo realistisch mogelijk met de
+  info van dat moment, in deze `budget_posten` (volgorde 1–4):
+  1. heen en terug: de vlucht (gevonden prijs), of bij een roadtrip
+     "Brandstof, tol en parkeren (schatting)" op basis van de route-km;
+  2. "Verblijf (schatting)": nachten van de route × gemiddelde per nacht
+     (twee kamers of familiekamer, zwembad heeft voorkeur);
+  3. "Eten, drinken en activiteiten (schatting)": een bedrag per persoon
+     voor de hele reis (ijkpunt Japan: ~€ 1.000 p.p. voor 3 weken),
+     aangepast aan het prijsniveau van het land;
+  4. "Vervoer ter plaatse (schatting)": treinen, bussen, huurauto,
+     binnenlandse vluchten (vervalt bij een roadtrip, zit in post 1).
+  `budget_notitie`: "Totaal een orde van grootte van € …, inclusief eten
+  en activiteiten." `secties.kosten.title` "Eerste inschatting". In
+  `detail` staat hoe het bedrag is opgebouwd, zodat het na een
+  routewijziging (aantal nachten) mee kan. **Na elke wijziging van de
+  nachten de posten 2 en 3 en de notitie bijwerken.** Echte bedragen uit
+  de Excel vervangen de schatting.
 - **Zoekprofiel is geen reisinhoud** (besluit gebruiker 2026-09-30): de
   zoekcriteria voor verblijven (kolom `reizen.randvoorwaarden`: max per
   nacht, minimale beoordeling, kamers, zwembad) zijn het uitgangspunt bij
