@@ -207,7 +207,11 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   één opgeschoonde lijst per plek, in de app altijd zichtbaar in het
   tipskader. `stops.highlights` is leeggemaakt en wordt niet meer
   gevuld; de app voegt hem voor de zekerheid nog wel samen (zonder
-  dubbelen). **Uitzondering, tips per bezoek** (besluit gebruiker
+  dubbelen). **Iets om te doen is een activiteit, geen tip** (besluit
+  gebruiker 2026-10-04): staat het als idee in `activiteiten` (met hartjes),
+  dan niet ook in `stops.tips`; extra info uit de tip gaat naar de notitie
+  van het idee. Tips zijn voor wat geen activiteit is (wanneer, waar
+  opletten, sfeer). **Uitzondering, tips per bezoek** (besluit gebruiker
   2026-10-01): staat een plek meer dan eens in de route en hoort een tip
   bij één bezoek (bijv. een stad bij aankomst en vlak voor vertrek), dan
   staat die in `dagen.tips` van de dag van dat bezoek; de
