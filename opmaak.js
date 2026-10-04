@@ -68,6 +68,26 @@
     var min = Math.min.apply(null, m), max = Math.max.apply(null, m);
     return reistijd(min, true) + (max > min ? '–' + reistijd(max) : '');
   }
+  // Hartjes van één activiteit (reis.hartjes): aantal, of jij er een gaf, en wie ("Jij" eerst).
+  // Naam uit reis.leden.weergavenaam; onbekend of leeg → "Iemand".
+  // gevers: per hartje naam en groep (leden.groep), voor de vorm per groep (O.hartVorm).
+  function hartjesVan(hartjes, activiteitId, leden, mijnId) {
+    var lid = {};
+    (leden || []).forEach(function (l) { lid[l.user_id] = l; });
+    var van = hartjes.filter(function (x) { return x.activiteit_id === activiteitId; });
+    var ik = !!mijnId && van.some(function (x) { return x.user_id === mijnId; });
+    var gever = function (x, naam) { var l = lid[x.user_id] || {}; return { naam: naam || l.weergavenaam || 'Iemand', groep: l.groep || null }; };
+    var gevers = (ik ? [gever({ user_id: mijnId }, 'Jij')] : [])
+      .concat(van.filter(function (x) { return !mijnId || x.user_id !== mijnId; }).map(function (x) { return gever(x); }));
+    return { aantal: van.length, ikOok: ik, namen: gevers.map(function (x) { return x.naam; }), gevers: gevers };
+  }
+  // Teken per groep (besluit gebruiker 2026-10-04): tieners een ster, volwassenen (en onbekend) een hart.
+  function hartVorm(groep) { return groep === 'tiener' ? '★' : '♥'; }
+  // ["Jij", "Bas", "Lies"] → "Jij, Bas en Lies".
+  function hartjesTekst(namen) {
+    if (namen.length < 2) return namen.join('');
+    return namen.slice(0, -1).join(', ') + ' en ' + namen[namen.length - 1];
+  }
   // "8,6 Booking.com"; onbekend → undefined, dan toont de kaart "Beoordeling ?".
   function beoordelingTekst(v) {
     if (v.beoordeling == null) return undefined;
@@ -95,7 +115,8 @@
   }
   // Activiteit: datum + tijdvak; zonder datum de oude tekst (`wanneer`), anders "Wanneer ?".
   function activiteitWanneer(a) {
-    if (!a.datum) return a.wanneer || 'Wanneer ?';
+    // Een voorstel zonder datum heeft nog geen moment: geen "Wanneer ?" (ruis; besluit gebruiker 2026-10-04).
+    if (!a.datum) return a.wanneer || (a.status === 'voorstel' ? '' : 'Wanneer ?');
     return [dagLabel(a.datum), tijdvak(a.begin_tijd, a.eind_tijd)].filter(Boolean).join(', ');
   }
   // Verblijf: "wo 16 – za 19 jan" (incheck- t/m uitcheckdag); onbekend → "".
@@ -168,7 +189,7 @@
   }
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
-    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
+    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,

@@ -246,6 +246,35 @@
   test('optieTekst: zonder naam → naam van het vervoer', 'Bus · ~1u', function () { return O.optieTekst({ vervoer: 'bus', minuten: 60 }); });
   test('optieTekst: zonder tijd → "?"', 'Boot · ? · ~€ 1.250', function () { return O.optieTekst({ vervoer: 'boat', prijs: 1250 }); });
 
+  // Hartjes per gezinslid (2026-10-04). Verzonnen namen en ID's.
+  var leden = [{ user_id: 'u1', weergavenaam: 'Lies' }, { user_id: 'u2', weergavenaam: 'Bas' }, { user_id: 'u3', weergavenaam: null }];
+  var hart = [{ user_id: 'u2', activiteit_id: 'a' }, { user_id: 'u1', activiteit_id: 'a' }, { user_id: 'u2', activiteit_id: 'b' }];
+  var kern = function (x) { return { aantal: x.aantal, ikOok: x.ikOok, namen: x.namen }; };
+  test('hartjesVan: geen hartjes', { aantal: 0, ikOok: false, namen: [] }, function () { return kern(O.hartjesVan([], 'a', leden, 'u1')); });
+  test('hartjesVan: jij eerst, dan de anderen', { aantal: 2, ikOok: true, namen: ['Jij', 'Bas'] }, function () { return kern(O.hartjesVan(hart, 'a', leden, 'u1')); });
+  test('hartjesVan: zonder naam → "Iemand"', { aantal: 1, ikOok: false, namen: ['Iemand'] }, function () {
+    return kern(O.hartjesVan([{ user_id: 'u3', activiteit_id: 'c' }], 'c', leden, 'u1'));
+  });
+  test('hartjesVan: onbekend lid → "Iemand"', ['Iemand'], function () { return O.hartjesVan([{ user_id: 'u9', activiteit_id: 'c' }], 'c', leden, 'u1').namen; });
+  test('hartjesVan: geen eigen ID → niemand is "Jij" (volgorde van geven)', ['Bas', 'Lies'], function () { return O.hartjesVan(hart, 'a', leden, null).namen; });
+  test('hartjesTekst: leeg', '', function () { return O.hartjesTekst([]); });
+  test('hartjesTekst: één', 'Jij', function () { return O.hartjesTekst(['Jij']); });
+  test('hartjesTekst: twee', 'Jij en Bas', function () { return O.hartjesTekst(['Jij', 'Bas']); });
+  test('hartjesTekst: drie', 'Jij, Bas en Lies', function () { return O.hartjesTekst(['Jij', 'Bas', 'Lies']); });
+  // Vorm per groep (besluit gebruiker 2026-10-04): tiener en volwassene elk een eigen teken; onbekend = hart.
+  var ledenG = [{ user_id: 'u1', weergavenaam: 'Lies', groep: 'volwassene' }, { user_id: 'u2', weergavenaam: 'Bas', groep: 'tiener' }];
+  test('hartjesVan: gevers met groep, jij eerst', [{ naam: 'Jij', groep: 'volwassene' }, { naam: 'Bas', groep: 'tiener' }], function () {
+    return O.hartjesVan(hart, 'a', ledenG, 'u1').gevers;
+  });
+  test('hartjesVan: groep onbekend → null', [{ naam: 'Iemand', groep: null }], function () {
+    return O.hartjesVan([{ user_id: 'u9', activiteit_id: 'c' }], 'c', ledenG, 'u1').gevers;
+  });
+  test('hartVorm: tiener', '★', function () { return O.hartVorm('tiener'); });
+  test('hartVorm: volwassene', '♥', function () { return O.hartVorm('volwassene'); });
+  test('hartVorm: onbekend → hart', '♥', function () { return O.hartVorm(null); });
+  test('activiteitWanneer: voorstel zonder datum → leeg (geen "Wanneer ?")', '', function () { return O.activiteitWanneer({ status: 'voorstel' }); });
+  test('activiteitWanneer: voorstel met tekst', 'ergens in jan', function () { return O.activiteitWanneer({ status: 'voorstel', wanneer: 'ergens in jan' }); });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');

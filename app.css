@@ -237,5 +237,20 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-onderweg .nv-contact { margin: calc(-1 * var(--space-2)) 0 var(--space-3) calc(18px + var(--space-3)); }
 /* Activiteit met contact: de lijn onder het geheel, niet tussen rij en contact. */
 .nv-activiteit { border-bottom: 1px solid var(--line); }
+/* Doen: per plek, filter op tieners/ouders en hartjes van het gezin. */
+.nv-doenfilter { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
+.nv-doenfilter .nv-tab[aria-pressed="true"] { background: var(--lagoon); border-color: var(--lagoon); color: var(--on-lagoon); }
+.nv-doenmelding { margin: 0 0 var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--terracotta-soft); color: var(--ink); font-size: 14px; }
+.nv-doengroep + .nv-doengroep { margin-top: var(--space-5); }
+.nv-doengroep__plek { margin: 0 0 var(--space-1); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-muted); }
+.nv-gezin { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: calc(-1 * var(--space-2)) 0 var(--space-3) calc(36px + var(--space-3)); }
+.nv-hart { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; min-width: 44px; padding: 0 var(--space-3); font: inherit; font-size: 14px; font-weight: 700; color: var(--ink-muted); background: var(--paper-raised); border: 1px solid var(--line); border-radius: var(--radius-pill); cursor: pointer; }
+.nv-hart[aria-pressed="true"] { color: var(--terracotta); border-color: var(--terracotta); background: var(--terracotta-soft); }
+.nv-hart:disabled { cursor: default; opacity: .6; }
+.nv-hart__icoon { font-size: 18px; line-height: 1; }
+.nv-hart--tiener[aria-pressed="true"] { color: var(--lagoon); border-color: var(--lagoon); background: var(--lagoon-soft); }
+.nv-gevers { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); list-style: none; margin: 0; padding: 0; font-size: 13px; color: var(--ink-muted); }
+.nv-gever > span { color: var(--terracotta); font-size: 15px; }
+.nv-gever--tiener > span { color: var(--lagoon); }
 .nv-activiteit .rg-act { border-bottom: 0; }
 .nv-activiteit .nv-contact { margin: calc(-1 * var(--space-2)) 0 var(--space-3) calc(36px + var(--space-3)); }

@@ -170,11 +170,11 @@ async function sbFetch(path, method, body, extraHeaders) {
   } catch (e) { return { _error: true, status: 0, message: 'Geen verbinding.' }; }
 }
 // Schrijven met een paar herhaalpogingen bij een kortstondige hapering.
-async function sbWrite(path, method, body, pogingen) {
+async function sbWrite(path, method, body, pogingen, extraHeaders) {
   pogingen = pogingen || 3;
   let r;
   for (let i = 0; i < pogingen; i++) {
-    r = await sbFetch(path, method, body);
+    r = await sbFetch(path, method, body, extraHeaders);
     if (!(r && r._error)) return r;
     if (r.status >= 400 && r.status < 500) return r; // geweigerd: opnieuw proberen helpt niet
     if (i < pogingen - 1) await new Promise(res => setTimeout(res, 700 * (i + 1)));
@@ -251,9 +251,40 @@ async function haalReis(slug) {
   });
   const fotoIds = [reis.hero_foto_id, reis.quote_foto_id, reis.kaart_foto_id]
     .concat(d.stops.map(s => s.foto_id), d.verblijven.map(v => v.foto_id));
-  const f = await haalFotos(fotoIds);
+  const [f, gezin] = await Promise.all([haalFotos(fotoIds), haalGezin(d.activiteiten.map(a => a.id))]);
   return {
     reis: reis, stops: d.stops, dagen: d.dagen, route: d.route_punten, verblijven: d.verblijven,
-    activiteiten: d.activiteiten, budget: d.budget_posten, fotos: f.fotos, fotoFout: f.fout,
+    activiteiten: d.activiteiten, budget: d.budget_posten, fotos: f.fotos, fotoFout: f.fout, gezin: gezin,
   };
+}
+
+// ─── DATALAAG: GEZIN (groep per lid en hartjes) ───
+// Eigen user-ID uit de access-token (JWT, veld sub); geen geldige token → null.
+function mijnId() {
+  try {
+    const deel = (AUTH_ACCESS_TOKEN || '').split('.')[1];
+    return deel ? JSON.parse(atob(deel.replace(/-/g, '+').replace(/_/g, '/'))).sub || null : null;
+  } catch (e) { return null; }
+}
+// Leden (naam, groep) en de hartjes bij deze activiteiten. Lukt dat niet, dan
+// werkt de reispagina gewoon zonder hartjes (werkt: false), want dit is een extra.
+async function haalGezin(activiteitIds) {
+  const ik = mijnId();
+  const leden = await sbFetch('leden?select=user_id,weergavenaam,groep');
+  const hartjes = activiteitIds.length
+    ? await sbFetch('hartjes?select=user_id,activiteit_id,aangemaakt&activiteit_id=in.(' + activiteitIds.join(',') + ')&order=aangemaakt')
+    : [];
+  if (isFout(leden) || isFout(hartjes)) return { werkt: false, leden: [], hartjes: [], mijnId: ik, groep: null };
+  const zelf = leden.filter(l => l.user_id === ik)[0];
+  return { werkt: true, leden: leden, hartjes: hartjes, mijnId: ik, groep: (zelf && zelf.groep) || null };
+}
+// Hartje geven (aan) of weghalen bij een activiteit; alleen het eigen hartje (RLS).
+// Bestaat het al (herhaalpoging na een hapering, of verouderde data uit de offline-cache),
+// dan is dat geen fout: dubbel wordt genegeerd. Weghalen van iets dat er niet is, is ook goed.
+async function zetHartje(activiteitId, aan) {
+  if (aan) return sbWrite('hartjes?on_conflict=user_id,activiteit_id', 'POST', { activiteit_id: activiteitId }, 3,
+    { Prefer: 'return=representation,resolution=ignore-duplicates' });
+  const ik = mijnId();
+  if (!ik) return { _error: true, status: 401, message: 'Niet ingelogd.' };
+  return sbWrite('hartjes?activiteit_id=eq.' + activiteitId + '&user_id=eq.' + ik, 'DELETE');
 }

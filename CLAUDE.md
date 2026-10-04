@@ -148,7 +148,23 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `…0012`: `dagen.route_punt_id`; `…0013`: vaste velden, zie hieronder;
   `…0014`: `verblijven.geboekt_via`; `…0015`: `leg_geboekt_via` en
   `leg_adres` bij een rit, `geboekt_via` bij een activiteit; `…0016`: `reizen.km_gereden`;
-  `…0017`: `route_punten.leg_opties`, zie Vervoersopties).
+  `…0017`: `route_punten.leg_opties`, zie Vervoersopties; `…0018`:
+  `leden.groep` en `reis.hartjes`, zie Hartjes).
+- **Hartjes** (migratie `…0018`, besluit gebruiker 2026-10-04): tieners
+  moeten ook zin hebben in de reis. Elk lid heeft een groep
+  (`leden.groep`: `tiener` of `volwassene`; geen leeftijd of geboortedatum)
+  en kan bij een activiteit aangeven wat hem aanspreekt (`reis.hartjes`, één
+  per lid per activiteit). Activiteiten krijgen **geen** doelgroep-label: de
+  hartjes laten zien wie wat wil. De app toont per gever het teken van zijn
+  groep (`O.hartVorm`: tiener ★, volwassene ♥), je eigen knop in jouw vorm,
+  en in Doen een filter Alles / ★ Tieners / ♥ Ouders. Doen staat per plek
+  (routevolgorde). Alle leden zien elkaars naam en groep (`leden_lezen` =
+  lid); elk lid, ook een kijker, geeft of haalt alleen zijn eigen hartje weg.
+  Lukt het ophalen van leden/hartjes niet, dan werkt de pagina zonder
+  hartjes (`haalGezin`). Suggesties uit de skill `tiener` gaan erin als
+  voorstel-activiteit (alleen in de app). Een voorstel zonder datum toont
+  geen "Wanneer ?". Namen (`leden.weergavenaam`) vult de gebruiker later in;
+  zonder naam toont de app "Iemand".
 - **Vervoersopties** (migratie `…0017`, besluit gebruiker 2026-10-04): zolang
   het vervoer van een rit niet gekozen is (`leg_vervoer` leeg), toont de app
   de opties uit `route_punten.leg_opties` (lijst van `{vervoer, label,

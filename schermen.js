@@ -552,23 +552,82 @@
         })) : null));
   }
 
+  // Doen: per plek gegroepeerd (volgorde van de route), met hartjes van het gezin (reis.hartjes);
+  // elke gever met het teken van zijn groep (O.hartVorm). Zonder gezinsdata
+  // (gezin.werkt false) gewoon de lijst zonder filter en hartjes.
   function Doen(p) {
     var kop = (p.reis.secties && p.reis.secties.doen) || {};
+    var g = p.gezin || { werkt: false, hartjes: [], leden: [] };
+    var hs = React.useState(g.hartjes), hartjes = hs[0], setHartjes = hs[1];
+    var fs = React.useState('alles'), filter = fs[0], setFilter = fs[1];
+    var ms = React.useState(''), melding = ms[0], setMelding = ms[1];
+    var bezig = React.useRef({});
+    function wissel(a) {
+      if (bezig.current[a.id]) return;
+      var ik = O.hartjesVan(hartjes, a.id, g.leden, g.mijnId).ikOok;
+      // Alleen je eigen hartje bij déze activiteit aanpassen (functioneel), zodat een gelijktijdige
+      // klik op een andere activiteit niet wordt overschreven bij terugzetten.
+      function zet(aan) {
+        setHartjes(function (cur) {
+          var zonder = cur.filter(function (x) { return !(x.activiteit_id === a.id && x.user_id === g.mijnId); });
+          return aan ? zonder.concat([{ user_id: g.mijnId, activiteit_id: a.id }]) : zonder;
+        });
+      }
+      // Meteen tonen; bij een fout terugzetten en melden.
+      zet(!ik);
+      setMelding('');
+      bezig.current[a.id] = true;
+      zetHartje(a.id, !ik).then(function (r) {
+        bezig.current[a.id] = false;
+        if (isFout(r)) { zet(ik); setMelding(r.status === 0 ? 'Geen verbinding: je hartje is niet opgeslagen.' : 'Je hartje kon niet worden opgeslagen.'); }
+      });
+    }
+    // Filter op wie er een hartje gaf: tieners (★) of ouders (♥); groep onbekend telt als ouder (zelfde vorm).
+    var zichtbaar = p.activiteiten.filter(function (a) {
+      if (filter === 'alles') return true;
+      return O.hartjesVan(hartjes, a.id, g.leden, g.mijnId).gevers.some(function (x) { return (x.groep === 'tiener') === (filter === 'tiener'); });
+    });
+    // Groepen per plek in routevolgorde; zonder plek achteraan.
+    var groepen = p.stops.map(function (s) { return { s: s, items: zichtbaar.filter(function (a) { return a.stop_id === s.id; }) }; })
+      .concat([{ s: null, items: zichtbaar.filter(function (a) { return !a.stop_id; }) }])
+      .filter(function (x) { return x.items.length; });
+    var filters = [['alles', 'Alles'], ['tiener', O.hartVorm('tiener') + ' Tieners'], ['volwassene', O.hartVorm('volwassene') + ' Ouders']];
+    var mijnVorm = O.hartVorm(g.groep), leegVorm = mijnVorm === '★' ? '☆' : '♡';
+    function rij(x) {
+      // Datum en tijden (migratie 0013), anders de oude tekst `wanneer`; de plek staat al boven de groep.
+      var ht = O.hartjesVan(hartjes, x.id, g.leden, g.mijnId);
+      return h('div', { key: x.id, className: 'nv-activiteit' },
+        h(G.ActivityRow, { name: x.naam, when: O.activiteitWanneer(x),
+          price: x.prijs != null ? Number(x.prijs) : '€ ?',
+          note: x.notitie || undefined, status: x.status || undefined, statusLabel: O.statusLabel(x), icon: x.icoon || undefined }),
+        h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, via: x.geboekt_via, boekingscode: x.boekingscode, link: x.link, naam: x.naam }),
+        // Eigen knop in de vorm van jouw groep; daarnaast iedereen die er een gaf, elk met de vorm van zijn groep.
+        g.werkt ? h('div', { className: 'nv-gezin' },
+          h('button', { type: 'button', className: 'nv-hart' + (mijnVorm === '★' ? ' nv-hart--tiener' : ''), 'aria-pressed': ht.ikOok, disabled: !g.mijnId,
+            'aria-label': (ht.ikOok ? 'Hartje weghalen bij ' : 'Hartje geven aan ') + x.naam, onClick: function () { wissel(x); } },
+            h('span', { className: 'nv-hart__icoon', 'aria-hidden': true }, ht.ikOok ? mijnVorm : leegVorm)),
+          ht.gevers.length ? h('ul', { className: 'nv-gevers', 'aria-label': 'Hartjes van ' + O.hartjesTekst(ht.namen) }, ht.gevers.map(function (v, k) {
+            return h('li', { key: k, className: v.groep === 'tiener' ? 'nv-gever nv-gever--tiener' : 'nv-gever' },
+              h('span', { 'aria-hidden': true }, O.hartVorm(v.groep)), ' ' + v.naam);
+          })) : null) : null);
+    }
     return h('section', { className: 'nv-blok', id: 'doen' },
       h('div', { className: 'nv-wrap', style: { maxWidth: '760px' } },
         h('div', { className: 'nv-kopblok' },
           h('span', { className: 'nv-label' }, p.herinnering ? 'Wat we deden' : 'Wat we willen doen'),
           h('h2', { className: 'nv-kop' }, kop.title || (p.herinnering ? 'Wat we deden' : 'Op het verlanglijstje')),
           kop.intro && h('p', { className: 'nv-tekst nv-muted' }, kop.intro)),
-        p.activiteiten.length ? p.activiteiten.map(function (x) {
-          // Met datum (migratie 0013): plek + datum + tijden; anders de oude tekst `wanneer`.
-          var s = x.datum && stopOpId(p.stops, x.stop_id);
-          return h('div', { key: x.id, className: 'nv-activiteit' },
-            h(G.ActivityRow, { name: x.naam, when: [s && kortNaam(s.naam), O.activiteitWanneer(x)].filter(Boolean).join(' · '),
-              price: x.prijs != null ? Number(x.prijs) : '€ ?',
-              note: x.notitie || undefined, status: x.status || undefined, statusLabel: O.statusLabel(x), icon: x.icoon || undefined }),
-            h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, via: x.geboekt_via, boekingscode: x.boekingscode, link: x.link, naam: x.naam }));
-        }) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen activiteiten gekozen.' })));
+        g.werkt && p.activiteiten.length ? h('div', { className: 'nv-doenfilter', role: 'group', 'aria-label': 'Toon' }, filters.map(function (f) {
+          return h('button', { key: f[0], type: 'button', className: 'nv-tab', 'aria-pressed': filter === f[0], onClick: function () { setFilter(f[0]); } }, f[1]);
+        })) : null,
+        melding ? h('p', { className: 'nv-doenmelding', role: 'status' }, melding) : null,
+        !p.activiteiten.length ? h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen activiteiten gekozen.' }) :
+        !groepen.length ? h('p', { className: 'nv-muted' }, filter === 'tiener' ? 'Nog geen ster van een tiener.' : 'Nog geen hartje van een ouder.') :
+        groepen.map(function (x) {
+          return h('div', { key: x.s ? x.s.id : 'los', className: 'nv-doengroep' },
+            h('h3', { className: 'nv-doengroep__plek' }, x.s ? kortNaam(x.s.naam) : 'Overig'),
+            x.items.map(rij));
+        })));
   }
 
   function Kosten(p) {
@@ -610,7 +669,7 @@
     }, []);
 
     var p = { reis: r, herinnering: r.stemming === 'herinnering', stops: stops, dagen: data.dagen, route: data.route,
-      verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, foto: maakFoto(data.fotos), kiesPlek: kiesPlek };
+      verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, gezin: data.gezin, foto: maakFoto(data.fotos), kiesPlek: kiesPlek };
     return h(React.Fragment, null,
       h(Opening, p),
       h(Balk, { secties: SECTIES, actief: actief }),
