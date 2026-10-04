@@ -37,6 +37,37 @@
     var u = Math.floor(min / 60), m = min % 60;
     return (benadering ? '~' : '') + (u ? (m ? u + 'u' + (m < 10 ? '0' + m : m) : u + 'u') : m + ' min');
   }
+  // Vervoersopties van een rit (route_punten.leg_opties): alleen zolang het vervoer nog niet
+  // gekozen is (leg_vervoer leeg). Suggesties van Claude, bekend vervoer, volgorde zoals opgeslagen.
+  var VERVOERSOORTEN = ['car', 'plane', 'boat', 'bus', 'train'];
+  var VERVOERNAAM = { car: 'Auto', plane: 'Vliegtuig', boat: 'Boot', bus: 'Bus', train: 'Trein' };
+  // "Shinkansen + Hida-express · ~4u30 · ~€ 360". Prijs = indicatie voor het hele reisgezelschap,
+  // alleen waar die betrouwbaar te schatten is; geen prijs → weglaten (optioneel, geen "€ ?").
+  function optieTekst(o) {
+    var prijs = getal(o.prijs);
+    return [tekstOf(o.label) || VERVOERNAAM[o.vervoer], reistijd(getal(o.minuten, true), true), prijs != null ? '~' + euro(prijs) : '']
+      .filter(Boolean).join(' · ');
+  }
+  // leg_opties wordt met de hand ingevuld: alleen een echt getal (≥ 0) telt, anders onbekend (null).
+  function getal(x, rond) {
+    if (x == null || x === '') return null;
+    var n = Number(x);
+    return isFinite(n) && n >= 0 ? (rond ? Math.round(n) : n) : null;
+  }
+  function tekstOf(x) { return typeof x === 'string' ? x : ''; }
+  function vervoerOpties(l) {
+    if (l.leg_vervoer || !Array.isArray(l.leg_opties)) return [];
+    return l.leg_opties.filter(function (o) { return o && VERVOERSOORTEN.indexOf(o.vervoer) > -1; });
+  }
+  // Kop bij de opties: één optie is een advies, meer opties een keuze (besluit gebruiker 2026-10-04).
+  function optiesKop(opties) { return opties.length === 1 ? 'advies' : 'nog te kiezen'; }
+  // Reistijd over de opties: "~3u15–4u" (kortste–langste), één tijd als die gelijk zijn; altijd benadering.
+  function reistijdBereik(opties) {
+    var m = opties.map(function (o) { return getal(o.minuten, true); }).filter(function (x) { return x != null; });
+    if (!m.length) return '?';
+    var min = Math.min.apply(null, m), max = Math.max.apply(null, m);
+    return reistijd(min, true) + (max > min ? '–' + reistijd(max) : '');
+  }
   // "8,6 Booking.com"; onbekend → undefined, dan toont de kaart "Beoordeling ?".
   function beoordelingTekst(v) {
     if (v.beoordeling == null) return undefined;
@@ -137,7 +168,7 @@
   }
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
-    nachtenTekst: nachtenTekst, reistijd: reistijd, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
+    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,

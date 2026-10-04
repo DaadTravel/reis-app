@@ -48,7 +48,7 @@
     if (bezoeken.length < 2) return nachtenTekst(s.nachten);
     return bezoeken.map(function (v) { return v.nachten == null ? '?' : v.nachten; }).join(' + ') + ' nachten';
   }
-  var VERVOER = { car: 'Auto', plane: 'Vliegtuig', boat: 'Boot', bus: 'Bus', train: 'Trein' };
+  var VERVOER = O.VERVOERNAAM;
   // Reistijd plus prijs van een etappe. Een autorit krijgt geen prijs (brandstof/tol
   // tonen we niet); alleen echte vervoerskosten (besluit gebruiker 2026-10-01).
   function etappeTijdPrijs(l) {
@@ -341,11 +341,18 @@
           // Begin- of eindpunt zonder plek is vertrek of thuiskomst: datum van de reis zelf.
           var rand = !x.stop && (i === 0 || i === punten.length - 1);
           if (rand) { nacht = i === 0 ? 'Vertrek' : 'Thuis'; datum = i === 0 ? r.start_datum : r.eind_datum; }
+          // Vervoer nog niet gekozen maar wel opties: hun iconen en de reistijd van kortste tot langste.
+          var opties = l ? O.vervoerOpties(l) : [];
           var onzeker = l && !p.herinnering && !l.leg_geverifieerd;
           return h('li', { key: i, className: rand ? 'is-thuis' : '' },
             h('span', { className: 'nv-tijdlijn__datum' }, datum ? O.kortDatum(datum) : '?'),
             h('span', { className: 'nv-tijdlijn__naam' }, kortNaam(x.naam)),
             h('span', { className: 'nv-tijdlijn__nacht' }, nacht),
+            i > 0 && l && opties.length ? h('span', { className: 'nv-tijdlijn__reis' },
+              h('span', { className: 'nv-opties__iconen', role: 'img', 'aria-label': opties.map(function (o) { return O.tekstOf(o.label) || VERVOER[o.vervoer]; }).join(' of ') },
+                opties.map(function (o, k) { return h(G.Icon, { key: k, name: o.vervoer, size: 14 }); })),
+              O.reistijdBereik(opties),
+              h('span', { className: 'nv-tijdlijn__check nv-opties__kies' }, O.optiesKop(opties))) :
             i > 0 && l ? h('span', { className: 'nv-tijdlijn__reis' },
               h(G.Icon, { name: l.leg_vervoer || 'reis', size: 14 }),
               etappeTijdPrijs(l).join(' · '),
@@ -483,18 +490,29 @@
         // Tijden van deze rit (en bij een heen- of terugreisdag ook de tekst) eronder.
         var dag = ritTekst(p.dagen, l);
         var doel = ander.stop_id && ander.stop_id !== p.hier && stopOpId(p.stops, ander.stop_id);
-        var delen = [l.leg_vervoer_label || VERVOER[l.leg_vervoer] || 'Vervoer ?'];
-        if (l.leg_km != null) delen.push(Number(l.leg_km).toLocaleString('nl-NL') + ' km');
-        else if (l.leg_vervoer === 'car') delen.push('? km');
-        delen = delen.concat(etappeTijdPrijs(l));
+        // Vervoer nog niet gekozen maar wel opties (O.vervoerOpties): per optie icoon, naam, reistijd en toelichting.
+        var opties = O.vervoerOpties(l);
+        // Eén optie is een advies (geen keuze); de reistijd staat dan al bij die optie.
+        var delen = opties.length === 1 ? ['Advies'] : opties.length ? ['Vervoer nog te kiezen', O.reistijdBereik(opties)] : [l.leg_vervoer_label || VERVOER[l.leg_vervoer] || 'Vervoer ?'];
+        if (!opties.length) {
+          if (l.leg_km != null) delen.push(Number(l.leg_km).toLocaleString('nl-NL') + ' km');
+          else if (l.leg_vervoer === 'car') delen.push('? km');
+          delen = delen.concat(etappeTijdPrijs(l));
+        }
         var inhoud = [
           h(G.Icon, { key: 'i', name: l.leg_vervoer || 'arrow', size: 18 }),
           h('span', { key: 't', className: 'nv-onderweg__tekst' },
             doel ? h('span', { className: 'nv-onzichtbaar' }, e.aankomst ? 'Vorige plek: ' : 'Volgende plek: ') : null,
             h('span', { className: 'nv-onderweg__route' }, kortNaam(e.van.naam) + ' → ' + kortNaam(e.naar.naam)),
             h('span', { className: 'nv-onderweg__info' }, delen.join(' · ')),
+            opties.length ? h('span', { className: 'nv-opties' }, opties.map(function (o, k) {
+              return h('span', { key: k, className: 'nv-optie' },
+                h(G.Icon, { name: o.vervoer, size: 16 }),
+                h('span', null, h('span', { className: 'nv-optie__naam' }, O.optieTekst(o)),
+                  O.tekstOf(o.toelichting) ? h('span', { className: 'nv-optie__uitleg' }, o.toelichting) : null));
+            })) : null,
             dag ? h('span', { className: 'nv-onderweg__dag' }, dag) : null,
-            !p.herinnering && !l.leg_geverifieerd ? h('span', { className: 'nv-tijdlijn__check' }, 'te verifiëren') : null),
+            !opties.length && !p.herinnering && !l.leg_geverifieerd ? h('span', { className: 'nv-tijdlijn__check' }, 'te verifiëren') : null),
           doel ? h('span', { key: 'p', className: 'nv-onderweg__pijl', 'aria-hidden': true }, e.aankomst ? '←' : '→') : null];
         // Contact van de rit (bijv. busje) los onder de rij: een link mag niet in een knop.
         var contact = h(Contact, { vertrekpunt: l.leg_adres, telefoon: l.leg_telefoon, email: l.leg_email, via: l.leg_geboekt_via, boekingscode: l.leg_boekingscode });

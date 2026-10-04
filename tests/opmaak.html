@@ -216,6 +216,36 @@
   test('periodeKort: zelfde maand in een ander jaar', '5 jan 2030 – 10 jan 2031', function () { return O.periodeKort('2030-01-05', '2031-01-10'); });
   test('reisFeiten: geen feiten en geen datums → lege lijst', [], function () { return O.reisFeiten({}, []); });
 
+  // Vervoersopties bij een rit waarvan het vervoer nog niet gekozen is (leg_opties).
+  var trein = { vervoer: 'train', label: 'Trein', minuten: 195 }, bus = { vervoer: 'bus', label: 'Bus', minuten: 240 };
+  test('vervoerOpties: geen opties → lege lijst', [], function () { return O.vervoerOpties({ leg_vervoer: null, leg_opties: null }); });
+  test('vervoerOpties: vervoer gekozen → geen opties', [], function () { return O.vervoerOpties({ leg_vervoer: 'train', leg_opties: [trein, bus] }); });
+  test('vervoerOpties: geen lijst → lege lijst', [], function () { return O.vervoerOpties({ leg_vervoer: null, leg_opties: { vervoer: 'bus' } }); });
+  test('vervoerOpties: onbekend vervoer valt weg', [trein], function () {
+    return O.vervoerOpties({ leg_vervoer: null, leg_opties: [trein, { vervoer: 'raket', label: 'Raket' }, null] });
+  });
+  test('vervoerOpties: volgorde blijft', [bus, trein], function () { return O.vervoerOpties({ leg_vervoer: null, leg_opties: [bus, trein] }); });
+  test('reistijdBereik: geen opties → "?"', '?', function () { return O.reistijdBereik([]); });
+  test('reistijdBereik: één optie', '~3u15', function () { return O.reistijdBereik([trein]); });
+  test('reistijdBereik: kortste–langste', '~3u15–4u', function () { return O.reistijdBereik([bus, trein]); });
+  test('reistijdBereik: gelijke tijden → één tijd', '~4u', function () { return O.reistijdBereik([bus, { vervoer: 'car', minuten: 240 }]); });
+  test('reistijdBereik: optie zonder tijd telt niet mee', '~3u15', function () { return O.reistijdBereik([trein, { vervoer: 'car', minuten: null }]); });
+  test('reistijdBereik: geen enkele tijd → "?"', '?', function () { return O.reistijdBereik([{ vervoer: 'car' }]); });
+  // Rare waarden in leg_opties (handmatig ingevoerd): geen getal = onbekend, nooit "NaN" of "0".
+  test('reistijdBereik: ongeldige tijd telt niet mee', '~3u15', function () { return O.reistijdBereik([trein, { vervoer: 'bus', minuten: 'abc' }, { vervoer: 'car', minuten: '' }]); });
+  test('optieTekst: ongeldige tijd en prijs', 'Bus · ? ', function () { return O.optieTekst({ vervoer: 'bus', minuten: 'abc', prijs: '' }) + ' '; });
+  test('optieTekst: label geen tekst → naam van het vervoer', 'Trein · ~1u', function () { return O.optieTekst({ vervoer: 'train', label: { nl: 'x' }, minuten: 60 }); });
+  test('optieTekst: tijd als tekst', 'Trein · ~3u15', function () { return O.optieTekst({ vervoer: 'train', minuten: '195' }); });
+  test('optieTekst: kommagetal wordt afgerond', 'Trein · ~3u16', function () { return O.optieTekst({ vervoer: 'train', minuten: 195.5 }); });
+  // Eén optie = advies, meer = keuze (besluit gebruiker 2026-10-04).
+  test('optiesKop: één optie → advies', 'advies', function () { return O.optiesKop([trein]); });
+  test('optiesKop: meer opties → nog te kiezen', 'nog te kiezen', function () { return O.optiesKop([trein, bus]); });
+  // Prijs bij een optie is een indicatie (totaal reisgezelschap); geen prijs → weglaten, geen "€ ?".
+  test('optieTekst: naam, tijd en prijs', 'Trein · ~3u15 · ~€ 240', function () { return O.optieTekst({ vervoer: 'train', label: 'Trein', minuten: 195, prijs: 240 }); });
+  test('optieTekst: zonder prijs', 'Huurauto · ~3u', function () { return O.optieTekst({ vervoer: 'car', label: 'Huurauto', minuten: 180, prijs: null }); });
+  test('optieTekst: zonder naam → naam van het vervoer', 'Bus · ~1u', function () { return O.optieTekst({ vervoer: 'bus', minuten: 60 }); });
+  test('optieTekst: zonder tijd → "?"', 'Boot · ? · ~€ 1.250', function () { return O.optieTekst({ vervoer: 'boat', prijs: 1250 }); });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');

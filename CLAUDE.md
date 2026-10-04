@@ -78,7 +78,7 @@ Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
   de schermen (prefix `nv-`), alleen variabelen, geen losse kleuren
 - `ds/bundle.js`, `ds/bundle.css` — het designsysteem "Reisgids"
   (componenten als `window.Reisgids`, prefix `rg-`), gemaakt met Claude
-  Design voor de gebruiker, dus eigen werk. Lokaal gepatcht (patches 1–7,
+  Design voor de gebruiker, dus eigen werk. Lokaal gepatcht (patches 1–8,
   zie `.claude/overdracht.md`); nooit overschrijven met een ongepatchte
   versie
 - `manifest.json`, `iconen/` — installeren op het beginscherm
@@ -147,7 +147,24 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   etappe, `route_punten.leg_vervoer_label`, bijv. "Privébusje";
   `…0012`: `dagen.route_punt_id`; `…0013`: vaste velden, zie hieronder;
   `…0014`: `verblijven.geboekt_via`; `…0015`: `leg_geboekt_via` en
-  `leg_adres` bij een rit, `geboekt_via` bij een activiteit; `…0016`: `reizen.km_gereden`).
+  `leg_adres` bij een rit, `geboekt_via` bij een activiteit; `…0016`: `reizen.km_gereden`;
+  `…0017`: `route_punten.leg_opties`, zie Vervoersopties).
+- **Vervoersopties** (migratie `…0017`, besluit gebruiker 2026-10-04): zolang
+  het vervoer van een rit niet gekozen is (`leg_vervoer` leeg), toont de app
+  de opties uit `route_punten.leg_opties` (lijst van `{vervoer, label,
+  minuten, prijs, toelichting}`; `O.vervoerOpties`): in de tijdlijn de
+  iconen + reistijd kortste–langste + "nog te kiezen", in Onderweg per optie
+  naam · ~reistijd · ~prijs en één regel uitleg. Is het vervoer gekozen (bijv.
+  via de Excel), dan verdwijnen de opties vanzelf. Suggesties van Claude, net
+  als voorstel-activiteiten: de Excel raakt dit veld nooit. Regels bij het
+  invullen: **alleen opties die qua reistijd én kosten bij elkaar in de buurt
+  komen** (een veel langere of duurdere route, of een die op alles slechter
+  scoort, valt af; noem wat afviel aan de gebruiker). `minuten` = deur tot
+  deur, benadering. **`prijs` = indicatie in euro voor het hele
+  reisgezelschap, alleen waar die voor de reisperiode betrouwbaar te schatten
+  is** (vaste tarieven van trein en bus); bij huurauto, vlucht of boot met
+  sterke seizoensprijzen geen prijs (leeg, de app toont dan niets — geen
+  "€ ?"). Omrekenen met de koers van dat moment, afronden op € 5.
 - **Vaste velden in plaats van tekst** (migratie `…0013`, besluit
   gebruiker 2026-10-01). Rit: `route_punten.leg_datum` (vertrekdag),
   `leg_vertrek`/`leg_aankomst` (lokale tijd), `leg_aankomst_dagen` (1 =
