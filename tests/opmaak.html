@@ -282,6 +282,65 @@
   // Verlanglijstje: ideeën alleen met minstens één hartje of ster; geboekt e.d. altijd; volgorde blijft.
   test('opVerlanglijst: ideeën met hartje en geboekt', ['i2', 'g1', 'i3'], function () { return O.opVerlanglijst(actS, hartS).map(function (a) { return a.id; }); });
   test('opVerlanglijst: geen hartjes → alleen geboekt', ['g1'], function () { return O.opVerlanglijst(actS, []).map(function (a) { return a.id; }); });
+  // Vergelijkingstabel voor de beheerder: per reis de kerngegevens naast elkaar.
+  var reizenV = [
+    { id: 'r1', slug: 'a', titel: 'A', stemming: 'voorpret', kaart_status_label: 'Optie · nog niet gekozen', start_datum: '2027-07-13', eind_datum: '2027-08-04', nachten: 21 },
+    { id: 'r2', slug: 'b', titel: 'B', stemming: 'herinnering', kaart_status_label: 'Afgerond', start_datum: null, eind_datum: null, nachten: null }];
+  var dV = {
+    budget: [{ reis_id: 'r1', label: 'Vlucht', totaal: 5000 }, { reis_id: 'r1', label: 'Verblijf (schatting)', totaal: '3000' }, { reis_id: 'r2', label: 'Verblijf', totaal: null }],
+    stops: [{ reis_id: 'r1' }, { reis_id: 'r1' }, { reis_id: 'r2' }],
+    route: [{ reis_id: 'r1', volgorde: 2, leg_vervoer: 'plane' }, { reis_id: 'r1', volgorde: 1, leg_vervoer: null }, { reis_id: 'r1', volgorde: 3, leg_vervoer: 'train' }],
+    activiteiten: [{ id: 'x1', reis_id: 'r1' }, { id: 'x2', reis_id: 'r2' }],
+    hartjes: [{ user_id: 'u1', activiteit_id: 'x1' }, { user_id: 'u2', activiteit_id: 'x1' }, { user_id: 'u2', activiteit_id: 'x2' }],
+    leden: ledenG };
+  test('vergelijk: kerngegevens van een reis', { status: 'Optie', dagen: 23, nachten: 21, plekken: 2, erheen: 'plane', totaal: 8000, onbekend: false, schatting: true, perDag: 348, tiener: 1, volwassene: 1 }, function () {
+    var x = O.vergelijk(reizenV, dV)[0];
+    return { status: x.status, dagen: x.dagen, nachten: x.nachten, plekken: x.plekken, erheen: x.erheen, totaal: x.totaal, onbekend: x.onbekend, schatting: x.schatting, perDag: x.perDag, tiener: x.tiener, volwassene: x.volwassene };
+  });
+  test('vergelijk: reistijd erheen en weer', { erheenMin: 810, erheenBenadering: true, weer: '31–34°C' }, function () {
+    var r = Object.assign({}, reizenV[0], { feiten: [['plane', 'retour Tokyo'], ['sun', '31–34°C']] });
+    var d = Object.assign({}, dV, { route: [{ reis_id: 'r1', volgorde: 2, leg_vervoer: 'plane', leg_minuten: 810, leg_benadering: true }] });
+    var x = O.vergelijk([r], d)[0];
+    return { erheenMin: x.erheenMin, erheenBenadering: x.erheenBenadering, weer: x.weer };
+  });
+  test('vergelijk: roadtrip telt de rijdagen tot de eerste plek met 3+ nachten', { erheenMin: 1054, erheenDagen: 3 }, function () {
+    var d = Object.assign({}, dV, { route: [
+      { reis_id: 'r1', volgorde: 1, leg_vervoer: null, nachten: null },
+      { reis_id: 'r1', volgorde: 3, leg_vervoer: 'car', leg_minuten: 255, nachten: 2 },
+      { reis_id: 'r1', volgorde: 2, leg_vervoer: 'car', leg_minuten: 479, nachten: 1 },
+      { reis_id: 'r1', volgorde: 4, leg_vervoer: 'car', leg_minuten: 320, nachten: 5 },
+      { reis_id: 'r1', volgorde: 5, leg_vervoer: 'car', leg_minuten: 120, nachten: 5 }] });
+    var x = O.vergelijk(reizenV, d)[0];
+    return { erheenMin: x.erheenMin, erheenDagen: x.erheenDagen };
+  });
+  test('vergelijk: roadtrip met een rit zonder tijd → onbekend', null, function () {
+    var d = Object.assign({}, dV, { route: [{ reis_id: 'r1', volgorde: 2, leg_vervoer: 'car', leg_minuten: 479, nachten: 1 }, { reis_id: 'r1', volgorde: 3, leg_vervoer: 'car', leg_minuten: null, nachten: 4 }] });
+    return O.vergelijk(reizenV, d)[0].erheenMin;
+  });
+  test('vergelijk: eerste rit nog niet gekozen → erheen onbekend', { erheen: null, erheenMin: null }, function () {
+    var d = Object.assign({}, dV, { route: [{ reis_id: 'r1', volgorde: 1, leg_vervoer: null }, { reis_id: 'r1', volgorde: 2, leg_vervoer: null, leg_opties: [{}] }, { reis_id: 'r1', volgorde: 3, leg_vervoer: 'train', leg_minuten: 60 }] });
+    var x = O.vergelijk(reizenV, d)[0];
+    return { erheen: x.erheen, erheenMin: x.erheenMin };
+  });
+  test('vergelijk: roadtrip zonder plek met 3+ nachten → onbekend', null, function () {
+    var d = Object.assign({}, dV, { route: [{ reis_id: 'r1', volgorde: 2, leg_vervoer: 'car', leg_minuten: 479, nachten: 1 }, { reis_id: 'r1', volgorde: 3, leg_vervoer: 'car', leg_minuten: 400, nachten: null }] });
+    return O.vergelijk(reizenV, d)[0].erheenMin;
+  });
+  test('vergelijk: rare data → onbekend, geen NaN', { totaal: 5000, onbekend: true, weer: null, dagen: null }, function () {
+    var r = Object.assign({}, reizenV[0], { feiten: [['sun', { x: 1 }]], start_datum: '2027-08-04', eind_datum: '2027-07-13' });
+    var d = Object.assign({}, dV, { budget: [{ reis_id: 'r1', label: 'a', totaal: 5000 }, { reis_id: 'r1', label: 'b', totaal: 'abc' }] });
+    var x = O.vergelijk([r], d)[0];
+    return { totaal: x.totaal, onbekend: x.onbekend, weer: x.weer, dagen: x.dagen };
+  });
+  test('vergelijk: feiten geen lijst → weer onbekend', null, function () { return O.vergelijk([Object.assign({}, reizenV[0], { feiten: 'x' })], dV)[0].weer; });
+  test('vergelijk: geen reistijd of weer → null', { erheenMin: null, weer: null }, function () {
+    var x = O.vergelijk(reizenV, dV)[0];
+    return { erheenMin: x.erheenMin, weer: x.weer };
+  });
+  test('vergelijk: onbekend blijft onbekend', { status: 'Afgerond', dagen: null, erheen: null, totaal: null, onbekend: true, perDag: null }, function () {
+    var x = O.vergelijk(reizenV, dV)[1];
+    return { status: x.status, dagen: x.dagen, erheen: x.erheen, totaal: x.totaal, onbekend: x.onbekend, perDag: x.perDag };
+  });
   test('isIdee: voorstel', true, function () { return O.isIdee({ status: 'voorstel' }); });
   test('isIdee: geboekt of onbekend is geen idee', [false, false], function () { return [O.isIdee({ status: 'geboekt' }), O.isIdee({ status: null })]; });
   test('hartVorm: tiener', '★', function () { return O.hartVorm('tiener'); });

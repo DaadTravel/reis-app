@@ -218,10 +218,25 @@ async function haalFotos(ids) {
 // ─── DATALAAG: REIZEN ───
 // Alle reizen voor het startscherm, met kaartfoto.
 async function haalReizen() {
-  const reizen = await sbFetch('reizen?select=id,slug,titel,jaar_label,ondertitel,stemming,status,status_label,kaart_status_label,nachten,kaart_foto_id,hero_foto_id,volgorde&order=volgorde');
+  const reizen = await sbFetch('reizen?select=id,slug,titel,jaar_label,ondertitel,stemming,status,status_label,kaart_status_label,nachten,start_datum,eind_datum,feiten,kaart_foto_id,hero_foto_id,volgorde&order=volgorde');
   if (isFout(reizen)) return reizen;
-  const f = await haalFotos(reizen.map(r => r.kaart_foto_id || r.hero_foto_id));
-  return { reizen: reizen, fotos: f.fotos, fotoFout: f.fout };
+  const [f, vergelijk] = await Promise.all([haalFotos(reizen.map(r => r.kaart_foto_id || r.hero_foto_id)), haalVergelijk(reizen)]);
+  return { reizen: reizen, fotos: f.fotos, fotoFout: f.fout, vergelijk: vergelijk };
+}
+// Vergelijkingstabel op het startscherm, alleen voor de beheerder (rol bewerker). Gaat iets mis
+// of ben je kijker, dan null: het startscherm werkt gewoon zonder tabel.
+async function haalVergelijk(reizen) {
+  const ik = mijnId();
+  if (!ik || !reizen.length) return null;
+  const zelf = await sbFetch('leden?select=rol&user_id=eq.' + ik);
+  if (isFout(zelf) || !zelf[0] || zelf[0].rol !== 'bewerker') return null;
+  const delen = await Promise.all(['budget_posten?select=reis_id,label,totaal', 'stops?select=reis_id', 'route_punten?select=reis_id,volgorde,nachten,leg_vervoer,leg_opties,leg_minuten,leg_benadering',
+    'activiteiten?select=id,reis_id', 'hartjes?select=user_id,activiteit_id', 'leden?select=user_id,groep'].map(p => sbFetch(p)));
+  if (delen.some(isFout)) return null;
+  // Een fout in het rekenen mag het startscherm nooit blokkeren.
+  try {
+    return Opmaak.vergelijk(reizen, { budget: delen[0], stops: delen[1], route: delen[2], activiteiten: delen[3], hartjes: delen[4], leden: delen[5] });
+  } catch (e) { return null; }
 }
 
 // Eén reis met alles erbij, of null als die niet bestaat (of niet zichtbaar is).

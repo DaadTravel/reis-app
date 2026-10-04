@@ -213,8 +213,52 @@
                 nights: r.nachten == null ? '?' : r.nachten, status: r.status || undefined, statusLabel: r.kaart_status_label || r.status_label || undefined,
                 href: reisUrl(r.slug) }));
             })));
-        })),
+        }),
+        p.data.vergelijk && p.data.vergelijk.length ? h(Vergelijk, { rijen: p.data.vergelijk }) : null),
       h(Voet, { onUitloggen: p.onUitloggen }));
+  }
+
+  // Vergelijkingstabel (alleen beheerder, app.js haalVergelijk): de reizen naast elkaar op de kerngegevens.
+  // Ingeklapt onderaan (besluit gebruiker 2026-10-04). "~" = (deels) geschat, "+ ?" = er is nog een post
+  // zonder bedrag; onbekend is "?". Erheen: zie O.vergelijk.
+  function Vergelijk(p) {
+    var euro = function (x) {
+      if (x.totaal == null) return '?';
+      return (x.schatting ? '~' : '') + O.euro(x.totaal) + (x.onbekend ? ' + ?' : '');
+    };
+    var groepen = [['voorpret', 'Nog te gaan'], ['herinnering', 'Al gemaakt']];
+    var kop = ['Reis', 'Status', 'Periode', 'Dagen', 'Plekken', 'Erheen', 'Weer', 'Totaal', 'Per dag', O.hartVorm('tiener') + ' ' + O.hartVorm('volwassene')];
+    var getal = [3, 4, 7, 8, 9];
+    return h('details', { className: 'nv-vergelijk' },
+      h('summary', null,
+        h('span', { className: 'nv-label' }, 'Alleen voor beheerder'),
+        h('span', { className: 'nv-vergelijk__titel' }, 'Reizen vergelijken')),
+      h('p', { className: 'nv-tekst nv-muted' }, 'Totaal met ~ is (deels) een schatting. Per dag is voor het hele gezin, inclusief reisdagen.'),
+      h('div', { className: 'nv-vergelijk__schuif', tabIndex: 0, role: 'region', 'aria-label': 'Tabel, schuif zijwaarts voor alle kolommen' },
+        h('table', { className: 'nv-vergelijk__tabel' },
+          h('thead', null, h('tr', null, kop.map(function (k, i) {
+            return h('th', { key: i, scope: 'col', className: getal.indexOf(i) > -1 ? 'nv-getal' : undefined, 'aria-label': i === kop.length - 1 ? 'Sterren van tieners en hartjes van ouders' : undefined }, k);
+          }))),
+          groepen.map(function (g) {
+            var rijen = p.rijen.filter(function (x) { return x.stemming === g[0]; });
+            if (!rijen.length) return null;
+            return h('tbody', { key: g[0] },
+              h('tr', { className: 'nv-vergelijk__groep' }, h('th', { colSpan: kop.length, scope: 'rowgroup' }, g[1])),
+              rijen.map(function (x) {
+                var tijd = x.erheenMin != null ? O.reistijd(x.erheenMin, x.erheenBenadering) + (x.erheenDagen > 1 ? ' in ' + x.erheenDagen + ' rijdagen' : '') : 'reistijd ?';
+                return h('tr', { key: x.id },
+                  h('th', { scope: 'row' }, h('a', { href: reisUrl(x.slug) }, x.titel)),
+                  h('td', null, x.status),
+                  h('td', null, x.periode || '?'),
+                  h('td', { className: 'nv-getal' }, x.dagen == null ? '?' : x.dagen, x.nachten != null ? h('small', null, x.nachten + ' n') : null),
+                  h('td', { className: 'nv-getal' }, x.plekken),
+                  h('td', null, x.erheen ? h(React.Fragment, null, h('span', { className: 'nv-vergelijk__erheen' }, h(G.Icon, { name: x.erheen, size: 16 }), VERVOER[x.erheen] || x.erheen), h('small', null, tijd)) : '?'),
+                  h('td', null, x.weer || '?'),
+                  h('td', { className: 'nv-getal' }, euro(x)),
+                  h('td', { className: 'nv-getal' }, x.perDag == null ? '?' : (x.schatting ? '~' : '') + O.euro(x.perDag) + (x.onbekend ? ' + ?' : '')),
+                  h('td', { className: 'nv-getal' }, x.tiener || x.volwassene ? O.hartVorm('tiener') + ' ' + x.tiener + '  ' + O.hartVorm('volwassene') + ' ' + x.volwassene : '–'));
+              }));
+          }))));
   }
 
   // ═════════════ reispagina ═════════════

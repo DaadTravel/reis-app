@@ -108,6 +108,48 @@
     hartjes.forEach(function (x) { met[x.activiteit_id] = true; });
     return acts.filter(function (a) { return !isIdee(a) || met[a.id]; });
   }
+  // Vergelijkingstabel voor de beheerder (2026-10-04): per reis de kerngegevens naast elkaar. Onbekend blijft
+  // null ("?"), nooit 0. Totaal = som van de bekende posten; onbekend = er is een post zonder (geldig) bedrag,
+  // of geen post. Dagen = van vertrek t/m thuiskomst (incl. reisdagen); per dag = totaal / dagen, voor het
+  // hele gezin. Erheen = de eerste rit na het vertrekpunt (nog niet gekozen → onbekend): de vlucht, of bij een
+  // roadtrip de rijuren tot de eerste plek met 3+ nachten (besluit gebruiker 2026-10-04); komt die plek er niet
+  // of ontbreekt een tijd → onbekend. Weer = het feit met icoon 'sun'.
+  function vergelijk(reizen, d) {
+    var van = function (lijst, r) { return (lijst || []).filter(function (x) { return x && x.reis_id === r.id; }); };
+    var bedrag = function (b) { return b.totaal != null && b.totaal !== '' && isFinite(Number(b.totaal)); };
+    return reizen.map(function (r) {
+      var posten = van(d.budget, r), bekend = posten.filter(bedrag);
+      var totaal = bekend.length ? bekend.reduce(function (s, b) { return s + Number(b.totaal); }, 0) : null;
+      var geldig = typeof r.start_datum === 'string' && typeof r.eind_datum === 'string';
+      var dagen = geldig ? Math.round((lees(r.eind_datum) - lees(r.start_datum)) / 864e5) + 1 : null;
+      if (!(dagen > 0)) dagen = null;
+      var punten = van(d.route, r).slice().sort(function (a, b) { return a.volgorde - b.volgorde; });
+      if (punten[0] && !punten[0].leg_vervoer && !punten[0].leg_opties) punten = punten.slice(1);
+      var eerste = punten[0] && punten[0].leg_vervoer ? punten[0] : null;
+      var heen = null;
+      if (eerste && eerste.leg_vervoer === 'car') {
+        for (var i = 0; i < punten.length && punten[i].leg_vervoer === 'car'; i++) {
+          if (punten[i].nachten >= 3) { heen = punten.slice(0, i + 1); break; }
+        }
+      } else if (eerste) heen = [eerste];
+      var heenMin = heen && heen.every(function (l) { return l.leg_minuten != null && isFinite(Number(l.leg_minuten)); })
+        ? heen.reduce(function (s, l) { return s + Number(l.leg_minuten); }, 0) : null;
+      var weer = (Array.isArray(r.feiten) ? r.feiten : []).filter(function (f) { return Array.isArray(f) && f[0] === 'sun' && typeof f[1] === 'string'; })[0];
+      var vormen = telVormen(d.hartjes || [], van(d.activiteiten, r).map(function (a) { return a.id; }), d.leden || []);
+      return { id: r.id, slug: r.slug, titel: r.titel, stemming: r.stemming,
+        status: r.stemming === 'herinnering' ? 'Afgerond' : String(r.kaart_status_label || r.status_label || '?').split(' · ')[0],
+        periode: dagen ? periodeKort(r.start_datum, r.eind_datum) + ' ' + lees(r.eind_datum).getUTCFullYear() : null,
+        dagen: dagen, nachten: r.nachten == null ? null : r.nachten, plekken: van(d.stops, r).length,
+        erheen: eerste ? eerste.leg_vervoer : null, totaal: totaal,
+        erheenMin: heenMin, erheenDagen: heen && eerste.leg_vervoer === 'car' ? heen.length : null,
+        erheenBenadering: !!heen && heen.some(function (l) { return l.leg_benadering; }),
+        weer: weer ? weer[1] : null,
+        onbekend: !posten.length || bekend.length < posten.length,
+        schatting: posten.some(function (b) { return /schatting|geschat/i.test(b.label || ''); }),
+        perDag: totaal != null && dagen ? Math.round(totaal / dagen) : null,
+        tiener: vormen.tiener, volwassene: vormen.volwassene };
+    });
+  }
   // Teken per groep (besluit gebruiker 2026-10-04): tieners een ster, volwassenen (en onbekend) een hart.
   function hartVorm(groep) { return groep === 'tiener' ? '★' : '♥'; }
   // ["Jij", "Bas", "Lies"] → "Jij, Bas en Lies".
@@ -216,7 +258,7 @@
   }
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
-    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
+    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, vergelijk: vergelijk, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,

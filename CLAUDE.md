@@ -358,6 +358,14 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   het label en `detail` zo benoemd, met `betaald` = `totaal` (het geld is
   uitgegeven). Notitie: "Totaal ongeveer € …: € … echte kosten uit de
   Excel, plus … geschat." Maximaal 4 posten (de kostenbalk heeft 4 kleuren).
+- **Vergelijkingstabel** (besluit gebruiker 2026-10-04): onderaan het
+  startscherm, ingeklapt, alleen voor de beheerder (`leden.rol` bewerker;
+  `haalVergelijk` in app.js, `O.vergelijk`). Per reis: status, periode,
+  dagen (vertrek t/m thuis) en nachten, plekken, erheen (vlucht, of bij een
+  roadtrip de rijuren tot de eerste plek met 3+ nachten), weer (het feit
+  `sun` in `reizen.feiten`, dus elke reis een temperatuur geven), totaal
+  (~ = deels geschat) en per dag voor het hele gezin, ★/♥. "Rust" (nachten
+  per plek) bewust niet.
 - **Zoekprofiel is geen reisinhoud** (besluit gebruiker 2026-09-30): de
   zoekcriteria voor verblijven (kolom `reizen.randvoorwaarden`: max per
   nacht, minimale beoordeling, kamers, zwembad) zijn het uitgangspunt bij
