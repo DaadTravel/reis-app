@@ -279,9 +279,9 @@
   test('sorteerTeDoen: geboekt eerst, dan meeste hartjes', ['g1', 'i3', 'i2', 'i1'], function () { return O.sorteerTeDoen(actS, hartS).map(function (a) { return a.id; }); });
   test('sorteerTeDoen: zonder hartjes op volgorde', ['g1', 'i1', 'i2', 'i3'], function () { return O.sorteerTeDoen(actS, []).map(function (a) { return a.id; }); });
   test('sorteerTeDoen: bron blijft ongewijzigd', 'i1', function () { O.sorteerTeDoen(actS, hartS); return actS[0].id; });
-  // Verlanglijstje: alleen wat minstens één hartje of ster heeft; volgorde blijft.
-  test('metHartje: alleen met hartje', ['i2', 'i3'], function () { return O.metHartje(actS, hartS).map(function (a) { return a.id; }); });
-  test('metHartje: geen hartjes → leeg', [], function () { return O.metHartje(actS, []); });
+  // Verlanglijstje: ideeën alleen met minstens één hartje of ster; geboekt e.d. altijd; volgorde blijft.
+  test('opVerlanglijst: ideeën met hartje en geboekt', ['i2', 'g1', 'i3'], function () { return O.opVerlanglijst(actS, hartS).map(function (a) { return a.id; }); });
+  test('opVerlanglijst: geen hartjes → alleen geboekt', ['g1'], function () { return O.opVerlanglijst(actS, []).map(function (a) { return a.id; }); });
   test('isIdee: voorstel', true, function () { return O.isIdee({ status: 'voorstel' }); });
   test('isIdee: geboekt of onbekend is geen idee', [false, false], function () { return [O.isIdee({ status: 'geboekt' }), O.isIdee({ status: null })]; });
   test('hartVorm: tiener', '★', function () { return O.hartVorm('tiener'); });

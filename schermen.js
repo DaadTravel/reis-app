@@ -649,10 +649,10 @@
     var kop = (p.reis.secties && p.reis.secties.doen) || {};
     var hart = p.hart, g = hart.g;
     var fs = React.useState('alles'), filter = fs[0], setFilter = fs[1];
-    // Verlanglijstje: alleen wat minstens één hartje of ster heeft (besluit gebruiker 2026-10-04). De stand bij het
-    // laden telt mee, zodat iets dat je hier ontzet niet meteen verdwijnt en je het kunt terugzetten.
+    // Verlanglijstje: ideeën alleen met minstens één hartje of ster, geboekt e.d. altijd (besluit gebruiker 2026-10-04).
+    // De stand bij het laden telt mee, zodat iets dat je hier ontzet niet meteen verdwijnt en je het kunt terugzetten.
     // Bij een afgeronde reis (Wat we deden) of zonder gezinsdata blijft alles staan.
-    var lijst = p.herinnering || !g.werkt ? p.activiteiten : O.metHartje(p.activiteiten, (g.hartjes || []).concat(hart.hartjes));
+    var lijst = p.herinnering || !g.werkt ? p.activiteiten : O.opVerlanglijst(p.activiteiten, (g.hartjes || []).concat(hart.hartjes));
     // Filter op wie er een hartje gaf: tieners (★) of ouders (♥); groep onbekend telt als ouder (zelfde vorm).
     var zichtbaar = lijst.filter(function (a) {
       if (filter === 'alles') return true;

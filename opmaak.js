@@ -101,11 +101,12 @@
       return (isIdee(a) - isIdee(b)) || (isIdee(a) ? (tel[b.id] || 0) - (tel[a.id] || 0) : 0) || a.volgorde - b.volgorde;
     });
   }
-  // Verlanglijstje (besluit gebruiker 2026-10-04): alleen wat minstens één hartje of ster heeft; volgorde blijft.
-  function metHartje(acts, hartjes) {
+  // Verlanglijstje (besluit gebruiker 2026-10-04): een idee alleen met minstens één hartje of ster; wat geen idee
+  // is (geboekt e.d.) staat er altijd op. Volgorde blijft.
+  function opVerlanglijst(acts, hartjes) {
     var met = {};
     hartjes.forEach(function (x) { met[x.activiteit_id] = true; });
-    return acts.filter(function (a) { return met[a.id]; });
+    return acts.filter(function (a) { return !isIdee(a) || met[a.id]; });
   }
   // Teken per groep (besluit gebruiker 2026-10-04): tieners een ster, volwassenen (en onbekend) een hart.
   function hartVorm(groep) { return groep === 'tiener' ? '★' : '♥'; }
@@ -215,7 +216,7 @@
   }
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
-    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, metHartje: metHartje, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
+    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,
