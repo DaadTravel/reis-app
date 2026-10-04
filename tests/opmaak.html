@@ -269,6 +269,10 @@
   test('hartjesVan: groep onbekend → null', [{ naam: 'Iemand', groep: null }], function () {
     return O.hartjesVan([{ user_id: 'u9', activiteit_id: 'c' }], 'c', ledenG, 'u1').gevers;
   });
+  // Telling per plek voor de tegel: sterren (tieners) en hartjes (volwassenen/onbekend) bij de activiteiten van die plek.
+  var hartT = [{ user_id: 'u1', activiteit_id: 'a' }, { user_id: 'u2', activiteit_id: 'a' }, { user_id: 'u2', activiteit_id: 'b' }, { user_id: 'u9', activiteit_id: 'b' }, { user_id: 'u1', activiteit_id: 'z' }];
+  test('telVormen: per groep, alleen eigen activiteiten', { tiener: 2, volwassene: 2 }, function () { return O.telVormen(hartT, ['a', 'b'], ledenG); });
+  test('telVormen: niets', { tiener: 0, volwassene: 0 }, function () { return O.telVormen(hartT, [], ledenG); });
   test('hartVorm: tiener', '★', function () { return O.hartVorm('tiener'); });
   test('hartVorm: volwassene', '♥', function () { return O.hartVorm('volwassene'); });
   test('hartVorm: onbekend → hart', '♥', function () { return O.hartVorm(null); });

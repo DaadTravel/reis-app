@@ -81,6 +81,15 @@
       .concat(van.filter(function (x) { return !mijnId || x.user_id !== mijnId; }).map(function (x) { return gever(x); }));
     return { aantal: van.length, ikOok: ik, namen: gevers.map(function (x) { return x.naam; }), gevers: gevers };
   }
+  // Aantal sterren (tieners) en hartjes (volwassenen; groep onbekend telt als hart) bij een set activiteiten,
+  // bijv. alle activiteiten van één plek (indicatie op de tegel).
+  function telVormen(hartjes, activiteitIds, leden) {
+    var groep = {}, ids = {}, uit = { tiener: 0, volwassene: 0 };
+    (leden || []).forEach(function (l) { groep[l.user_id] = l.groep; });
+    activiteitIds.forEach(function (id) { ids[id] = true; });
+    hartjes.forEach(function (x) { if (ids[x.activiteit_id]) uit[groep[x.user_id] === 'tiener' ? 'tiener' : 'volwassene']++; });
+    return uit;
+  }
   // Teken per groep (besluit gebruiker 2026-10-04): tieners een ster, volwassenen (en onbekend) een hart.
   function hartVorm(groep) { return groep === 'tiener' ? '★' : '♥'; }
   // ["Jij", "Bas", "Lies"] → "Jij, Bas en Lies".
@@ -189,7 +198,7 @@
   }
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
-    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
+    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,

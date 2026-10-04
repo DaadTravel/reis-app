@@ -158,7 +158,11 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   hartjes laten zien wie wat wil. De app toont per gever het teken van zijn
   groep (`O.hartVorm`: tiener ★, volwassene ♥), je eigen knop in jouw vorm,
   en in Doen een filter Alles / ★ Tieners / ♥ Ouders. Doen staat per plek
-  (routevolgorde). Alle leden zien elkaars naam en groep (`leden_lezen` =
+  (routevolgorde). **Alles rond een plek bij elkaar** (besluit gebruiker
+  2026-10-04): het plek-paneel toont onder de tips "Te doen in …" met
+  dezelfde activiteiten en hartjes, en de tegel in het reisoverzicht
+  rechtsonder het aantal ★ en ♥ (`O.telVormen`). Eén hartjes-stand per
+  reispagina (`useHartjes`), gedeeld door paneel, tegels en Doen. Alle leden zien elkaars naam en groep (`leden_lezen` =
   lid); elk lid, ook een kijker, geeft of haalt alleen zijn eigen hartje weg.
   Lukt het ophalen van leden/hartjes niet, dan werkt de pagina zonder
   hartjes (`haalGezin`). Suggesties uit de skill `tiener` gaan erin als

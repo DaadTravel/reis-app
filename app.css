@@ -78,6 +78,15 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 @media (min-width: 720px) { .nv-tegel__tekst { left: var(--space-5); right: var(--space-5); bottom: var(--space-5); } }
 .nv-tegel__naam { display: block; font-family: var(--font-display); font-style: italic; font-size: clamp(24px, 6.5vw, 36px); line-height: 1; overflow-wrap: anywhere; }
 .nv-tegel__meer { display: block; margin-top: var(--space-1); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+/* Rechtsonder: sterren (tieners) en hartjes (ouders) bij de activiteiten van deze plek. */
+.nv-tegel__hart { position: absolute; right: var(--space-2); bottom: var(--space-2); display: flex; gap: var(--space-2); padding: 2px var(--space-2); border-radius: var(--radius-pill); background: color-mix(in srgb, var(--scrim) 70%, transparent); font-size: 12px; font-weight: 700; line-height: 1.5; }
+@media (min-width: 720px) { .nv-tegel__hart { right: var(--space-4); bottom: var(--space-4); font-size: 13px; } }
+/* Ruimte voor de teller, ook bij twee cijfers (★ 12 ♥ 10) op een smalle telefoontegel. */
+.nv-tegel--hart .nv-tegel__tekst { bottom: calc(var(--space-3) + 26px); }
+@media (min-width: 720px) { .nv-tegel--hart .nv-tegel__tekst { bottom: var(--space-5); } .nv-tegel--hart .nv-tegel__meer { padding-right: 110px; } }
+/* Te doen in het plek-paneel: zelfde regels als in Doen. */
+.nv-plekdoen { margin-top: var(--space-5); }
+.nv-plekdoen > .nv-label { display: block; margin-bottom: var(--space-1); }
 @media (prefers-reduced-motion: reduce) { .nv-tegel img { transition: none; } }
 
 /* ---------- reisprogramma ---------- */

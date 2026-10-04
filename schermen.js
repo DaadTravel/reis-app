@@ -359,13 +359,24 @@
               onzeker ? h('span', { className: 'nv-tijdlijn__check' }, 'te verifiëren') : null) : null);
         })) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen route.' }),
         // Elke plek een sfeertegel (besluit gebruiker 2026-09-29).
+        // Rechtsonder op de tegel: sterren (tieners) en hartjes (ouders) bij de activiteiten van die plek, als indicatie.
         h('div', { className: 'nv-tegels' }, p.stops.map(function (s) {
-          var f = p.foto(s.foto_id);
-          return h('button', { key: s.id, type: 'button', className: 'nv-tegel', onClick: function () { p.kiesPlek(s.id); } },
+          var f = p.foto(s.foto_id), g = p.hart.g;
+          var tel = g.werkt ? O.telVormen(p.hart.hartjes, p.activiteiten.filter(function (a) { return a.stop_id === s.id; }).map(function (a) { return a.id; }), g.leden) : null;
+          var telt = tel && (tel.tiener || tel.volwassene);
+          // Teken + aantal; voor schermlezers een gewone zin (een naam op een kale span wordt niet altijd voorgelezen).
+          function teller(n, groep, een, meer, wie) {
+            return n ? h('span', null, h('span', { 'aria-hidden': true }, O.hartVorm(groep) + ' ' + n),
+              h('span', { className: 'nv-onzichtbaar' }, ', ' + n + ' ' + (n === 1 ? een : meer) + ' van ' + wie)) : null;
+          }
+          return h('button', { key: s.id, type: 'button', className: 'nv-tegel' + (telt ? ' nv-tegel--hart' : ''), onClick: function () { p.kiesPlek(s.id); } },
             f.image && h('img', { src: f.image, alt: '' }),
             h('span', { className: 'nv-tegel__tekst' },
               h('span', { className: 'nv-tegel__naam' }, kortNaam(s.naam)),
-              h('span', { className: 'nv-tegel__meer' }, nachtenPlek(p.route, s) + ' →')));
+              h('span', { className: 'nv-tegel__meer' }, nachtenPlek(p.route, s) + ' →')),
+            telt ? h('span', { className: 'nv-tegel__hart' },
+              teller(tel.tiener, 'tiener', 'ster', 'sterren', 'tieners'),
+              teller(tel.volwassene, 'volwassene', 'hartje', 'hartjes', 'ouders')) : null);
         }))));
   }
 
@@ -408,6 +419,7 @@
     // van een dag die aan geen bezoek hangt (niets stil weglaten).
     var bezoekDagen = bezoeken.map(function (v, k) { return dagVanBezoek(p.dagen, v, k); });
     var tips = tipsVan(s, meer ? dagen.filter(function (x) { return bezoekDagen.indexOf(x) < 0; }) : dagen);
+    var hier = p.activiteiten.filter(function (a) { return a.stop_id === s.id; });
     // Tijden staan onder hun rit; alleen wat aan geen getoonde rit hangt blijft een losse notitie.
     var notities = dagen.filter(function (x) {
       return !etappes.some(function (e) { return e.naar.id === x.route_punt_id; });
@@ -450,6 +462,11 @@
             d && d.beleving && d.beleving !== s.lede && h('p', { className: 'nv-tekst nv-muted' }, d.beleving),
             !etappes.length && notities.length ? h('div', { className: 'nv-logistiek' }, h(G.Icon, { name: 'clock', size: 18 }), h('span', null, notities.join(' · '))) : null,
             tips.length ? h(G.TipNote, { title: 'Tips voor ' + kortNaam(s.naam), items: tips }) : null,
+            // Alles rond een plek bij elkaar (besluit gebruiker 2026-10-04): de activiteiten van deze plek met hartjes.
+            hier.length ? h('div', { className: 'nv-plekdoen' },
+              h('span', { className: 'nv-label' }, p.herinnering ? 'Wat we deden' : 'Te doen in ' + kortNaam(s.naam)),
+              h(HartMelding, { hart: p.hart, stil: true }),
+              hier.map(function (a) { return h(ActiviteitRij, { key: a.id, x: a, hart: p.hart }); })) : null,
             // Geboekt of status onbekend (O.inSlapen): per verblijf naam, data en contact (onderweg in twee tikken). Anders de stand
             // van het zoeken; prijs is altijd het totaal van een verblijf (CLAUDE.md).
             geboekt.length ? h('div', { className: 'nv-verblijven' },
@@ -552,28 +569,22 @@
         })) : null));
   }
 
-  // Doen: per plek gegroepeerd (volgorde van de route), met hartjes van het gezin (reis.hartjes);
-  // elke gever met het teken van zijn groep (O.hartVorm). Zonder gezinsdata
-  // (gezin.werkt false) gewoon de lijst zonder filter en hartjes.
-  function Doen(p) {
-    var kop = (p.reis.secties && p.reis.secties.doen) || {};
-    var g = p.gezin || { werkt: false, hartjes: [], leden: [] };
-    var hs = React.useState(g.hartjes), hartjes = hs[0], setHartjes = hs[1];
-    var fs = React.useState('alles'), filter = fs[0], setFilter = fs[1];
+  // Hartjes van het gezin (reis.hartjes), gedeeld door plek-paneel, tegels en Doen: één stand per reispagina.
+  // wissel: meteen tonen, bij een fout alleen déze activiteit terugzetten (functioneel) en melden.
+  function useHartjes(gezin) {
+    var g = gezin || { werkt: false, hartjes: [], leden: [] };
+    var hs = React.useState(g.hartjes || []), hartjes = hs[0], setHartjes = hs[1];
     var ms = React.useState(''), melding = ms[0], setMelding = ms[1];
     var bezig = React.useRef({});
     function wissel(a) {
       if (bezig.current[a.id]) return;
       var ik = O.hartjesVan(hartjes, a.id, g.leden, g.mijnId).ikOok;
-      // Alleen je eigen hartje bij déze activiteit aanpassen (functioneel), zodat een gelijktijdige
-      // klik op een andere activiteit niet wordt overschreven bij terugzetten.
       function zet(aan) {
         setHartjes(function (cur) {
           var zonder = cur.filter(function (x) { return !(x.activiteit_id === a.id && x.user_id === g.mijnId); });
           return aan ? zonder.concat([{ user_id: g.mijnId, activiteit_id: a.id }]) : zonder;
         });
       }
-      // Meteen tonen; bij een fout terugzetten en melden.
       zet(!ik);
       setMelding('');
       bezig.current[a.id] = true;
@@ -582,35 +593,52 @@
         if (isFout(r)) { zet(ik); setMelding(r.status === 0 ? 'Geen verbinding: je hartje is niet opgeslagen.' : 'Je hartje kon niet worden opgeslagen.'); }
       });
     }
+    return { g: g, hartjes: hartjes, wissel: wissel, melding: melding };
+  }
+
+  // Eén activiteit met (als er gezinsdata is) je eigen knop in de vorm van jouw groep en wie er een gaf,
+  // elk met het teken van zijn groep (O.hartVorm). De plek staat al erboven (plek-paneel of groep in Doen).
+  function ActiviteitRij(p) {
+    var x = p.x, hart = p.hart, g = hart.g;
+    var ht = O.hartjesVan(hart.hartjes, x.id, g.leden, g.mijnId);
+    var mijnVorm = O.hartVorm(g.groep), leegVorm = mijnVorm === '★' ? '☆' : '♡';
+    return h('div', { className: 'nv-activiteit' },
+      h(G.ActivityRow, { name: x.naam, when: O.activiteitWanneer(x),
+        price: x.prijs != null ? Number(x.prijs) : '€ ?',
+        note: x.notitie || undefined, status: x.status || undefined, statusLabel: O.statusLabel(x), icon: x.icoon || undefined }),
+      h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, via: x.geboekt_via, boekingscode: x.boekingscode, link: x.link, naam: x.naam }),
+      g.werkt ? h('div', { className: 'nv-gezin' },
+        h('button', { type: 'button', className: 'nv-hart' + (mijnVorm === '★' ? ' nv-hart--tiener' : ''), 'aria-pressed': ht.ikOok, disabled: !g.mijnId,
+          'aria-label': (ht.ikOok ? 'Hartje weghalen bij ' : 'Hartje geven aan ') + x.naam, onClick: function () { hart.wissel(x); } },
+          h('span', { className: 'nv-hart__icoon', 'aria-hidden': true }, ht.ikOok ? mijnVorm : leegVorm)),
+        ht.gevers.length ? h('ul', { className: 'nv-gevers', 'aria-label': 'Hartjes van ' + O.hartjesTekst(ht.namen) }, ht.gevers.map(function (v, k) {
+          return h('li', { key: k, className: v.groep === 'tiener' ? 'nv-gever nv-gever--tiener' : 'nv-gever' },
+            h('span', { 'aria-hidden': true }, O.hartVorm(v.groep)), ' ' + v.naam);
+        })) : null) : null);
+  }
+  // De melding staat zowel in het plek-paneel als in Doen (zichtbaar waar je klikte); alleen die in Doen
+  // heeft role=status, zodat een schermlezer hem één keer voorleest.
+  function HartMelding(p) {
+    return p.hart.melding ? h('p', { className: 'nv-doenmelding', role: p.stil ? undefined : 'status' }, p.hart.melding) : null;
+  }
+
+  // Doen: overzicht van alle activiteiten, per plek gegroepeerd (volgorde van de route), met een filter op wie
+  // er een hartje gaf. Dezelfde activiteiten staan ook in het plek-paneel (besluit gebruiker 2026-10-04:
+  // alles rond een plek bij elkaar). Zonder gezinsdata (gezin.werkt false) de lijst zonder filter en hartjes.
+  function Doen(p) {
+    var kop = (p.reis.secties && p.reis.secties.doen) || {};
+    var hart = p.hart, g = hart.g;
+    var fs = React.useState('alles'), filter = fs[0], setFilter = fs[1];
     // Filter op wie er een hartje gaf: tieners (★) of ouders (♥); groep onbekend telt als ouder (zelfde vorm).
     var zichtbaar = p.activiteiten.filter(function (a) {
       if (filter === 'alles') return true;
-      return O.hartjesVan(hartjes, a.id, g.leden, g.mijnId).gevers.some(function (x) { return (x.groep === 'tiener') === (filter === 'tiener'); });
+      return O.hartjesVan(hart.hartjes, a.id, g.leden, g.mijnId).gevers.some(function (x) { return (x.groep === 'tiener') === (filter === 'tiener'); });
     });
     // Groepen per plek in routevolgorde; zonder plek achteraan.
     var groepen = p.stops.map(function (s) { return { s: s, items: zichtbaar.filter(function (a) { return a.stop_id === s.id; }) }; })
       .concat([{ s: null, items: zichtbaar.filter(function (a) { return !a.stop_id; }) }])
       .filter(function (x) { return x.items.length; });
     var filters = [['alles', 'Alles'], ['tiener', O.hartVorm('tiener') + ' Tieners'], ['volwassene', O.hartVorm('volwassene') + ' Ouders']];
-    var mijnVorm = O.hartVorm(g.groep), leegVorm = mijnVorm === '★' ? '☆' : '♡';
-    function rij(x) {
-      // Datum en tijden (migratie 0013), anders de oude tekst `wanneer`; de plek staat al boven de groep.
-      var ht = O.hartjesVan(hartjes, x.id, g.leden, g.mijnId);
-      return h('div', { key: x.id, className: 'nv-activiteit' },
-        h(G.ActivityRow, { name: x.naam, when: O.activiteitWanneer(x),
-          price: x.prijs != null ? Number(x.prijs) : '€ ?',
-          note: x.notitie || undefined, status: x.status || undefined, statusLabel: O.statusLabel(x), icon: x.icoon || undefined }),
-        h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, via: x.geboekt_via, boekingscode: x.boekingscode, link: x.link, naam: x.naam }),
-        // Eigen knop in de vorm van jouw groep; daarnaast iedereen die er een gaf, elk met de vorm van zijn groep.
-        g.werkt ? h('div', { className: 'nv-gezin' },
-          h('button', { type: 'button', className: 'nv-hart' + (mijnVorm === '★' ? ' nv-hart--tiener' : ''), 'aria-pressed': ht.ikOok, disabled: !g.mijnId,
-            'aria-label': (ht.ikOok ? 'Hartje weghalen bij ' : 'Hartje geven aan ') + x.naam, onClick: function () { wissel(x); } },
-            h('span', { className: 'nv-hart__icoon', 'aria-hidden': true }, ht.ikOok ? mijnVorm : leegVorm)),
-          ht.gevers.length ? h('ul', { className: 'nv-gevers', 'aria-label': 'Hartjes van ' + O.hartjesTekst(ht.namen) }, ht.gevers.map(function (v, k) {
-            return h('li', { key: k, className: v.groep === 'tiener' ? 'nv-gever nv-gever--tiener' : 'nv-gever' },
-              h('span', { 'aria-hidden': true }, O.hartVorm(v.groep)), ' ' + v.naam);
-          })) : null) : null);
-    }
     return h('section', { className: 'nv-blok', id: 'doen' },
       h('div', { className: 'nv-wrap', style: { maxWidth: '760px' } },
         h('div', { className: 'nv-kopblok' },
@@ -620,13 +648,13 @@
         g.werkt && p.activiteiten.length ? h('div', { className: 'nv-doenfilter', role: 'group', 'aria-label': 'Toon' }, filters.map(function (f) {
           return h('button', { key: f[0], type: 'button', className: 'nv-tab', 'aria-pressed': filter === f[0], onClick: function () { setFilter(f[0]); } }, f[1]);
         })) : null,
-        melding ? h('p', { className: 'nv-doenmelding', role: 'status' }, melding) : null,
+        h(HartMelding, { hart: hart }),
         !p.activiteiten.length ? h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen activiteiten gekozen.' }) :
         !groepen.length ? h('p', { className: 'nv-muted' }, filter === 'tiener' ? 'Nog geen ster van een tiener.' : 'Nog geen hartje van een ouder.') :
         groepen.map(function (x) {
           return h('div', { key: x.s ? x.s.id : 'los', className: 'nv-doengroep' },
             h('h3', { className: 'nv-doengroep__plek' }, x.s ? kortNaam(x.s.naam) : 'Overig'),
-            x.items.map(rij));
+            x.items.map(function (a) { return h(ActiviteitRij, { key: a.id, x: a, hart: hart }); }));
         })));
   }
 
@@ -668,8 +696,9 @@
       return function () { window.removeEventListener('scroll', bijScroll); };
     }, []);
 
+    var hart = useHartjes(data.gezin);
     var p = { reis: r, herinnering: r.stemming === 'herinnering', stops: stops, dagen: data.dagen, route: data.route,
-      verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, gezin: data.gezin, foto: maakFoto(data.fotos), kiesPlek: kiesPlek };
+      verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, hart: hart, foto: maakFoto(data.fotos), kiesPlek: kiesPlek };
     return h(React.Fragment, null,
       h(Opening, p),
       h(Balk, { secties: SECTIES, actief: actief }),
