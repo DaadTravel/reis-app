@@ -228,7 +228,7 @@
     var dagNr = dagenTussen(r.start_datum, datum), dagen = dagenTussen(r.start_datum, r.eind_datum);
     return {
       datum: datum, dagNr: dagNr == null ? null : dagNr + 1, dagen: dagen == null ? null : dagen + 1,
-      plek: plekId ? stopNaam[plekId] || null : null, routes: routes, slapen: slapen,
+      plek: plekId ? stopNaam[plekId] || null : null, plekId: plekId && stopNaam[plekId] !== undefined ? plekId : null, routes: routes, slapen: slapen,
       nachtNr: slapen ? dagenTussen(slapen.inchecken, datum) + 1 : null, nachtenHier: slapen ? dagenTussen(slapen.inchecken, slapen.uitchecken) : null,
       activiteiten: activiteiten, vrij: vrij, ideeen: ideeen, laatsteDag: datum === r.eind_datum,
       morgen: { datum: morgenDatum, uitchecken: slapen && slapen.uitchecken === morgenDatum && (!morgenSlapen || morgenSlapen.id !== slapen.id) ? slapen : null,

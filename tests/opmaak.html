@@ -429,6 +429,9 @@
   test('laatste dag: thuisreis, niet slapen, laatste dag', { routes: ['Bangkok|Purmerend|12:25|'], slapen: null, laatste: true, plek: null }, function () {
     var x = dag('2026-07-12'); return { routes: x.routes.map(ritTekst), slapen: x.slapen, laatste: x.laatsteDag, plek: x.plek };
   });
+  test('dag: plekId voor Plek voor plek (vóór vertrek geen, rustdag de plek, nachtvlucht de bestemming)', [null, 's2', 's3'], function () {
+    return [dag('2026-07-06').plekId, dag('2026-07-09').plekId, dag('2026-07-10').plekId];
+  });
   test('vlucht met aankomst +2: aankomst pas op de tweede dag erna', [[], ['Corvara|Bangkok|21:40|aankomst']], function () {
     var r = Object.assign({}, dagReis, { route: dagReis.route.map(function (l) { return l.id === 'p3' ? Object.assign({}, l, { leg_aankomst_dagen: 2 }) : l; }) });
     return [O.dagOverzicht(r, '2026-07-11').routes.map(ritTekst), O.dagOverzicht(r, '2026-07-12').routes.filter(function (x) { return x.aankomst; }).map(ritTekst)];

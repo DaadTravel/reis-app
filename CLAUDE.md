@@ -161,9 +161,10 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   (`O.datumIn`; na een vlucht naar Japan springt de dag mee). Testen met
   `?vandaag=JJJJ-MM-DD`: alleen lokaal of voor de beheerder (`vandaagIso`),
   er wordt niets opgeslagen; geen dummyreis in de database. Het scherm
-  Vandaag (`O.dagOverzicht`), in deze volgorde: route vandaag (een
+  Vandaag (`O.dagOverzicht`), in deze volgorde: route vandaag (betaalstatus
+  bij vlucht, ferry, bus of trein, niet bij een eigen autorit; een
   nachtvlucht ook de dag erna als aankomst; een autorit na de eerste rit
-  zonder tijd vertrekt "~09:00", gewoonte van het gezin), slapen vannacht,
+  zonder tijd vertrekt "~09:00", gewoonte van het gezin), slapen vannacht (met betaald / nog betalen / "Status ?"),
   gepland (naam, tijd, ophaalpunt, contact en of er nog betaald moet
   worden; geen hartje, geen prijs) óf vrije dag (top 3 ideeën van de plek
   op ★/♥), morgen (uitchecken, route, activiteiten), reisverslag. Bewust

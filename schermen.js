@@ -286,19 +286,26 @@
     return h('div', { className: 'nv-vandaag__regel' },
       h('p', { className: 'nv-vandaag__hoofd' }, h(G.Icon, { name: l.leg_vervoer || 'arrow', size: 18 }), (x.van ? kortNaam(x.van) + ' → ' : '') + kortNaam(x.naar || '?')),
       tijden.filter(Boolean).length ? h('p', { className: 'nv-vandaag__tijd' }, tijden.filter(Boolean).join(' · ')) : null,
+      // Betaalstatus bij een kaartje (vlucht, ferry, bus, trein); niet bij een eigen autorit.
+      x.aankomst || l.leg_vervoer === 'car' ? null : h(BetaalStatus, { status: l.leg_status }),
       x.aankomst ? null : h(Contact, { vertrekpunt: l.leg_adres, telefoon: l.leg_telefoon, via: l.leg_geboekt_via, boekingscode: l.leg_boekingscode }));
+  }
+  // Betaalstatus op Vandaag (besluit gebruiker 2026-10-04): betaald, nog betalen, of onbekend ("Status ?").
+  function BetaalStatus(p) {
+    var label = p.status === 'betaald' ? 'Betaald' : p.status === 'geboekt' ? 'Nog betalen' : !p.status ? 'Status ?' : null;
+    return label ? h('p', { className: 'nv-vandaag__status' }, h(G.StatusBadge, { status: p.status || undefined, label: label })) : null;
   }
   // Gepland op Vandaag (besluit gebruiker 2026-10-04): naam, tijd, ophaalpunt en contact; geen hartje (het is
   // al gepland) en geen prijs, wel of er nog betaald moet worden.
   function GeplandRegel(p) {
     var a = p.x;
     var tijd = [a.begin_tijd ? O.tijd(a.begin_tijd) : '', a.eind_tijd ? O.tijd(a.eind_tijd) : ''].filter(Boolean).join(' – ');
-    var betaal = a.status === 'betaald' ? 'Betaald' : a.status === 'geboekt' ? 'Nog betalen' : null;
+    var betaal = a.status === 'betaald' || a.status === 'geboekt';
     return h('div', { className: 'nv-vandaag__regel' },
       h('p', { className: 'nv-vandaag__hoofd' }, h(G.Icon, { name: a.icoon || 'calendar', size: 18 }),
         O.veiligeLink(a.link) ? h('a', { href: a.link, target: '_blank', rel: 'noopener noreferrer' }, a.naam) : a.naam),
       tijd || a.notitie ? h('p', { className: 'nv-vandaag__tijd' }, [tijd, a.notitie].filter(Boolean).join(' · ')) : null,
-      betaal ? h('p', { className: 'nv-vandaag__status' }, h(G.StatusBadge, { status: a.status, label: betaal })) : null,
+      betaal ? h(BetaalStatus, { status: a.status }) : null,
       h(Contact, { ophaalpunt: a.ophaalpunt, telefoon: a.telefoon, email: a.email, via: a.geboekt_via, boekingscode: a.boekingscode }));
   }
 
@@ -410,6 +417,7 @@
           h('div', { className: 'nv-vandaag__regel' },
             h('p', { className: 'nv-vandaag__hoofd' }, O.veiligeLink(v.link) ? h('a', { href: v.link, target: '_blank', rel: 'noopener noreferrer' }, v.naam) : v.naam),
             x.nachtNr === 1 && v.inchecktijd ? h('p', { className: 'nv-vandaag__tijd' }, 'inchecken vanaf ' + O.tijd(v.inchecktijd)) : null,
+            h(BetaalStatus, { status: v.status }),
             h(Contact, { adres: v.adres, telefoon: v.telefoon, email: v.email, via: v.geboekt_via, boekingscode: v.boekingscode }))) : null,
         x.activiteiten.length ? h(VandaagBlok, { titel: 'Gepland', icoon: 'calendar' }, x.activiteiten.map(function (a) { return h(GeplandRegel, { key: a.id, x: a }); })) : null,
         x.vrij ? h(VandaagBlok, { titel: 'Vrije dag', icoon: 'sun' },
@@ -946,7 +954,15 @@
 
   function Reispagina(props) {
     var data = props.data, r = data.reis, stops = data.stops;
-    var pk = React.useState(stops[0] && stops[0].id), plekId = pk[0], setPlekId = pk[1];
+    // Onderweg: is deze reis actief (vanaf de dag vóór vertrek), dan staat Vandaag vooraan en opent Plek voor plek
+    // op de plek van vandaag (besluit gebruiker 2026-10-04).
+    var gezin = data.gezin || {};
+    var vandaag = vandaagIso(!!gezin.beheerder);
+    var onderweg = O.actieveReis([r], vandaag);
+    var pk = React.useState(function () {
+      var hier = onderweg && O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, vandaag).plekId;
+      return hier || (stops[0] && stops[0].id);
+    }), plekId = pk[0], setPlekId = pk[1];
     React.useEffect(function () { document.title = r.titel + ' · Onze reizen'; }, [r.titel]);
     // Vanuit een tegel: naar het programma. Binnen het programma: alleen terug naar het paneel als je al voorbij het begin bent.
     function kiesPlek(id, blijf) {
@@ -955,10 +971,6 @@
       var el = document.getElementById('plek-paneel');
       if (el && el.getBoundingClientRect().top < 0) naar('plek-paneel');
     }
-    // Onderweg: is deze reis actief (vanaf de dag vóór vertrek), dan staat Vandaag vooraan.
-    var gezin = data.gezin || {};
-    var vandaag = vandaagIso(!!gezin.beheerder);
-    var onderweg = O.actieveReis([r], vandaag);
     // Reisverslag: vanaf vertrek, voor de ouders (schrijven) of zodra er iets geschreven is (lezen).
     var vs = useVerslagen(data);
     var verslagDagen = O.verslagDagen(r, vandaag);
