@@ -432,6 +432,10 @@
   test('dag: plekId voor Plek voor plek (vóór vertrek geen, rustdag de plek, nachtvlucht de bestemming)', [null, 's2', 's3'], function () {
     return [dag('2026-07-06').plekId, dag('2026-07-09').plekId, dag('2026-07-10').plekId];
   });
+  // Kenmerken van het verblijf op Vandaag: alleen wat bekend is (geen "?"); geen ontbijt wél noemen, geen zwembad niet.
+  test('verblijfKenmerken: alles bekend', 'Ontbijt inbegrepen · Zwembad · 2 kamers', function () { return O.verblijfKenmerken({ ontbijt: true, zwembad: true, kamers: 2 }); });
+  test('verblijfKenmerken: geen ontbijt, geen zwembad, 1 kamer', 'Geen ontbijt · 1 kamer', function () { return O.verblijfKenmerken({ ontbijt: false, zwembad: false, kamers: 1 }); });
+  test('verblijfKenmerken: onbekend of raar → leeg', ['', ''], function () { return [O.verblijfKenmerken({ ontbijt: null, zwembad: null, kamers: null }), O.verblijfKenmerken({ ontbijt: 'ja', kamers: 'abc' })]; });
   test('vlucht met aankomst +2: aankomst pas op de tweede dag erna', [[], ['Corvara|Bangkok|21:40|aankomst']], function () {
     var r = Object.assign({}, dagReis, { route: dagReis.route.map(function (l) { return l.id === 'p3' ? Object.assign({}, l, { leg_aankomst_dagen: 2 }) : l; }) });
     return [O.dagOverzicht(r, '2026-07-11').routes.map(ritTekst), O.dagOverzicht(r, '2026-07-12').routes.filter(function (x) { return x.aankomst; }).map(ritTekst)];

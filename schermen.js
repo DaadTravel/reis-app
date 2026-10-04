@@ -416,6 +416,7 @@
         v ? h(VandaagBlok, { titel: 'Slapen vannacht', icoon: 'bed' },
           h('div', { className: 'nv-vandaag__regel' },
             h('p', { className: 'nv-vandaag__hoofd' }, O.veiligeLink(v.link) ? h('a', { href: v.link, target: '_blank', rel: 'noopener noreferrer' }, v.naam) : v.naam),
+            O.verblijfKenmerken(v) ? h('p', { className: 'nv-vandaag__tijd' }, O.verblijfKenmerken(v)) : null,
             x.nachtNr === 1 && v.inchecktijd ? h('p', { className: 'nv-vandaag__tijd' }, 'inchecken vanaf ' + O.tijd(v.inchecktijd)) : null,
             h(BetaalStatus, { status: v.status }),
             h(Contact, { adres: v.adres, telefoon: v.telefoon, email: v.email, via: v.geboekt_via, boekingscode: v.boekingscode }))) : null,

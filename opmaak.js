@@ -235,6 +235,15 @@
         routes: routesOp(morgenDatum).filter(function (x) { return !x.aankomst; }), activiteiten: gepland(morgenDatum) }
     };
   }
+  // Kenmerken van het verblijf op Vandaag (besluit gebruiker 2026-10-04): "Ontbijt inbegrepen · Zwembad · 2 kamers".
+  // Alleen wat bekend is (onbekend wordt weggelaten, geen "?"); geen ontbijt wél noemen (dan zelf regelen).
+  function verblijfKenmerken(v) {
+    var x = v || {}, uit = [], n = Number(x.kamers);
+    if (x.ontbijt === true) uit.push('Ontbijt inbegrepen'); else if (x.ontbijt === false) uit.push('Geen ontbijt');
+    if (x.zwembad === true) uit.push('Zwembad');
+    if (x.kamers != null && x.kamers !== '' && isFinite(n) && n > 0) uit.push(n === 1 ? '1 kamer' : n + ' kamers');
+    return uit.join(' · ');
+  }
   // ===== Reisverslag (besluit gebruiker 2026-10-04) =====
   // Wachtrij op de telefoon: { "reis|datum|user": {reis_id, datum, user_id, tekst, gewijzigd, verzonden, fout} }.
   // Kapotte of rare inhoud → leeg (wat kapot is, kan niet meer verstuurd worden; nooit een fout).
@@ -398,7 +407,7 @@
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
-    wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
+    verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,

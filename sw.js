@@ -1,7 +1,7 @@
 // Service worker: installeerbaar en onderweg zonder bereik te gebruiken.
 // Verhoog CACHE bij elke wijziging aan de app (CLAUDE.md), anders blijft
 // de oude versie in gebruik.
-const CACHE = 'reis-app-v26';
+const CACHE = 'reis-app-v27';
 // De app heeft een eigen domein (daadtravel.github.io), maar voor de
 // zekerheid ruimt hij alleen caches met dit voorvoegsel op.
 const VOORVOEGSEL = 'reis-app-';
