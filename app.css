@@ -208,6 +208,45 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 /* Jaar en statuslabel naast elkaar; past het niet, dan het label eronder in plaats van afgesneden. */
 .nv-reizen .rg-tripcard__top { flex-wrap: wrap; align-items: flex-start; gap: var(--space-2); }
 .nv-reizen .rg-tripcard__year { white-space: nowrap; }
+/* Onderweg: kaart "Nu onderweg" bovenaan het startscherm. */
+.nv-nu { display: flex; flex-direction: column; gap: 4px; margin: 0 0 var(--space-6); padding: var(--space-5); border-radius: var(--radius-lg);
+  background: var(--lagoon); color: var(--on-lagoon); text-decoration: none; box-shadow: var(--shadow-card); }
+.nv-nu .nv-label { color: inherit; opacity: .85; }
+.nv-nu__titel { font-family: var(--font-display); font-size: clamp(30px, 7vw, 44px); line-height: 1.05; }
+.nv-nu__titel, .nv-nu__dag { color: var(--on-lagoon); }
+.nv-nu__dag { font-size: 17px; }
+.nv-nu:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* Vandaag: blokken met wat je nu nodig hebt (route, slapen, gepland, morgen, verslag). */
+/* Compacte kop: onderweg op een telefoon moet de route of de slaapplek meteen in beeld zijn. */
+.nv-blok.nv-vandaag { padding-top: var(--space-5); }
+.nv-vandaag .nv-kopblok { margin-bottom: var(--space-4); }
+.nv-vandaag .nv-kop { font-size: clamp(30px, 6vw, 44px); margin-bottom: 4px; }
+.nv-vandaag .nv-kopblok .nv-tekst { font-size: 15px; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .nv-blok.nv-vandaag { padding-top: var(--space-3); }
+  .nv-vandaag .nv-kopblok { margin-bottom: var(--space-3); }
+  .nv-vandaag .nv-kop { font-size: 26px; }
+}
+.nv-vandaag__blok { margin: 0 0 var(--space-4); padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-raised); }
+.nv-vandaag__kop { display: flex; align-items: center; gap: 8px; margin: 0 0 var(--space-3); font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--lagoon); }
+.nv-vandaag__regel + .nv-vandaag__regel { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--line); }
+.nv-vandaag__hoofd { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 18px; font-weight: 600; color: var(--ink); }
+.nv-vandaag__hoofd a { color: inherit; }
+.nv-vandaag__tijd { margin: 4px 0 0; font-size: 16px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.nv-vandaag__uitleg { margin: 0 0 var(--space-2); }
+.nv-vandaag__morgen { margin: 0; padding-left: 1.2em; font-size: 16px; line-height: 1.6; color: var(--ink); }
+.nv-verslag { width: 100%; box-sizing: border-box; min-height: 120px; padding: 12px; font: inherit; font-size: 16px; line-height: 1.5; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); resize: vertical; }
+.nv-verslag:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.nv-verslag__knoppen { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-2); }
+.nv-verslag__ander { margin-top: var(--space-3); }
+.nv-verslag__ander .nv-label { display: block; margin-bottom: 4px; }
+.nv-verslag__tekst { margin: 0; font-size: 16px; line-height: 1.6; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.nv-verslag__dag { padding: var(--space-4) 0; border-top: 1px solid var(--line); }
+.nv-verslag__dag .nv-doengroep__plek { margin-top: 0; }
+.nv-vandaag__status { margin: 6px 0 0; }
+
 /* Vergelijkingstabel (alleen beheerder): schuift zelf zijwaarts op een smal scherm, de pagina niet. */
 .nv-vergelijk { margin: var(--space-8) 0 var(--space-6); border-top: 1px solid var(--line); }
 .nv-vergelijk summary { display: flex; flex-direction: column; gap: 4px; padding: var(--space-4) 36px var(--space-4) 0; cursor: pointer; list-style: none; position: relative; border-radius: var(--radius-sm); }

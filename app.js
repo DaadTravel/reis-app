@@ -19,7 +19,8 @@ const FOTO_BUCKET = 'reis-fotos';
 // ververst (60 s marge). Refresh-tokens zijn eenmalig bruikbaar, dus
 // gelijktijdige aanroepen wachten op dezelfde verversing.
 function leesOpslag(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
-function zetOpslag(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) { /* geen opslag: alleen deze sessie */ } }
+// Geeft false als bewaren niet lukte (geen opslag of opslag vol).
+function zetOpslag(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); return true; } catch (e) { /* geen opslag: alleen deze sessie */ return false; } }
 
 let AUTH_ACCESS_TOKEN = leesOpslag('reis_access_token');
 let AUTH_REFRESH_TOKEN = leesOpslag('reis_refresh_token');
@@ -220,16 +221,25 @@ async function haalFotos(ids) {
 async function haalReizen() {
   const reizen = await sbFetch('reizen?select=id,slug,titel,jaar_label,ondertitel,stemming,status,status_label,kaart_status_label,nachten,start_datum,eind_datum,feiten,kaart_foto_id,hero_foto_id,volgorde&order=volgorde');
   if (isFout(reizen)) return reizen;
-  const [f, vergelijk] = await Promise.all([haalFotos(reizen.map(r => r.kaart_foto_id || r.hero_foto_id)), haalVergelijk(reizen)]);
-  return { reizen: reizen, fotos: f.fotos, fotoFout: f.fout, vergelijk: vergelijk };
+  const [f, rol] = await Promise.all([haalFotos(reizen.map(r => r.kaart_foto_id || r.hero_foto_id)), haalRol()]);
+  const beheerder = rol === 'bewerker';
+  const vergelijk = beheerder ? await haalVergelijk(reizen) : null;
+  // Onderweg: de actieve reis (vanaf de dag vóór vertrek) bovenaan, en alvast helemaal op de telefoon.
+  const actief = Opmaak.actieveReis(reizen, vandaagIso(beheerder));
+  if (actief) voorlaadReis(actief.reis.slug);
+  return { reizen: reizen, fotos: f.fotos, fotoFout: f.fout, vergelijk: vergelijk, actief: actief, beheerder: beheerder };
 }
-// Vergelijkingstabel op het startscherm, alleen voor de beheerder (rol bewerker). Gaat iets mis
-// of ben je kijker, dan null: het startscherm werkt gewoon zonder tabel.
-async function haalVergelijk(reizen) {
+// Eigen rol (bewerker = beheerder, kijker); onbekend of fout → null.
+async function haalRol() {
   const ik = mijnId();
-  if (!ik || !reizen.length) return null;
+  if (!ik) return null;
   const zelf = await sbFetch('leden?select=rol&user_id=eq.' + ik);
-  if (isFout(zelf) || !zelf[0] || zelf[0].rol !== 'bewerker') return null;
+  return isFout(zelf) || !zelf[0] ? null : zelf[0].rol;
+}
+// Vergelijkingstabel op het startscherm, alleen voor de beheerder (haalReizen vraagt de rol).
+// Gaat iets mis, dan null: het startscherm werkt gewoon zonder tabel.
+async function haalVergelijk(reizen) {
+  if (!reizen.length) return null;
   const delen = await Promise.all(['budget_posten?select=reis_id,label,totaal', 'stops?select=reis_id', 'route_punten?select=reis_id,volgorde,nachten,leg_vervoer,leg_opties,leg_minuten,leg_benadering',
     'activiteiten?select=id,reis_id', 'hartjes?select=user_id,activiteit_id', 'leden?select=user_id,groep'].map(p => sbFetch(p)));
   if (delen.some(isFout)) return null;
@@ -238,6 +248,35 @@ async function haalVergelijk(reizen) {
     return Opmaak.vergelijk(reizen, { budget: delen[0], stops: delen[1], route: delen[2], activiteiten: delen[3], hartjes: delen[4], leden: delen[5] });
   } catch (e) { return null; }
 }
+
+// ─── ONDERWEG ───
+// "Vandaag" = de datum op de klok van de telefoon, in de tijdzone waar je bent. Testen kan met
+// ?vandaag=JJJJ-MM-DD, alleen lokaal of voor de beheerder; er wordt niets opgeslagen.
+function vandaagIso(beheerder) {
+  const p = new URLSearchParams(location.search).get('vandaag');
+  const lokaal = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  if (p && Opmaak.plusDagen(p, 0) && (lokaal || beheerder)) return p;
+  return Opmaak.datumIn(new Date());
+}
+// Offline (besluit gebruiker 2026-10-04): tijdens een actieve reis, vanaf de dag vóór vertrek, de hele reis
+// en al haar foto's op de achtergrond ophalen; de service worker bewaart ze. Mislukt het: de volgende keer.
+// Hooguit één keer per dag per reis (stempel in localStorage); de reispagina zelf haalt altijd vers op.
+async function voorlaadReis(slug) {
+  const stempel = slug + '|' + Opmaak.datumIn(new Date());
+  if (leesOpslag('reis-voorgeladen') === stempel) return;
+  try {
+    const d = await haalReis(slug);
+    if (!d || isFout(d)) return;
+    const fotos = await Promise.all(Object.keys(d.fotos).map(id => d.fotos[id].url ? fetch(d.fotos[id].url, { mode: 'cors', credentials: 'omit' }).then(r => r.ok, () => false) : true));
+    if (!d.fotoFout && fotos.every(Boolean)) zetOpslag('reis-voorgeladen', stempel);
+  } catch (e) { /* geen verbinding: de volgende keer */ }
+}
+// Blijft de app over middernacht open (of komt hij de volgende dag terug uit de achtergrond), dan opnieuw laden,
+// zodat Vandaag meeschuift. Niet bij een tijdreis (?vandaag=), die staat vast.
+const DAG_BIJ_START = Opmaak.datumIn(new Date());
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !/[?&]vandaag=/.test(location.search) && Opmaak.datumIn(new Date()) !== DAG_BIJ_START) location.reload();
+});
 
 // Eén reis met alles erbij, of null als die niet bestaat (of niet zichtbaar is).
 const REIS_TABELLEN = ['stops', 'dagen', 'route_punten', 'verblijven', 'activiteiten', 'budget_posten'];
@@ -266,12 +305,88 @@ async function haalReis(slug) {
   });
   const fotoIds = [reis.hero_foto_id, reis.quote_foto_id, reis.kaart_foto_id]
     .concat(d.stops.map(s => s.foto_id), d.verblijven.map(v => v.foto_id));
-  const [f, gezin] = await Promise.all([haalFotos(fotoIds), haalGezin(d.activiteiten.map(a => a.id))]);
+  const [f, gezin, verslagen] = await Promise.all([haalFotos(fotoIds), haalGezin(d.activiteiten.map(a => a.id)),
+    sbFetch('verslagen?select=datum,user_id,tekst,gewijzigd&reis_id=eq.' + reis.id + '&order=datum')]);
   return {
     reis: reis, stops: d.stops, dagen: d.dagen, route: d.route_punten, verblijven: d.verblijven,
     activiteiten: d.activiteiten, budget: d.budget_posten, fotos: f.fotos, fotoFout: f.fout, gezin: gezin,
+    // Het verslag is een extra: lukt ophalen niet, dan werkt de reispagina gewoon (en meldt het verslag dat).
+    verslagen: isFout(verslagen) ? [] : verslagen, verslagFout: isFout(verslagen),
   };
 }
+
+// ─── DATALAAG: REISVERSLAG ───
+// Elke wijziging gaat meteen naar de telefoon (wachtrij in localStorage), ook als de app daarna dicht gaat;
+// versturen gebeurt daarna: bij typen (na een korte pauze), bij het openen van de app, als er weer verbinding
+// is en als de app naar de achtergrond gaat. Na aankomst blijft je laatste versie als eigen kopie staan
+// (verzonden: true), zodat een verouderde kopie uit de cache je tekst nooit vervangt; de database laat een
+// oudere versie een nieuwere ook nooit overschrijven (migratie …0020).
+const VERSLAG_WACHT = 'reis-verslag-wachtrij';
+function leesWachtrij() { return Opmaak.wachtrijLees(leesOpslag(VERSLAG_WACHT)); }
+function bewaarWachtrij(w) { return zetOpslag(VERSLAG_WACHT, Object.keys(w).length ? JSON.stringify(w) : ''); }
+function wachtSleutel(reisId, datum, ik) { return reisId + '|' + datum + '|' + ik; }
+// Je eigen laatste versie van deze dag op dit toestel (verstuurd of niet), of null.
+function verslagConcept(reisId, datum) {
+  const ik = mijnId();
+  return ik ? leesWachtrij()[wachtSleutel(reisId, datum, ik)] || null : null;
+}
+// Meteen op de telefoon bewaren. Uitslag: 'ok', 'uitgelogd' (kan niet aan jou gekoppeld worden) of 'vol'
+// (opslag van de telefoon vol of geblokkeerd: niet bewaard).
+function zetVerslagConcept(reisId, datum, tekst) {
+  const ik = mijnId();
+  if (!ik) return 'uitgelogd';
+  const w = leesWachtrij(), k = wachtSleutel(reisId, datum, ik);
+  w[k] = { reis_id: reisId, datum: datum, user_id: ik, tekst: tekst, gewijzigd: new Date().toISOString(), verzonden: false, fout: null };
+  if (!bewaarWachtrij(w)) return 'vol';
+  const terug = leesWachtrij()[k];
+  return terug && terug.tekst === tekst ? 'ok' : 'vol';
+}
+// Staat er van jou nog iets dat nog kan aankomen? (waarschuwing bij uitloggen; geweigerde items tellen niet)
+function heeftOnverzondenVerslag() {
+  const ik = mijnId(), w = leesWachtrij();
+  return !!ik && Object.keys(w).some(k => w[k].user_id === ik && !w[k].verzonden && !w[k].fout);
+}
+// Eén verzendronde tegelijk; komt er intussen iets bij, dan nog een ronde. Items van een ander account op dit
+// toestel blijven staan tot die weer inlogt. Per item wordt bijgehouden of het is aangekomen of geweigerd.
+// Geweigerd (4xx, behalve een verlopen sessie) wordt niet opnieuw geprobeerd tot je de tekst aanpast.
+// Verstuurde kopieën ouder dan 60 dagen worden opgeruimd (de server heeft ze; de wachtrij blijft klein).
+const OPRUIMEN_NA_MS = 60 * 24 * 3600 * 1000;
+let versturen = null, nogEenRonde = false;
+async function verzendRonde() {
+  const ik = mijnId();
+  let w = leesWachtrij();
+  const oud = Object.keys(w).filter(k => w[k].verzonden && Date.now() - Date.parse(w[k].gewijzigd) > OPRUIMEN_NA_MS);
+  if (oud.length) { oud.forEach(k => { delete w[k]; }); bewaarWachtrij(w); }
+  for (const k of Object.keys(w)) {
+    const x = w[k];
+    if (!ik || x.user_id !== ik || x.verzonden || x.fout) continue;
+    const r = await sbWrite('verslagen?on_conflict=reis_id,datum,user_id', 'POST',
+      { reis_id: x.reis_id, datum: x.datum, tekst: x.tekst, gewijzigd: x.gewijzigd }, 2, { Prefer: 'resolution=merge-duplicates,return=minimal' });
+    if (isFout(r) && (r.status === 0 || r.status === 401 || r.status >= 500)) break; // later opnieuw
+    const nu = leesWachtrij();
+    if (nu[k] && nu[k].gewijzigd === x.gewijzigd && nu[k].tekst === x.tekst) {
+      nu[k] = Object.assign({}, nu[k], isFout(r) ? { fout: r.message || ('fout ' + r.status) } : { verzonden: true, fout: null });
+      bewaarWachtrij(nu);
+    }
+  }
+}
+function verstuurVerslagen() {
+  if (versturen) { nogEenRonde = true; return versturen; }
+  nogEenRonde = false;
+  // Altijd asynchroon (ook met een lege wachtrij), zodat "bezig" pas na de ronde vrijkomt.
+  versturen = Promise.resolve().then(verzendRonde).catch(() => {})
+    .then(() => {
+      versturen = null;
+      if (nogEenRonde) return verstuurVerslagen();
+      // Schermen laten weten dat de wachtrij is bijgewerkt (ook na versturen op de achtergrond).
+      window.dispatchEvent(new CustomEvent('reis-verslag-verstuurd'));
+    });
+  return versturen;
+}
+window.addEventListener('online', () => { if (isIngelogd()) verstuurVerslagen(); });
+// App naar de achtergrond of dicht: nog één poging (het concept staat al op de telefoon).
+window.addEventListener('pagehide', () => { if (isIngelogd()) verstuurVerslagen(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && isIngelogd()) verstuurVerslagen(); });
 
 // ─── DATALAAG: GEZIN (groep per lid en hartjes) ───
 // Eigen user-ID uit de access-token (JWT, veld sub); geen geldige token → null.
@@ -285,13 +400,13 @@ function mijnId() {
 // werkt de reispagina gewoon zonder hartjes (werkt: false), want dit is een extra.
 async function haalGezin(activiteitIds) {
   const ik = mijnId();
-  const leden = await sbFetch('leden?select=user_id,weergavenaam,groep');
+  const leden = await sbFetch('leden?select=user_id,weergavenaam,groep,rol');
   const hartjes = activiteitIds.length
     ? await sbFetch('hartjes?select=user_id,activiteit_id,aangemaakt&activiteit_id=in.(' + activiteitIds.join(',') + ')&order=aangemaakt')
     : [];
-  if (isFout(leden) || isFout(hartjes)) return { werkt: false, leden: [], hartjes: [], mijnId: ik, groep: null };
+  if (isFout(leden) || isFout(hartjes)) return { werkt: false, leden: [], hartjes: [], mijnId: ik, groep: null, beheerder: false };
   const zelf = leden.filter(l => l.user_id === ik)[0];
-  return { werkt: true, leden: leden, hartjes: hartjes, mijnId: ik, groep: (zelf && zelf.groep) || null };
+  return { werkt: true, leden: leden, hartjes: hartjes, mijnId: ik, groep: (zelf && zelf.groep) || null, beheerder: !!zelf && zelf.rol === 'bewerker' };
 }
 // Hartje geven (aan) of weghalen bij een activiteit; alleen het eigen hartje (RLS).
 // Bestaat het al (herhaalpoging na een hapering, of verouderde data uit de offline-cache),

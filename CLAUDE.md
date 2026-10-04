@@ -48,7 +48,8 @@ voor beschrijving en beleving.
   `sw.js`/manifest (offline), lettertypes zelf meegeleverd. Live op
   `daadtravel.github.io/reis-app/`; gebruiker is lid (bewerker) en de
   rooktest als lid is geslaagd (2026-09-30). Geparkeerd: foto's te hoog
-  op een telefoon in landscape.
+  op een telefoon in landscape. Sinds 2026-10-04 ook voor onderweg:
+  Vandaag/morgen en het reisverslag (zie Onderweg).
 
 **Bij de start van een sessie:** lees ook `.claude/overdracht.md`
 (gitignored) — daarin staan de actuele stand, de open vragen en de
@@ -149,7 +150,42 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `…0014`: `verblijven.geboekt_via`; `…0015`: `leg_geboekt_via` en
   `leg_adres` bij een rit, `geboekt_via` bij een activiteit; `…0016`: `reizen.km_gereden`;
   `…0017`: `route_punten.leg_opties`, zie Vervoersopties; `…0018`:
-  `leden.groep` en `reis.hartjes`, zie Hartjes).
+  `leden.groep` en `reis.hartjes`, zie Hartjes; `…0019`: `reis.verslagen`,
+  `…0020`: nieuwste versie wint, zie Onderweg).
+- **Onderweg** (besluit gebruiker 2026-10-04). Een gekozen reis (geboekt of
+  betaald) is **actief** van de dag vóór vertrek t/m de dag van thuiskomst
+  (`O.actieveReis`). Dan staat er bovenaan het startscherm een kaart "Nu
+  onderweg" (`NuOnderweg`, class `nv-nu`) en op de reispagina "Vandaag"
+  vooraan in de balk; de app opent níet vanzelf op Vandaag. **Vandaag** =
+  de datum op de klok van de telefoon in de tijdzone waar je bent
+  (`O.datumIn`; na een vlucht naar Japan springt de dag mee). Testen met
+  `?vandaag=JJJJ-MM-DD`: alleen lokaal of voor de beheerder (`vandaagIso`),
+  er wordt niets opgeslagen; geen dummyreis in de database. Het scherm
+  Vandaag (`O.dagOverzicht`), in deze volgorde: route vandaag (een
+  nachtvlucht ook de dag erna als aankomst; een autorit na de eerste rit
+  zonder tijd vertrekt "~09:00", gewoonte van het gezin), slapen vannacht,
+  gepland (naam, tijd, ophaalpunt, contact en of er nog betaald moet
+  worden; geen hartje, geen prijs) óf vrije dag (top 3 ideeën van de plek
+  op ★/♥), morgen (uitchecken, route, activiteiten), reisverslag. Bewust
+  niet: kosten, beschrijving, de hele route. **Offline**: zodra een reis
+  actief is, haalt de app hem met al zijn foto's op de achtergrond op
+  (`voorlaadReis`). **Reisverslag** (`reis.verslagen`): per dag een eigen
+  tekst per ouder (alleen bewerkers schrijven, iedereen leest; kinderen
+  zijn kijker). Elke toetsaanslag gaat meteen naar de telefoon (localStorage
+  `reis-verslag-wachtrij`), versturen daarna (na een pauze in het typen,
+  bij openen van de app, weer verbinding en als de app naar de achtergrond
+  gaat). Na aankomst blijft je laatste versie als eigen kopie staan
+  (`verzonden: true`); je eigen tekst is altijd de nieuwste van server en
+  telefoon (`gewijzigd`), en de database laat een oudere versie een nieuwere
+  nooit overschrijven (trigger, migratie `…0020`). Kon het verslag niet
+  geladen worden en staat er niets op de telefoon, dan kan er niet getypt
+  worden. Uitloggen met onverstuurde tekst: eerst een waarschuwing; de
+  tekst blijft op de telefoon (gaat mee na opnieuw inloggen). Knop
+  "Kopieer" (datum · plek + teksten, voor Polarsteps, een appje of het
+  fotoboek; Polarsteps kan niets importeren) en onderdeel Verslag met
+  "Download verslag" (tekstbestand); **altijd met de naam van de
+  schrijver** (besluit gebruiker 2026-10-04). Geen foto's in het verslag.
+  Rollen: beide ouders bewerker, kinderen kijker.
 - **Hartjes** (migratie `…0018`, besluit gebruiker 2026-10-04): tieners
   moeten ook zin hebben in de reis. Elk lid heeft een groep
   (`leden.groep`: `tiener` of `volwassene`; geen leeftijd of geboortedatum)

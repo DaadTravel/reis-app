@@ -150,6 +150,145 @@
         tiener: vormen.tiener, volwassene: vormen.volwassene };
     });
   }
+  // ===== Onderweg (besluit gebruiker 2026-10-04) =====
+  // Datum "vandaag" als JJJJ-MM-DD op de klok van de telefoon, in de tijdzone waar je bent: na een vlucht naar
+  // Japan springt de telefoon over en dus ook de dag. tijdzone alleen voor tests; onbekend → die van het toestel.
+  function datumIn(nu, tijdzone) {
+    if (!(nu instanceof Date) || isNaN(nu)) return null;
+    var opties = { year: 'numeric', month: '2-digit', day: '2-digit' }, f;
+    try { f = new Intl.DateTimeFormat('en-CA', Object.assign({ timeZone: tijdzone || undefined }, opties)); } catch (e) { f = new Intl.DateTimeFormat('en-CA', opties); }
+    var d = {};
+    f.formatToParts(nu).forEach(function (p) { d[p.type] = p.value; });
+    return d.year + '-' + d.month + '-' + d.day;
+  }
+  // Echte kalenderdatum JJJJ-MM-DD (geen 2026-13-45 of 30 februari); alles anders → false.
+  function isDatum(iso) {
+    if (typeof iso !== 'string' || !/^\d{4}-\d\d-\d\d$/.test(iso)) return false;
+    var d = lees(iso);
+    return !isNaN(d) && d.toISOString().slice(0, 10) === iso;
+  }
+  function plusDagen(iso, n) {
+    if (!isDatum(iso)) return null;
+    var d = lees(iso); d.setUTCDate(d.getUTCDate() + (Number(n) || 0));
+    return d.toISOString().slice(0, 10);
+  }
+  function dagenTussen(van, tot) { return isDatum(van) && isDatum(tot) ? Math.round((lees(tot) - lees(van)) / 864e5) : null; }
+  // Rijen uit de database: alleen een echte lijst met objecten telt (rare of ontbrekende data → leeg).
+  function rijen(x) { return Array.isArray(x) ? x.filter(function (r) { return r && typeof r === 'object'; }) : []; }
+  // Actieve reis: gekozen (geboekt/betaald), van de dag vóór vertrek (dagNr 0) t/m de dag van thuiskomst.
+  // Lopen er twee tegelijk, dan de reis die het eerst begon. Ongeldige datums tellen niet mee.
+  function actieveReis(reizen, vandaag) {
+    if (!isDatum(vandaag)) return null;
+    var kandidaten = rijen(reizen).filter(function (r) {
+      return (r.status === 'geboekt' || r.status === 'betaald') && isDatum(r.start_datum) && isDatum(r.eind_datum) &&
+        vandaag >= plusDagen(r.start_datum, -1) && vandaag <= r.eind_datum;
+    }).sort(function (a, b) { return a.start_datum < b.start_datum ? -1 : a.start_datum > b.start_datum ? 1 : 0; });
+    var r = kandidaten[0];
+    return r ? { reis: r, dagNr: dagenTussen(r.start_datum, vandaag) + 1, dagen: dagenTussen(r.start_datum, r.eind_datum) + 1 } : null;
+  }
+  // Wat er op een dag gebeurt. routes: ritten die die dag vertrekken, plus een nachtvlucht van gisteren die vandaag
+  // aankomt (aankomst: true). Vertrek zonder tijd: een autorit na de eerste rit vertrekt "~09:00" (gewoonte van het
+  // gezin, besluit gebruiker 2026-10-04); anders geen tijd. slapen: het geboekte (of onbekende) verblijf van die nacht.
+  // Vrije dag (geen rit, niets gepland): de top 3 ideeën van deze plek op hartjes. Rare data → leeg, nooit een fout.
+  function dagOverzicht(d, datum) {
+    d = d && typeof d === 'object' ? d : {};
+    var r = d.reis && typeof d.reis === 'object' ? d.reis : {};
+    var leeg = { datum: datum, dagNr: null, dagen: null, plek: null, routes: [], slapen: null, nachtNr: null, nachtenHier: null,
+      activiteiten: [], vrij: false, ideeen: [], laatsteDag: false, morgen: { datum: null, uitchecken: null, routes: [], activiteiten: [] } };
+    if (!isDatum(datum)) return leeg;
+    var route = rijen(d.route).slice().sort(function (a, b) { return (Number(a.volgorde) || 0) - (Number(b.volgorde) || 0); });
+    var eersteRit = route.filter(function (l) { return l.leg_vervoer; })[0];
+    var stopNaam = {};
+    rijen(d.stops).forEach(function (s) { stopNaam[s.id] = tekstOf(s.naam) || null; });
+    var verblijven = rijen(d.verblijven), acts = rijen(d.activiteiten);
+    function rit(l, aankomst) {
+      var i = route.indexOf(l), van = i > 0 ? tekstOf(route[i - 1].naam) || null : null;
+      var vertrek = l.leg_vertrek ? tijd(l.leg_vertrek) : l.leg_vervoer === 'car' && l !== eersteRit ? '~09:00' : null;
+      return { punt: l, van: van, naar: tekstOf(l.naam) || null, vertrek: vertrek, aankomst: !!aankomst, aankomstTijd: l.leg_aankomst ? tijd(l.leg_aankomst) : null };
+    }
+    function routesOp(dt) {
+      return route.filter(function (l) { return l.leg_vervoer && Number(l.leg_aankomst_dagen) >= 1 && isDatum(l.leg_datum) && plusDagen(l.leg_datum, Number(l.leg_aankomst_dagen)) === dt; }).map(function (l) { return rit(l, true); })
+        .concat(route.filter(function (l) { return l.leg_vervoer && l.leg_datum === dt; }).map(function (l) { return rit(l, false); }));
+    }
+    function slaapOp(dt) {
+      return verblijven.filter(function (v) { return inSlapen(v) && isDatum(v.inchecken) && isDatum(v.uitchecken) && v.inchecken <= dt && dt < v.uitchecken; })[0] || null;
+    }
+    function gepland(dt) {
+      return acts.filter(function (a) { return !isIdee(a) && a.datum === dt; })
+        .sort(function (a, b) { return String(a.begin_tijd || '99').localeCompare(String(b.begin_tijd || '99')); });
+    }
+    var morgenDatum = plusDagen(datum, 1);
+    var routes = routesOp(datum), slapen = slaapOp(datum), activiteiten = gepland(datum);
+    var vertrekt = routes.filter(function (x) { return !x.aankomst; });
+    var laatste = vertrekt[vertrekt.length - 1];
+    var plekId = slapen ? slapen.stop_id : laatste && laatste.punt.stop_id;
+    var vrij = !routes.length && !activiteiten.length && !!slapen;
+    var ideeen = vrij ? sorteerTeDoen(acts.filter(function (a) { return isIdee(a) && a.stop_id === plekId; }), rijen(d.hartjes)).slice(0, 3) : [];
+    var morgenSlapen = slaapOp(morgenDatum);
+    var dagNr = dagenTussen(r.start_datum, datum), dagen = dagenTussen(r.start_datum, r.eind_datum);
+    return {
+      datum: datum, dagNr: dagNr == null ? null : dagNr + 1, dagen: dagen == null ? null : dagen + 1,
+      plek: plekId ? stopNaam[plekId] || null : null, routes: routes, slapen: slapen,
+      nachtNr: slapen ? dagenTussen(slapen.inchecken, datum) + 1 : null, nachtenHier: slapen ? dagenTussen(slapen.inchecken, slapen.uitchecken) : null,
+      activiteiten: activiteiten, vrij: vrij, ideeen: ideeen, laatsteDag: datum === r.eind_datum,
+      morgen: { datum: morgenDatum, uitchecken: slapen && slapen.uitchecken === morgenDatum && (!morgenSlapen || morgenSlapen.id !== slapen.id) ? slapen : null,
+        routes: routesOp(morgenDatum).filter(function (x) { return !x.aankomst; }), activiteiten: gepland(morgenDatum) }
+    };
+  }
+  // ===== Reisverslag (besluit gebruiker 2026-10-04) =====
+  // Wachtrij op de telefoon: { "reis|datum|user": {reis_id, datum, user_id, tekst, gewijzigd, verzonden, fout} }.
+  // Kapotte of rare inhoud → leeg (wat kapot is, kan niet meer verstuurd worden; nooit een fout).
+  function wachtrijLees(json) {
+    var w;
+    try { w = JSON.parse(json || '{}'); } catch (e) { return {}; }
+    if (!w || typeof w !== 'object' || Array.isArray(w)) return {};
+    var uit = {};
+    Object.keys(w).forEach(function (k) {
+      var x = w[k];
+      if (x && typeof x === 'object' && typeof x.reis_id === 'string' && isDatum(x.datum) && typeof x.user_id === 'string' &&
+        typeof x.tekst === 'string' && typeof x.gewijzigd === 'string') {
+        // verzonden: deze versie is aangekomen (blijft als eigen kopie staan); fout: laatste weigering.
+        uit[k] = Object.assign({}, x, { verzonden: x.verzonden === true, fout: typeof x.fout === 'string' ? x.fout : null });
+      }
+    });
+    return uit;
+  }
+  // Dagen van het verslag: van vertrek t/m vandaag (tijdens de reis) of t/m thuiskomst (daarna); vóór vertrek geen.
+  function verslagDagen(reis, vandaag) {
+    var r = reis || {};
+    if (!isDatum(r.start_datum) || !isDatum(r.eind_datum) || !isDatum(vandaag) || vandaag < r.start_datum) return [];
+    var tot = vandaag < r.eind_datum ? vandaag : r.eind_datum, uit = [];
+    for (var d = r.start_datum; d <= tot && uit.length < 400; d = plusDagen(d, 1)) uit.push(d);
+    return uit;
+  }
+  // Per dag: je eigen verslag (om te bewerken) en die van de anderen met naam (om te lezen; lege tekst telt niet).
+  function verslagVan(verslagen, datum, mijnId, leden) {
+    var naam = {};
+    rijen(leden).forEach(function (l) { naam[l.user_id] = l.weergavenaam || 'Iemand'; });
+    var vandag = rijen(verslagen).filter(function (v) { return v.datum === datum && typeof v.tekst === 'string'; });
+    return { eigen: vandag.filter(function (v) { return v.user_id === mijnId; })[0] || null,
+      anderen: vandag.filter(function (v) { return v.user_id !== mijnId && v.tekst.trim(); })
+        .map(function (v) { return { naam: naam[v.user_id] || 'Iemand', tekst: v.tekst }; }) };
+  }
+  // Download als platte tekst: titel, periode, per dag "wo 8 juli · plek" en de teksten, altijd met de naam van
+  // de schrijver (besluit gebruiker 2026-10-04; op naam gesorteerd). Dagen zonder tekst vallen weg.
+  function verslagExport(reis, verslagen, leden, plekken) {
+    var r = reis || {}, naam = {};
+    rijen(leden).forEach(function (l) { naam[l.user_id] = l.weergavenaam || 'Iemand'; });
+    var delen = [tekstOf(r.titel)];
+    if (isDatum(r.start_datum) && isDatum(r.eind_datum)) delen[0] += '\n' + periodeKort(r.start_datum, r.eind_datum) + ' ' + lees(r.eind_datum).getUTCFullYear();
+    var dagen = {};
+    rijen(verslagen).forEach(function (v) {
+      if (!isDatum(v.datum) || typeof v.tekst !== 'string' || !v.tekst.trim()) return;
+      (dagen[v.datum] = dagen[v.datum] || []).push({ naam: naam[v.user_id] || 'Iemand', tekst: v.tekst.trim() });
+    });
+    Object.keys(dagen).sort().forEach(function (d) {
+      var lijst = dagen[d].sort(function (a, b) { return a.naam.localeCompare(b.naam); });
+      var kop = dagLabel(d) + (plekken && plekken[d] ? ' · ' + plekken[d] : '');
+      delen.push(kop + '\n\n' + lijst.map(function (x) { return x.naam + ':\n' + x.tekst; }).join('\n\n'));
+    });
+    return delen.join('\n\n') + '\n';
+  }
   // Teken per groep (besluit gebruiker 2026-10-04): tieners een ster, volwassenen (en onbekend) een hart.
   function hartVorm(groep) { return groep === 'tiener' ? '★' : '♥'; }
   // ["Jij", "Bas", "Lies"] → "Jij, Bas en Lies".
@@ -258,7 +397,8 @@
   }
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
-    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, vergelijk: vergelijk, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
+    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
+    wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,

@@ -349,6 +349,141 @@
   test('activiteitWanneer: voorstel zonder datum → leeg (geen "Wanneer ?")', '', function () { return O.activiteitWanneer({ status: 'voorstel' }); });
   test('activiteitWanneer: voorstel met tekst', 'ergens in jan', function () { return O.activiteitWanneer({ status: 'voorstel', wanneer: 'ergens in jan' }); });
 
+  // ===== Onderweg: datum van vandaag, actieve reis en het dagoverzicht (2026-10-04) =====
+  // "Vandaag" = de datum op de klok van de telefoon, in de tijdzone waar je bent (tijdzone meegeven in tests).
+  var nachtUtc = new Date(Date.UTC(2027, 6, 13, 20, 30)); // 22:30 in Amsterdam, 05:30 de volgende dag in Tokio
+  test('datumIn: Amsterdam, laat op de avond', '2027-07-13', function () { return O.datumIn(nachtUtc, 'Europe/Amsterdam'); });
+  test('datumIn: Tokio, al de volgende ochtend', '2027-07-14', function () { return O.datumIn(nachtUtc, 'Asia/Tokyo'); });
+  test('datumIn: Seoul net na middernacht', '2027-07-15', function () { return O.datumIn(new Date(Date.UTC(2027, 6, 14, 15, 1)), 'Asia/Seoul'); });
+  test('datumIn: Seoul net vóór middernacht', '2027-07-14', function () { return O.datumIn(new Date(Date.UTC(2027, 6, 14, 14, 59)), 'Asia/Seoul'); });
+  test('datumIn: jaarwisseling in Bangkok', '2026-01-01', function () { return O.datumIn(new Date(Date.UTC(2025, 11, 31, 17, 0)), 'Asia/Bangkok'); });
+  test('datumIn: ongeldige datum → null', null, function () { return O.datumIn(new Date('x'), 'Europe/Amsterdam'); });
+  test('datumIn: onbekende tijdzone → tijdzone van het toestel', true, function () { return /^\d{4}-\d\d-\d\d$/.test(O.datumIn(nachtUtc, 'Geen/Zone')); });
+  test('plusDagen: over de maandgrens', '2026-08-01', function () { return O.plusDagen('2026-07-31', 1); });
+  test('plusDagen: terug', '2026-07-06', function () { return O.plusDagen('2026-07-07', -1); });
+
+  // Actieve reis: gekozen (geboekt/betaald), van de dag vóór vertrek t/m de dag van thuiskomst.
+  var reizenA = [
+    { id: 'idee', status: 'voorstel', start_datum: '2026-07-07', eind_datum: '2026-07-30' },
+    { id: 'eu', status: 'betaald', start_datum: '2026-07-07', eind_datum: '2026-07-30' },
+    { id: 'later', status: 'geboekt', start_datum: '2026-08-10', eind_datum: '2026-08-20' }];
+  var actief = function (d) { var a = O.actieveReis(reizenA, d); return a && [a.reis.id, a.dagNr, a.dagen]; };
+  test('actieveReis: dag vóór vertrek = dag 0', ['eu', 0, 24], function () { return actief('2026-07-06'); });
+  test('actieveReis: eerste dag', ['eu', 1, 24], function () { return actief('2026-07-07'); });
+  test('actieveReis: dag van thuiskomst', ['eu', 24, 24], function () { return actief('2026-07-30'); });
+  test('actieveReis: dag erna niet meer', null, function () { return actief('2026-07-31'); });
+  test('actieveReis: twee dagen ervoor nog niet', null, function () { return actief('2026-07-05'); });
+  test('actieveReis: een idee wordt nooit actief', null, function () { return O.actieveReis([reizenA[0]], '2026-07-10'); });
+  test('actieveReis: zonder datums niet', null, function () { return O.actieveReis([{ id: 'x', status: 'betaald', start_datum: null, eind_datum: null }], '2026-07-10'); });
+  test('actieveReis: overlap → de reis die het eerst begint', 'eu', function () {
+    return O.actieveReis([reizenA[2], reizenA[1], { id: 'mid', status: 'geboekt', start_datum: '2026-07-20', eind_datum: '2026-07-25' }], '2026-07-21').reis.id;
+  });
+
+  // Dagoverzicht: modelreis met een autorit, een rustdag, een wisseldag, een nachtvlucht en een thuisreis.
+  var dagReis = {
+    reis: { id: 'eu', start_datum: '2026-07-07', eind_datum: '2026-07-12' },
+    stops: [{ id: 's1', naam: 'Nesselwang' }, { id: 's2', naam: 'Corvara' }, { id: 's3', naam: 'Bangkok' }],
+    route: [
+      { id: 'p0', volgorde: 1, naam: 'Purmerend', leg_vervoer: null },
+      { id: 'p1', volgorde: 2, naam: 'Nesselwang', stop_id: 's1', leg_vervoer: 'car', leg_datum: '2026-07-07', leg_vertrek: '06:00:00' },
+      { id: 'p2', volgorde: 3, naam: 'Corvara', stop_id: 's2', leg_vervoer: 'car', leg_datum: '2026-07-08' },
+      { id: 'p3', volgorde: 4, naam: 'Bangkok', stop_id: 's3', leg_vervoer: 'plane', leg_datum: '2026-07-10', leg_vertrek: '21:40:00', leg_aankomst: '13:55:00', leg_aankomst_dagen: 1 },
+      { id: 'p4', volgorde: 5, naam: 'Purmerend', leg_vervoer: 'plane', leg_datum: '2026-07-12', leg_vertrek: '12:25:00' }],
+    verblijven: [
+      { id: 'v1', naam: 'Alpenrose', stop_id: 's1', inchecken: '2026-07-07', uitchecken: '2026-07-08', status: 'betaald' },
+      { id: 'v2', naam: 'Lavara', stop_id: 's2', inchecken: '2026-07-08', uitchecken: '2026-07-10', status: 'betaald' },
+      { id: 'vx', naam: 'Optie die het niet werd', stop_id: 's2', inchecken: '2026-07-08', uitchecken: '2026-07-10', status: 'optie' },
+      { id: 'v3', naam: 'Hotel BKK', stop_id: 's3', inchecken: '2026-07-11', uitchecken: '2026-07-12', status: 'betaald' }],
+    activiteiten: [
+      { id: 'a1', naam: 'Kabelbaan', stop_id: 's2', datum: '2026-07-08', begin_tijd: '14:00:00', status: 'betaald' },
+      { id: 'a0', naam: 'Ontbijt op de berg', stop_id: 's2', datum: '2026-07-08', begin_tijd: '08:00:00', status: 'betaald' },
+      { id: 'i1', naam: 'Meer', stop_id: 's2', status: 'voorstel', volgorde: 1 },
+      { id: 'i2', naam: 'Hut', stop_id: 's2', status: 'voorstel', volgorde: 2 },
+      { id: 'i3', naam: 'Tunnels', stop_id: 's2', status: 'voorstel', volgorde: 3 },
+      { id: 'i4', naam: 'Fietsen', stop_id: 's2', status: 'voorstel', volgorde: 4 },
+      { id: 'i5', naam: 'Elders', stop_id: 's1', status: 'voorstel', volgorde: 5 }],
+    hartjes: [{ user_id: 'u1', activiteit_id: 'i3' }, { user_id: 'u2', activiteit_id: 'i3' }, { user_id: 'u1', activiteit_id: 'i4' }] };
+  var dag = function (d) { return O.dagOverzicht(dagReis, d); };
+  var ritTekst = function (r) { return [r.van, r.naar, r.vertrek, r.aankomst ? 'aankomst' : ''].join('|'); };
+  test('dag: vóór vertrek: thuis, morgen de eerste rit', { dagNr: 0, plek: null, slapen: null, morgen: ['Purmerend|Nesselwang|06:00|'] }, function () {
+    var x = dag('2026-07-06'); return { dagNr: x.dagNr, plek: x.plek, slapen: x.slapen, morgen: x.morgen.routes.map(ritTekst) };
+  });
+  test('dag 1: rit met vertrektijd, slapen nacht 1 van 1', { dagNr: 1, plek: 'Nesselwang', routes: ['Purmerend|Nesselwang|06:00|'], slapen: 'Alpenrose', nacht: [1, 1] }, function () {
+    var x = dag('2026-07-07'); return { dagNr: x.dagNr, plek: x.plek, routes: x.routes.map(ritTekst), slapen: x.slapen.naam, nacht: [x.nachtNr, x.nachtenHier] };
+  });
+  test('dag 1: morgen uitchecken en verder rijden', { uitchecken: 'Alpenrose', routes: ['Nesselwang|Corvara|~09:00|'] }, function () {
+    var m = dag('2026-07-07').morgen; return { uitchecken: m.uitchecken && m.uitchecken.naam, routes: m.routes.map(ritTekst) };
+  });
+  test('wisseldag: autorit zonder tijd = ~09:00 (gewoonte), het geboekte verblijf, activiteiten op tijd', { routes: ['Nesselwang|Corvara|~09:00|'], slapen: 'Lavara', acts: ['a0', 'a1'], ideeen: [] }, function () {
+    var x = dag('2026-07-08'); return { routes: x.routes.map(ritTekst), slapen: x.slapen.naam, acts: x.activiteiten.map(function (a) { return a.id; }), ideeen: x.ideeen.map(function (a) { return a.id; }) };
+  });
+  test('vrije dag: top 3 ideeën van deze plek op hartjes, dan volgorde', { vrij: true, ideeen: ['i3', 'i4', 'i1'], nacht: [2, 2] }, function () {
+    var x = dag('2026-07-09'); return { vrij: x.vrij, ideeen: x.ideeen.map(function (a) { return a.id; }), nacht: [x.nachtNr, x.nachtenHier] };
+  });
+  test('nachtvlucht: vertrekdag zonder slaapplek, morgen geen uitchecken', { routes: ['Corvara|Bangkok|21:40|'], slapen: null, plek: 'Bangkok' }, function () {
+    var x = dag('2026-07-10'); return { routes: x.routes.map(ritTekst), slapen: x.slapen, plek: x.plek };
+  });
+  test('na de nachtvlucht: aankomst vandaag', { routes: ['Corvara|Bangkok|21:40|aankomst'], aankomstTijd: '13:55', slapen: 'Hotel BKK', plek: 'Bangkok' }, function () {
+    var x = dag('2026-07-11'); return { routes: x.routes.map(ritTekst), aankomstTijd: x.routes[0].aankomstTijd, slapen: x.slapen.naam, plek: x.plek };
+  });
+  test('laatste dag: thuisreis, niet slapen, laatste dag', { routes: ['Bangkok|Purmerend|12:25|'], slapen: null, laatste: true, plek: null }, function () {
+    var x = dag('2026-07-12'); return { routes: x.routes.map(ritTekst), slapen: x.slapen, laatste: x.laatsteDag, plek: x.plek };
+  });
+  test('vlucht met aankomst +2: aankomst pas op de tweede dag erna', [[], ['Corvara|Bangkok|21:40|aankomst']], function () {
+    var r = Object.assign({}, dagReis, { route: dagReis.route.map(function (l) { return l.id === 'p3' ? Object.assign({}, l, { leg_aankomst_dagen: 2 }) : l; }) });
+    return [O.dagOverzicht(r, '2026-07-11').routes.map(ritTekst), O.dagOverzicht(r, '2026-07-12').routes.filter(function (x) { return x.aankomst; }).map(ritTekst)];
+  });
+  test('vliegen zonder vertrektijd: geen gewoontetijd', null, function () {
+    var r = Object.assign({}, dagReis, { route: dagReis.route.map(function (l) { return l.id === 'p3' ? Object.assign({}, l, { leg_vertrek: null }) : l; }) });
+    return O.dagOverzicht(r, '2026-07-10').routes[0].vertrek;
+  });
+  test('dagoverzicht: lege reis geeft geen fout', { routes: [], slapen: null, activiteiten: [], ideeen: [] }, function () {
+    var x = O.dagOverzicht({ reis: { start_datum: '2026-07-07', eind_datum: '2026-07-08' } }, '2026-07-07');
+    return { routes: x.routes, slapen: x.slapen, activiteiten: x.activiteiten, ideeen: x.ideeen };
+  });
+
+  // Uit de monkeytest (2026-10-04): ongeldige datums en data in de verkeerde vorm → leeg, nooit een fout.
+  test('plusDagen: ongeldige datum → null', [null, null, null], function () { return [O.plusDagen('2026-02-30', 1), O.plusDagen('', 1), O.plusDagen(null, 1)]; });
+  test('actieveReis: reis met datum 2026-13-45 telt niet mee', null, function () { return O.actieveReis([{ status: 'betaald', start_datum: '2026-13-45', eind_datum: '2026-13-50' }], '2026-07-10'); });
+  test('actieveReis: geen lijst of geen datum → null', [null, null], function () { return [O.actieveReis({}, '2026-07-10'), O.actieveReis(reizenA, 'abc')]; });
+  test('dagOverzicht: lijsten in de verkeerde vorm → leeg', { routes: [], slapen: null, plek: null }, function () {
+    var x = O.dagOverzicht({ reis: dagReis.reis, route: 'x', stops: {}, verblijven: [null, 5], activiteiten: 'abc', hartjes: 1 }, '2026-07-08');
+    return { routes: x.routes, slapen: x.slapen, plek: x.plek };
+  });
+  test('dagOverzicht: ongeldige dag → leeg overzicht', { routes: [], dagNr: null }, function () { var x = O.dagOverzicht(dagReis, '2026-02-30'); return { routes: x.routes, dagNr: x.dagNr }; });
+
+  // ===== Reisverslag (2026-10-04) =====
+  // Wachtrij op de telefoon (localStorage, JSON): alleen geldige items; kapotte of rare inhoud → leeg, nooit een fout.
+  var item = { reis_id: 'r', datum: '2026-07-18', user_id: 'u1', tekst: 'Zon!', gewijzigd: '2026-07-18T20:00:00.000Z' };
+  test('wachtrijLees: geldig item blijft', ['r|2026-07-18|u1'], function () { return Object.keys(O.wachtrijLees(JSON.stringify({ 'r|2026-07-18|u1': item }))); });
+  test('wachtrijLees: kapotte JSON → leeg', {}, function () { return O.wachtrijLees('{"r|2026'); });
+  test('wachtrijLees: array, null, getal → leeg', [{}, {}, {}], function () { return [O.wachtrijLees('[1,2]'), O.wachtrijLees('null'), O.wachtrijLees('5')]; });
+  test('wachtrijLees: item zonder tekst of met foute datum valt af', [], function () {
+    return Object.keys(O.wachtrijLees(JSON.stringify({ a: Object.assign({}, item, { tekst: 5 }), b: Object.assign({}, item, { datum: '2026-13-01' }), c: null })));
+  });
+  test('wachtrijLees: lege opslag → leeg', {}, function () { return O.wachtrijLees(''); });
+  // Dagen van het verslag: van vertrek t/m vandaag (tijdens de reis) of t/m thuiskomst (daarna); vóór vertrek geen.
+  var reisV = { start_datum: '2026-07-07', eind_datum: '2026-07-10' };
+  test('verslagDagen: tijdens de reis t/m vandaag', ['2026-07-07', '2026-07-08'], function () { return O.verslagDagen(reisV, '2026-07-08'); });
+  test('verslagDagen: na de reis alle dagen', 4, function () { return O.verslagDagen(reisV, '2026-09-01').length; });
+  test('verslagDagen: vóór vertrek of zonder datums → geen', [[], []], function () { return [O.verslagDagen(reisV, '2026-07-06'), O.verslagDagen({}, '2026-07-08')]; });
+  // Per dag: je eigen verslag (om te bewerken) en die van de anderen (om te lezen), met naam.
+  var versl = [{ datum: '2026-07-08', user_id: 'u1', tekst: 'Mijn dag' }, { datum: '2026-07-08', user_id: 'u2', tekst: 'Haar dag' }, { datum: '2026-07-09', user_id: 'u2', tekst: 'Later' }];
+  test('verslagVan: eigen en anderen', { eigen: 'Mijn dag', anderen: [['Bas', 'Haar dag']] }, function () {
+    var x = O.verslagVan(versl, '2026-07-08', 'u1', ledenG); return { eigen: x.eigen && x.eigen.tekst, anderen: x.anderen.map(function (a) { return [a.naam, a.tekst]; }) };
+  });
+  test('verslagVan: lege tekst van een ander telt niet', 0, function () { return O.verslagVan([{ datum: 'd', user_id: 'u2', tekst: '  ' }], 'd', 'u1', ledenG).anderen.length; });
+  // Download: platte tekst per dag met plek; naam van de schrijver alleen als er die dag meer dan één is.
+  test('wachtrijLees: verstuurd en fout blijven bewaard', [true, 'geweigerd'], function () {
+    var w = O.wachtrijLees(JSON.stringify({ k: Object.assign({}, item, { verzonden: true, fout: 'geweigerd' }) })); return [w.k.verzonden, w.k.fout];
+  });
+  test('wachtrijLees: rare verzonden/fout → genegeerd, item blijft', [false, null], function () {
+    var w = O.wachtrijLees(JSON.stringify({ k: Object.assign({}, item, { verzonden: 'ja', fout: 5 }) })); return [w.k.verzonden, w.k.fout];
+  });
+  test('verslagExport: titel, dagen met plek, altijd de naam van de schrijver, lege dagen weg', 'Reis\n7 – 10 jul 2026\n\nwo 8 juli · Corvara\n\nBas:\nHaar dag\n\nLies:\nMijn dag\n\ndo 9 juli\n\nBas:\nLater\n', function () {
+    return O.verslagExport({ titel: 'Reis', start_datum: '2026-07-07', eind_datum: '2026-07-10' }, versl, ledenG, { '2026-07-08': 'Corvara' });
+  });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');

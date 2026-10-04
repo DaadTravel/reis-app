@@ -201,6 +201,7 @@
           h('h1', null, 'Onze reizen'),
           h('p', null, 'De reizen die we nog gaan maken, en de reizen die we al gemaakt hebben.')),
         h(FotoMelding, { fout: p.data.fotoFout }),
+        p.data.actief ? h(NuOnderweg, { actief: p.data.actief }) : null,
         reizen.length ? null : h(Leeg, { herinnering: true, tekst: 'Er zijn nog geen reizen zichtbaar voor dit account. Is je account al toegevoegd aan de reisgids?' }),
         groepen.map(function (g) {
           var lijst = reizen.filter(function (r) { return r.stemming === g[0]; });
@@ -259,6 +260,208 @@
                   h('td', { className: 'nv-getal' }, x.tiener || x.volwassene ? O.hartVorm('tiener') + ' ' + x.tiener + '  ' + O.hartVorm('volwassene') + ' ' + x.volwassene : '–'));
               }));
           }))));
+  }
+
+  // ═════════════ onderweg (besluit gebruiker 2026-10-04) ═════════════
+  // Kaart bovenaan het startscherm tijdens een actieve reis (vanaf de dag vóór vertrek); één tik naar Vandaag.
+  function NuOnderweg(p) {
+    var a = p.actief, r = a.reis;
+    var dag = a.dagNr === 0 ? 'Morgen vertrekken we' : a.dagNr === a.dagen ? 'Laatste dag' : 'Dag ' + a.dagNr + ' van ' + a.dagen;
+    return h('a', { className: 'nv-nu', href: reisUrl(r.slug) + location.search.replace(/^\?/, '&').replace(/&reis=[^&]*/, '') + '#vandaag' },
+      h('span', { className: 'nv-label' }, a.dagNr === 0 ? 'Bijna op reis' : 'Nu onderweg'),
+      h('span', { className: 'nv-nu__titel' }, r.titel),
+      h('span', { className: 'nv-nu__dag' }, dag, h('span', { className: 'nv-nu__pijl', 'aria-hidden': true }, ' →')));
+  }
+
+  // Eén blok op het scherm Vandaag.
+  function VandaagBlok(p) {
+    return h('section', { className: 'nv-vandaag__blok', 'aria-label': p.titel },
+      h('h3', { className: 'nv-vandaag__kop' }, p.icoon ? h(G.Icon, { name: p.icoon, size: 18 }) : null, p.titel),
+      p.children);
+  }
+  function RouteRegel(p) {
+    var x = p.x, l = x.punt;
+    var tijden = x.aankomst ? [x.aankomstTijd ? 'aankomst ' + x.aankomstTijd : 'aankomst vandaag']
+      : [x.vertrek ? 'vertrek ' + x.vertrek : null, x.aankomstTijd ? 'aankomst ' + x.aankomstTijd + (l.leg_aankomst_dagen ? ' (+' + l.leg_aankomst_dagen + ')' : '') : null];
+    return h('div', { className: 'nv-vandaag__regel' },
+      h('p', { className: 'nv-vandaag__hoofd' }, h(G.Icon, { name: l.leg_vervoer || 'arrow', size: 18 }), (x.van ? kortNaam(x.van) + ' → ' : '') + kortNaam(x.naar || '?')),
+      tijden.filter(Boolean).length ? h('p', { className: 'nv-vandaag__tijd' }, tijden.filter(Boolean).join(' · ')) : null,
+      x.aankomst ? null : h(Contact, { vertrekpunt: l.leg_adres, telefoon: l.leg_telefoon, via: l.leg_geboekt_via, boekingscode: l.leg_boekingscode }));
+  }
+  // Gepland op Vandaag (besluit gebruiker 2026-10-04): naam, tijd, ophaalpunt en contact; geen hartje (het is
+  // al gepland) en geen prijs, wel of er nog betaald moet worden.
+  function GeplandRegel(p) {
+    var a = p.x;
+    var tijd = [a.begin_tijd ? O.tijd(a.begin_tijd) : '', a.eind_tijd ? O.tijd(a.eind_tijd) : ''].filter(Boolean).join(' – ');
+    var betaal = a.status === 'betaald' ? 'Betaald' : a.status === 'geboekt' ? 'Nog betalen' : null;
+    return h('div', { className: 'nv-vandaag__regel' },
+      h('p', { className: 'nv-vandaag__hoofd' }, h(G.Icon, { name: a.icoon || 'calendar', size: 18 }),
+        O.veiligeLink(a.link) ? h('a', { href: a.link, target: '_blank', rel: 'noopener noreferrer' }, a.naam) : a.naam),
+      tijd || a.notitie ? h('p', { className: 'nv-vandaag__tijd' }, [tijd, a.notitie].filter(Boolean).join(' · ')) : null,
+      betaal ? h('p', { className: 'nv-vandaag__status' }, h(G.StatusBadge, { status: a.status, label: betaal })) : null,
+      h(Contact, { ophaalpunt: a.ophaalpunt, telefoon: a.telefoon, email: a.email, via: a.geboekt_via, boekingscode: a.boekingscode }));
+  }
+
+  function tijdVan(x) { var t = x && Date.parse(x.gewijzigd); return isNaN(t) ? 0 : t; }
+  // Reisverslag (besluit gebruiker 2026-10-04): per dag schrijft elke ouder (bewerker) een eigen tekst; het hele
+  // gezin leest mee. Stand per reispagina, gedeeld door Vandaag en het onderdeel Verslag. Je eigen tekst = de
+  // nieuwste van wat de server gaf en wat op deze telefoon staat (de cache kan verouderd zijn).
+  function useVerslagen(data) {
+    var reisId = data.reis.id, ik = mijnId();
+    var server = data.verslagen || [];
+    var t = React.useState(0), setTik = t[1];
+    var s = React.useState({}), bezig = s[0], setBezig = s[1];
+    var u = React.useState('ok'), opslag = u[0], setOpslag = u[1]; // 'ok', 'uitgelogd' of 'vol' (zie zetVerslagConcept)
+    function tik() { setTik(function (n) { return n + 1; }); }
+    var w = leesWachtrij(), lokaal = {};
+    Object.keys(w).forEach(function (k) { var x = w[k]; if (x.reis_id === reisId && x.user_id === ik) lokaal[x.datum] = x; });
+    var rijen = server.filter(function (v) { return !(v.user_id === ik && lokaal[v.datum] && tijdVan(lokaal[v.datum]) >= tijdVan(v)); })
+      .concat(Object.keys(lokaal).filter(function (d) {
+        var sv = server.filter(function (v) { return v.user_id === ik && v.datum === d; })[0];
+        return !sv || tijdVan(lokaal[d]) >= tijdVan(sv);
+      }).map(function (d) { return lokaal[d]; }));
+    // Typen: meteen op de telefoon (ook als de app daarna dicht gaat).
+    function wijzig(datum, tekst) {
+      var uitslag = zetVerslagConcept(reisId, datum, tekst);
+      setOpslag(uitslag);
+      tik();
+      return uitslag === 'ok';
+    }
+    function verstuur(datum) {
+      setBezig(function (o) { var n = A(o, {}); n[datum] = true; return n; });
+      verstuurVerslagen().then(function () { setBezig(function (o) { var n = A(o, {}); delete n[datum]; return n; }); });
+    }
+    // Na een verzendronde (ook op de achtergrond): opnieuw tekenen met de stand uit de wachtrij.
+    React.useEffect(function () {
+      window.addEventListener('reis-verslag-verstuurd', tik);
+      return function () { window.removeEventListener('reis-verslag-verstuurd', tik); };
+    }, []);
+    return { rijen: rijen, lokaal: lokaal, bezig: bezig, opslag: opslag, wijzig: wijzig, verstuur: verstuur, fout: data.verslagFout };
+  }
+  // Tekst van één dag om te kopiëren (Polarsteps, appje, fotoboek): datum · plek, dan de teksten met naam.
+  function dagTekst(datum, plek, teksten) {
+    var lijst = teksten.filter(function (x) { return x.tekst && x.tekst.trim(); });
+    return O.dagLabel(datum) + (plek ? ' · ' + kortNaam(plek) : '') + '\n\n' +
+      lijst.map(function (x) { return x.naam + ':\n' + x.tekst.trim(); }).join('\n\n');
+  }
+  function VerslagDag(p) {
+    var vs = p.vs, ik = mijnId(), leden = (p.gezin && p.gezin.leden) || [];
+    var van = O.verslagVan(vs.rijen, p.datum, ik, leden);
+    var s = React.useState(function () { return van.eigen ? van.eigen.tekst : ''; }), tekst = s[0], setTekst = s[1];
+    var k = React.useState(''), melding = k[0], setMelding = k[1];
+    var wacht = React.useRef(null);
+    // Kon het verslag niet geladen worden en staat er niets op deze telefoon, dan niet typen: je zou de
+    // bestaande tekst op de server met een lege basis overschrijven.
+    var geblokkeerd = vs.fout && !vs.lokaal[p.datum];
+    React.useEffect(function () { return function () { if (wacht.current) { clearTimeout(wacht.current); verstuurVerslagen(); } }; }, []);
+    function typ(e) {
+      var t = e.target.value; setTekst(t); setMelding('');
+      vs.wijzig(p.datum, t);
+      if (wacht.current) clearTimeout(wacht.current);
+      wacht.current = setTimeout(function () { wacht.current = null; vs.verstuur(p.datum); }, 1000);
+    }
+    function nu() { if (wacht.current) { clearTimeout(wacht.current); wacht.current = null; vs.verstuur(p.datum); } }
+    function kopieer() {
+      var zelf = leden.filter(function (l) { return l.user_id === ik; })[0];
+      var t = dagTekst(p.datum, p.plek, [{ naam: (zelf && zelf.weergavenaam) || 'Ik', tekst: tekst }].concat(van.anderen).sort(function (a, b) { return a.naam.localeCompare(b.naam); }));
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { setMelding('Gekopieerd.'); }, function () { setMelding('Kopiëren lukt hier niet; selecteer de tekst zelf.'); });
+    }
+    var x = vs.lokaal[p.datum];
+    var standTekst = vs.opslag === 'uitgelogd' ? 'Je bent niet ingelogd: deze tekst is níet bewaard. Kopieer hem en log opnieuw in.'
+      : vs.opslag === 'vol' ? 'De opslag van deze telefoon is vol: deze tekst is níet bewaard. Kopieer hem naar een andere app.'
+      : wacht.current ? '' : vs.bezig[p.datum] ? 'Opslaan…' : !x ? '' : x.verzonden ? 'Opgeslagen'
+      : x.fout ? 'Niet opgeslagen (' + x.fout + '); het staat nog op deze telefoon. Pas de tekst aan om het opnieuw te proberen.' : 'Bewaard op deze telefoon; gaat mee zodra er verbinding is.';
+    var id = 'verslag-' + p.datum;
+    return h('div', { className: 'nv-verslagdag' },
+      p.schrijven ? h(React.Fragment, null,
+        h('label', { className: 'nv-onzichtbaar', htmlFor: id }, 'Jouw verslag van ' + O.dagLabel(p.datum)),
+        geblokkeerd ? h('p', { className: 'nv-melding' }, 'Het verslag kon niet geladen worden. Schrijven kan weer zodra het opnieuw geladen is (herlaad de pagina met verbinding).') : null,
+        h('textarea', { id: id, className: 'nv-verslag', rows: 5, value: tekst, maxLength: 20000, readOnly: geblokkeerd,
+          placeholder: 'Wat deden we vandaag? Wat was het mooiste moment?', onChange: typ, onBlur: nu }),
+        h('div', { className: 'nv-verslag__knoppen' },
+          h('span', { className: 'nv-muted', role: 'status' }, standTekst),
+          h('button', { type: 'button', className: 'nv-knop', disabled: !tekst.trim() && !van.anderen.length, onClick: kopieer }, 'Kopieer'))) : null,
+      van.anderen.map(function (a, i) {
+        return h('div', { key: i, className: 'nv-verslag__ander' }, h('p', { className: 'nv-label' }, a.naam), h('p', { className: 'nv-verslag__tekst' }, a.tekst));
+      }),
+      melding ? h('p', { className: 'nv-muted', role: 'status' }, melding) : null);
+  }
+
+  // Vandaag (besluit gebruiker 2026-10-04): waar zijn we, route, slapen, gepland of vrij (top 3 ideeën), morgen
+  // en het reisverslag. Bewust niet: kosten, beschrijving, de hele route.
+  function Vandaag(p) {
+    var x = p.dag, m = x.morgen;
+    var titel = x.dagNr === 0 ? 'Morgen vertrekken we' : x.laatsteDag ? 'Vandaag naar huis'
+      : x.plek ? (x.slapen ? 'In ' : 'Onderweg naar ') + kortNaam(x.plek) : 'Onderweg';
+    var sub = [O.dagLabel(x.datum), x.slapen && x.nachtenHier > 1 ? 'nacht ' + x.nachtNr + ' van ' + x.nachtenHier : null].filter(Boolean).join(' · ');
+    var v = x.slapen;
+    var morgen = [];
+    if (m.uitchecken) morgen.push('Uitchecken bij ' + m.uitchecken.naam + (m.uitchecken.uitchecktijd ? ', uiterlijk ' + O.tijd(m.uitchecken.uitchecktijd) : ''));
+    m.routes.forEach(function (r, i) { morgen.push((r.naar ? 'Route naar ' + kortNaam(r.naar) : 'Route') + (r.vertrek ? ', vertrek ' + r.vertrek : '')); });
+    m.activiteiten.forEach(function (a) { morgen.push((a.begin_tijd ? O.tijd(a.begin_tijd) + ' ' : '') + a.naam); });
+    return h('section', { className: 'nv-blok nv-vandaag', id: 'vandaag' },
+      h('div', { className: 'nv-wrap', style: { maxWidth: '760px' } },
+        h('div', { className: 'nv-kopblok' },
+          h('span', { className: 'nv-label' }, x.dagNr === 0 ? 'Vandaag · de dag vóór vertrek' : 'Vandaag · dag ' + x.dagNr + ' van ' + x.dagen),
+          h('h2', { className: 'nv-kop' }, titel),
+          h('p', { className: 'nv-tekst nv-muted' }, sub)),
+        x.routes.length ? h(VandaagBlok, { titel: 'Route vandaag', icoon: 'arrow' }, x.routes.map(function (r) { return h(RouteRegel, { key: r.punt.id, x: r }); })) : null,
+        v ? h(VandaagBlok, { titel: 'Slapen vannacht', icoon: 'bed' },
+          h('div', { className: 'nv-vandaag__regel' },
+            h('p', { className: 'nv-vandaag__hoofd' }, O.veiligeLink(v.link) ? h('a', { href: v.link, target: '_blank', rel: 'noopener noreferrer' }, v.naam) : v.naam),
+            x.nachtNr === 1 && v.inchecktijd ? h('p', { className: 'nv-vandaag__tijd' }, 'inchecken vanaf ' + O.tijd(v.inchecktijd)) : null,
+            h(Contact, { adres: v.adres, telefoon: v.telefoon, email: v.email, via: v.geboekt_via, boekingscode: v.boekingscode }))) : null,
+        x.activiteiten.length ? h(VandaagBlok, { titel: 'Gepland', icoon: 'calendar' }, x.activiteiten.map(function (a) { return h(GeplandRegel, { key: a.id, x: a }); })) : null,
+        x.vrij ? h(VandaagBlok, { titel: 'Vrije dag', icoon: 'sun' },
+          x.ideeen.length ? h(React.Fragment, null, h('p', { className: 'nv-muted nv-vandaag__uitleg' }, 'Niets gepland. Dit vinden jullie het leukst hier:'),
+            x.ideeen.map(function (a) { return h(ActiviteitRij, { key: a.id, x: a, hart: p.hart }); }))
+            : h('p', { className: 'nv-muted' }, 'Niets gepland: tijd om bij te komen.')) : null,
+        h(HartMelding, { hart: p.hart, stil: true }),
+        x.laatsteDag ? null : h(VandaagBlok, { titel: 'Morgen', icoon: 'clock' },
+          morgen.length ? h('ul', { className: 'nv-vandaag__morgen' }, morgen.map(function (t, i) { return h('li', { key: i }, t); }))
+            : h('p', { className: 'nv-muted' }, 'Nog niets gepland.')),
+        x.dagNr > 0 && (p.beheerder || O.verslagVan(p.vs.rijen, x.datum, mijnId(), (p.gezin && p.gezin.leden) || []).anderen.length)
+          ? h(VandaagBlok, { titel: 'Reisverslag', icoon: 'check' },
+            h(VerslagDag, { key: x.datum, vs: p.vs, gezin: p.gezin, reisId: p.reisId, datum: x.datum, plek: x.plek, schrijven: p.beheerder })) : null));
+  }
+
+  // Onderdeel Verslag: alle dagen van vertrek t/m vandaag (of t/m thuiskomst), per dag de teksten; een ouder
+  // vult een dag aan met "Schrijf"/"Bewerk". Download = het hele verslag als tekstbestand (naslag, fotoboek).
+  function Reisverslag(p) {
+    var vs = p.vs, ik = mijnId(), leden = (p.gezin && p.gezin.leden) || [];
+    var o = React.useState(null), open = o[0], setOpen = o[1];
+    var heeftTekst = vs.rijen.some(function (v) { return v.tekst && v.tekst.trim(); });
+    function download() {
+      var tekst = '﻿' + O.verslagExport(p.reis, vs.rijen, leden, p.plekken);
+      var url = URL.createObjectURL(new Blob([tekst], { type: 'text/plain;charset=utf-8' }));
+      var a = document.createElement('a');
+      a.href = url; a.download = 'Reisverslag ' + p.reis.titel + '.txt';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }
+    return h('section', { className: 'nv-blok', id: 'verslag' },
+      h('div', { className: 'nv-wrap', style: { maxWidth: '760px' } },
+        h('div', { className: 'nv-kopblok' },
+          h('span', { className: 'nv-label' }, 'Reisverslag'),
+          h('h2', { className: 'nv-kop' }, 'Dag voor dag'),
+          vs.fout ? h('p', { className: 'nv-melding' }, 'Het verslag kon niet geladen worden. Dagen zonder eigen kopie op deze telefoon kun je pas bewerken na herladen met verbinding.') : null,
+          heeftTekst ? h('p', null, h('button', { type: 'button', className: 'nv-knop', onClick: download }, 'Download verslag')) : null),
+        p.dagen.slice().reverse().map(function (d) {
+          var van = O.verslagVan(vs.rijen, d, ik, leden);
+          var eigen = van.eigen && van.eigen.tekst && van.eigen.tekst.trim() ? van.eigen.tekst : '';
+          var onverzonden = !!van.eigen && van.eigen === vs.lokaal[d] && !vs.lokaal[d].verzonden;
+          // Vandaag schrijf je bij Vandaag (één invoerveld per dag); hier alleen eerdere dagen bewerken.
+          var isVandaag = p.vandaag === d;
+          var bewerk = p.beheerder && open === d && !isVandaag;
+          if (!p.beheerder && !van.anderen.length && !eigen) return null;
+          return h('article', { key: d, className: 'nv-verslag__dag' },
+            h('h3', { className: 'nv-doengroep__plek' }, O.dagLabel(d) + (p.plekken[d] ? ' · ' + kortNaam(p.plekken[d]) : '')),
+            bewerk ? h(VerslagDag, { vs: vs, gezin: p.gezin, reisId: p.reis.id, datum: d, plek: p.plekken[d], schrijven: true }) : h(React.Fragment, null,
+              eigen ? h('div', { className: 'nv-verslag__ander' }, h('p', { className: 'nv-label' }, onverzonden ? 'Jij · nog niet verstuurd' : 'Jij'), h('p', { className: 'nv-verslag__tekst' }, eigen)) : null,
+              van.anderen.map(function (a, i) { return h('div', { key: i, className: 'nv-verslag__ander' }, h('p', { className: 'nv-label' }, a.naam), h('p', { className: 'nv-verslag__tekst' }, a.tekst)); }),
+              p.beheerder ? h('button', { type: 'button', className: 'nv-meer', onClick: function () { if (isVandaag) naar('vandaag'); else setOpen(d); } },
+                isVandaag ? 'Schrijf bij Vandaag' : eigen ? 'Bewerk' : 'Schrijf') : null));
+        })));
   }
 
   // ═════════════ reispagina ═════════════
@@ -752,16 +955,32 @@
       var el = document.getElementById('plek-paneel');
       if (el && el.getBoundingClientRect().top < 0) naar('plek-paneel');
     }
+    // Onderweg: is deze reis actief (vanaf de dag vóór vertrek), dan staat Vandaag vooraan.
+    var gezin = data.gezin || {};
+    var vandaag = vandaagIso(!!gezin.beheerder);
+    var onderweg = O.actieveReis([r], vandaag);
+    // Reisverslag: vanaf vertrek, voor de ouders (schrijven) of zodra er iets geschreven is (lezen).
+    var vs = useVerslagen(data);
+    var verslagDagen = O.verslagDagen(r, vandaag);
+    var toonVerslag = verslagDagen.length > 0 && (!!gezin.beheerder || vs.rijen.some(function (v) { return v.tekst && v.tekst.trim(); }));
+    var plekken = React.useMemo(function () {
+      var uit = {}, d = { reis: r, stops: stops, route: data.route, verblijven: data.verblijven };
+      verslagDagen.forEach(function (dag) { uit[dag] = O.dagOverzicht(d, dag).plek; });
+      return uit;
+    }, [verslagDagen.join()]);
+    var secties = (onderweg ? [['vandaag', 'Vandaag']] : []).concat(SECTIES.slice(0, 4), toonVerslag ? [['verslag', 'Verslag']] : [], SECTIES.slice(4));
     var a = React.useState(null), actief = a[0], setActief = a[1];
     React.useEffect(function () {
       function bijScroll() {
         var huidige = null;
-        SECTIES.forEach(function (s) { var el = document.getElementById(s[0]); if (el && el.getBoundingClientRect().top < 140) huidige = s[0]; });
-        if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) huidige = SECTIES[SECTIES.length - 1][0];
+        secties.forEach(function (s) { var el = document.getElementById(s[0]); if (el && el.getBoundingClientRect().top < 140) huidige = s[0]; });
+        if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) huidige = secties[secties.length - 1][0];
         setActief(huidige);
       }
       window.addEventListener('scroll', bijScroll, { passive: true });
       bijScroll();
+      // Vanaf de kaart "Nu onderweg": meteen naar Vandaag.
+      if (onderweg && location.hash === '#vandaag') setTimeout(function () { naar('vandaag'); }, 0);
       return function () { window.removeEventListener('scroll', bijScroll); };
     }, []);
 
@@ -770,10 +989,14 @@
       verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, hart: hart, foto: maakFoto(data.fotos), kiesPlek: kiesPlek };
     return h(React.Fragment, null,
       h(Opening, p),
-      h(Balk, { secties: SECTIES, actief: actief }),
+      h(Balk, { secties: secties, actief: actief }),
       h('main', null,
         data.fotoFout && h('div', { className: 'nv-wrap' }, h(FotoMelding, { fout: data.fotoFout })),
-        h(Intro, p), h(Citaat, p), h(Overzicht, p), h(Programma, A(p, { plekId: plekId })), h(Slapen, p), h(Doen, p), h(Kosten, p)),
+        onderweg ? h(Vandaag, { dag: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten,
+          hartjes: hart.g.hartjes || [] }, vandaag), hart: hart, beheerder: !!gezin.beheerder, reisId: r.id, vs: vs, gezin: gezin }) : null,
+        h(Intro, p), h(Citaat, p), h(Overzicht, p), h(Programma, A(p, { plekId: plekId })), h(Slapen, p), h(Doen, p),
+        toonVerslag ? h(Reisverslag, { reis: r, vs: vs, gezin: gezin, dagen: verslagDagen, plekken: plekken, beheerder: !!gezin.beheerder, vandaag: onderweg ? vandaag : null }) : null,
+        h(Kosten, p)),
       h(Voet, { tekst: r.titel, onUitloggen: props.onUitloggen }));
   }
 
@@ -804,10 +1027,15 @@
         if (res._error && res.status === 401) { clearAuthSession(); return zet({ scherm: 'inloggen', melding: 'Je sessie is verlopen. Log opnieuw in.' }); }
         if (isFout(res)) return zet({ scherm: 'fout', tekst: res.status === 0 ? 'Geen verbinding. Controleer je internet en probeer het opnieuw.' : 'Laden mislukt: ' + res.message });
         zet({ scherm: slug ? 'reis' : 'start', data: res });
+        verstuurVerslagen(); // wat zonder bereik geschreven is, alsnog versturen
       });
     }
     React.useEffect(function () { if (st.scherm === 'laden') laad(); }, []);
-    function uitloggen() { signOut().then(function () { zet({ scherm: 'inloggen' }); }); }
+    function uitloggen() {
+      // Niet-verstuurd reisverslag blijft op deze telefoon staan (gaat mee als je weer inlogt); wel eerst waarschuwen.
+      if (heeftOnverzondenVerslag() && !window.confirm('Er staat nog een reisverslag op deze telefoon dat niet is verstuurd. Het blijft bewaard en gaat mee zodra je weer inlogt met verbinding. Toch uitloggen?')) return;
+      signOut().then(function () { zet({ scherm: 'inloggen' }); });
+    }
 
     if (st.scherm === 'inloggen') return h(Inloggen, { melding: st.melding, onIngelogd: laad });
     if (st.scherm === 'wachtwoord') return h(WachtwoordInstellen, { type: FRAGMENT, onKlaar: laad });
