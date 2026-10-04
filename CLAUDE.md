@@ -352,7 +352,12 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `detail` staat hoe het bedrag is opgebouwd, zodat het na een
   routewijziging (aantal nachten) mee kan. **Na elke wijziging van de
   nachten de posten 2 en 3 en de notitie bijwerken.** Echte bedragen uit
-  de Excel vervangen de schatting.
+  de Excel vervangen de schatting. **Afgeronde reis:** dezelfde posten met
+  de echte bedragen uit de Excel (bij brandstof het blok "werkelijk"); wat
+  niet is bijgehouden (eten, drinken, tol) komt er als schatting bij, in
+  het label en `detail` zo benoemd, met `betaald` = `totaal` (het geld is
+  uitgegeven). Notitie: "Totaal ongeveer € …: € … echte kosten uit de
+  Excel, plus … geschat." Maximaal 4 posten (de kostenbalk heeft 4 kleuren).
 - **Zoekprofiel is geen reisinhoud** (besluit gebruiker 2026-09-30): de
   zoekcriteria voor verblijven (kolom `reizen.randvoorwaarden`: max per
   nacht, minimale beoordeling, kamers, zwembad) zijn het uitgangspunt bij
