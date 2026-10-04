@@ -649,8 +649,12 @@
     var kop = (p.reis.secties && p.reis.secties.doen) || {};
     var hart = p.hart, g = hart.g;
     var fs = React.useState('alles'), filter = fs[0], setFilter = fs[1];
+    // Verlanglijstje: alleen wat minstens één hartje of ster heeft (besluit gebruiker 2026-10-04). De stand bij het
+    // laden telt mee, zodat iets dat je hier ontzet niet meteen verdwijnt en je het kunt terugzetten.
+    // Bij een afgeronde reis (Wat we deden) of zonder gezinsdata blijft alles staan.
+    var lijst = p.herinnering || !g.werkt ? p.activiteiten : O.metHartje(p.activiteiten, (g.hartjes || []).concat(hart.hartjes));
     // Filter op wie er een hartje gaf: tieners (★) of ouders (♥); groep onbekend telt als ouder (zelfde vorm).
-    var zichtbaar = p.activiteiten.filter(function (a) {
+    var zichtbaar = lijst.filter(function (a) {
       if (filter === 'alles') return true;
       return O.hartjesVan(hart.hartjes, a.id, g.leden, g.mijnId).gevers.some(function (x) { return (x.groep === 'tiener') === (filter === 'tiener'); });
     });
@@ -665,11 +669,12 @@
           h('span', { className: 'nv-label' }, p.herinnering ? 'Wat we deden' : 'Wat we willen doen'),
           h('h2', { className: 'nv-kop' }, kop.title || (p.herinnering ? 'Wat we deden' : 'Op het verlanglijstje')),
           kop.intro && h('p', { className: 'nv-tekst nv-muted' }, kop.intro)),
-        g.werkt && p.activiteiten.length ? h('div', { className: 'nv-doenfilter', role: 'group', 'aria-label': 'Toon' }, filters.map(function (f) {
+        g.werkt && lijst.length ? h('div', { className: 'nv-doenfilter', role: 'group', 'aria-label': 'Toon' }, filters.map(function (f) {
           return h('button', { key: f[0], type: 'button', className: 'nv-tab', 'aria-pressed': filter === f[0], onClick: function () { setFilter(f[0]); } }, f[1]);
         })) : null,
         h(HartMelding, { hart: hart }),
         !p.activiteiten.length ? h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen activiteiten gekozen.' }) :
+        !lijst.length ? h('p', { className: 'nv-muted' }, 'Nog niets met een hartje of ster. Geef ze bij ‘Te doen’ in het programma.') :
         !groepen.length ? h('p', { className: 'nv-muted' }, filter === 'tiener' ? 'Nog geen ster van een tiener.' : 'Nog geen hartje van een ouder.') :
         groepen.map(function (x) {
           return h('div', { key: x.s ? x.s.id : 'los', className: 'nv-doengroep' },

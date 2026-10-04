@@ -158,7 +158,9 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   hartjes laten zien wie wat wil. De app toont per gever het teken van zijn
   groep (`O.hartVorm`: tiener ★, volwassene ♥), je eigen knop in jouw vorm,
   en in Doen een filter Alles / ★ Tieners / ♥ Ouders. Doen staat per plek
-  (routevolgorde). **Alles rond een plek bij elkaar** (besluit gebruiker
+  (routevolgorde) en is het **verlanglijstje: alleen wat minstens één hartje
+  of ster heeft** (`O.metHartje`, besluit gebruiker 2026-10-04; afgeronde reis
+  of geen gezinsdata: alles). **Alles rond een plek bij elkaar** (besluit gebruiker
   2026-10-04): het plek-paneel toont onder de tips "Te doen in …" met
   dezelfde activiteiten en hartjes, en de tegel in het reisoverzicht
   rechtsonder het aantal ★ en ♥ (`O.telVormen`). Eén hartjes-stand per
