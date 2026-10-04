@@ -371,7 +371,7 @@ gedeeld (bewuste keuze, zie Supabase).
 Vraag bij elk verzoek om een actie of wijziging aan de app eerst welke
 skill(s) ingezet moeten worden (architectuur-check, cc-instructie-schrijver,
 data-steward, design-check, mockup-eerst, monkey, rooktest,
-supabase-wijziging, super-reiziger, tdd). Na afronding van een taak, vóór
+supabase-wijziging, super-reiziger, tdd, tiener). Na afronding van een taak, vóór
 commit/push: de agent `code-controleur` laten meekijken.
 
 ### Testen, niet aannemen
