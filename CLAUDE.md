@@ -162,12 +162,20 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   2026-10-04): het plek-paneel toont onder de tips "Te doen in …" met
   dezelfde activiteiten en hartjes, en de tegel in het reisoverzicht
   rechtsonder het aantal ★ en ♥ (`O.telVormen`). Eén hartjes-stand per
-  reispagina (`useHartjes`), gedeeld door paneel, tegels en Doen. Alle leden zien elkaars naam en groep (`leden_lezen` =
+  reispagina (`useHartjes`), gedeeld door paneel, tegels en Doen. **Een idee
+  (status voorstel) is een compacte regel** (`O.isIdee`; besluit gebruiker
+  2026-10-04): icoon, naam, één regel uitleg en de hartjes, zonder prijs en
+  zonder statuslabel; geboekt/betaald/optie (en status onbekend) houdt de
+  volle regel met prijs, tijden en contact. Het plek-paneel toont eerst 4
+  (`TE_DOEN_EERST`; geboekt eerst, dan de meeste hartjes, `O.sorteerTeDoen`)
+  en "Toon nog …" voor de rest; de volgorde komt uit de stand bij het laden,
+  zodat een idee niet wegspringt als je tikt. Dagtrips krijgen "(dagtrip)"
+  in de naam. Per plek met mate: liever 4–8 goede ideeën dan alles. Alle leden zien elkaars naam en groep (`leden_lezen` =
   lid); elk lid, ook een kijker, geeft of haalt alleen zijn eigen hartje weg.
   Lukt het ophalen van leden/hartjes niet, dan werkt de pagina zonder
   hartjes (`haalGezin`). Suggesties uit de skill `tiener` gaan erin als
-  voorstel-activiteit (alleen in de app). Een voorstel zonder datum toont
-  geen "Wanneer ?". Namen (`leden.weergavenaam`) vult de gebruiker later in;
+  voorstel-activiteit (alleen in de app). Een voorstel toont een beoogde
+  dag en website alleen als die er zijn (nooit "Wanneer ?"). Namen (`leden.weergavenaam`) vult de gebruiker later in;
   zonder naam toont de app "Iemand".
 - **Vervoersopties** (migratie `…0017`, besluit gebruiker 2026-10-04): zolang
   het vervoer van een rit niet gekozen is (`leg_vervoer` leeg), toont de app

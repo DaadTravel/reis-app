@@ -380,11 +380,15 @@
         }))));
   }
 
+  var TE_DOEN_EERST = 4;
   function Programma(p) {
     var i = Math.max(0, p.stops.findIndex(function (s) { return s.id === p.plekId; }));
     var s = p.stops[i];
     var tabsRef = React.useRef(null);
     var sid = s && s.id;
+    // Te doen: eerst de 4 bovenste, "toon nog …" voor de rest; bij een andere plek weer ingeklapt.
+    var ta = React.useState(false), toonAlles = ta[0], setToonAlles = ta[1];
+    React.useEffect(function () { setToonAlles(false); }, [sid]);
     React.useEffect(function () {
       var rij = tabsRef.current, knop = rij && rij.querySelector('[aria-selected="true"]');
       if (!knop) return;
@@ -419,7 +423,9 @@
     // van een dag die aan geen bezoek hangt (niets stil weglaten).
     var bezoekDagen = bezoeken.map(function (v, k) { return dagVanBezoek(p.dagen, v, k); });
     var tips = tipsVan(s, meer ? dagen.filter(function (x) { return bezoekDagen.indexOf(x) < 0; }) : dagen);
-    var hier = p.activiteiten.filter(function (a) { return a.stop_id === s.id; });
+    // Geboekte dingen eerst, dan de ideeën met de meeste sterren en hartjes (wat het gezin wil staat bovenaan).
+    // Op de stand bij het laden, niet de live stand: anders springt een idee weg onder je vinger als je tikt.
+    var hier = O.sorteerTeDoen(p.activiteiten.filter(function (a) { return a.stop_id === s.id; }), p.hart.g.hartjes || []);
     // Tijden staan onder hun rit; alleen wat aan geen getoonde rit hangt blijft een losse notitie.
     var notities = dagen.filter(function (x) {
       return !etappes.some(function (e) { return e.naar.id === x.route_punt_id; });
@@ -466,7 +472,9 @@
             hier.length ? h('div', { className: 'nv-plekdoen' },
               h('span', { className: 'nv-label' }, p.herinnering ? 'Wat we deden' : 'Te doen in ' + kortNaam(s.naam)),
               h(HartMelding, { hart: p.hart, stil: true }),
-              hier.map(function (a) { return h(ActiviteitRij, { key: a.id, x: a, hart: p.hart }); })) : null,
+              (toonAlles ? hier : hier.slice(0, TE_DOEN_EERST)).map(function (a) { return h(ActiviteitRij, { key: a.id, x: a, hart: p.hart }); }),
+              hier.length > TE_DOEN_EERST ? h('button', { type: 'button', className: 'nv-meer', 'aria-expanded': toonAlles, onClick: function () { setToonAlles(!toonAlles); } },
+                toonAlles ? 'Toon minder' : 'Toon nog ' + (hier.length - TE_DOEN_EERST)) : null) : null,
             // Geboekt of status onbekend (O.inSlapen): per verblijf naam, data en contact (onderweg in twee tikken). Anders de stand
             // van het zoeken; prijs is altijd het totaal van een verblijf (CLAUDE.md).
             geboekt.length ? h('div', { className: 'nv-verblijven' },
@@ -602,19 +610,31 @@
     var x = p.x, hart = p.hart, g = hart.g;
     var ht = O.hartjesVan(hart.hartjes, x.id, g.leden, g.mijnId);
     var mijnVorm = O.hartVorm(g.groep), leegVorm = mijnVorm === '★' ? '☆' : '♡';
+    var knop = g.werkt ? h('button', { type: 'button', className: 'nv-hart' + (mijnVorm === '★' ? ' nv-hart--tiener' : ''), 'aria-pressed': ht.ikOok, disabled: !g.mijnId,
+      'aria-label': (ht.ikOok ? 'Hartje weghalen bij ' : 'Hartje geven aan ') + x.naam, onClick: function () { hart.wissel(x); } },
+      h('span', { className: 'nv-hart__icoon', 'aria-hidden': true }, ht.ikOok ? mijnVorm : leegVorm)) : null;
+    var gevers = g.werkt && ht.gevers.length ? h('ul', { className: 'nv-gevers', 'aria-label': 'Hartjes van ' + O.hartjesTekst(ht.namen) }, ht.gevers.map(function (v, k) {
+      return h('li', { key: k, className: v.groep === 'tiener' ? 'nv-gever nv-gever--tiener' : 'nv-gever' },
+        h('span', { 'aria-hidden': true }, O.hartVorm(v.groep)), ' ' + v.naam);
+    })) : null;
+    // Idee (voorstel): compact, zonder prijs en label (besluit gebruiker 2026-10-04); knop rechts, gevers onder de uitleg.
+    // Een beoogde dag (datum/wanneer) en een website blijven zichtbaar als ze er zijn; anders niets (geen "?").
+    if (O.isIdee(x)) {
+      var wanneer = O.activiteitWanneer(x);
+      return h('div', { className: 'nv-idee' },
+        h('span', { className: 'rg-act__icon' }, h(G.Icon, { name: x.icoon || 'sun', size: 18 })),
+        h('div', { className: 'nv-idee__main' },
+          h('p', { className: 'rg-act__name' }, O.veiligeLink(x.link) ? h('a', { href: x.link, target: '_blank', rel: 'noopener noreferrer' }, x.naam) : x.naam),
+          wanneer || x.notitie ? h('p', { className: 'rg-act__when' }, [wanneer, x.notitie].filter(Boolean).join(' · ')) : null,
+          gevers),
+        knop);
+    }
     return h('div', { className: 'nv-activiteit' },
       h(G.ActivityRow, { name: x.naam, when: O.activiteitWanneer(x),
         price: x.prijs != null ? Number(x.prijs) : '€ ?',
         note: x.notitie || undefined, status: x.status || undefined, statusLabel: O.statusLabel(x), icon: x.icoon || undefined }),
       h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, via: x.geboekt_via, boekingscode: x.boekingscode, link: x.link, naam: x.naam }),
-      g.werkt ? h('div', { className: 'nv-gezin' },
-        h('button', { type: 'button', className: 'nv-hart' + (mijnVorm === '★' ? ' nv-hart--tiener' : ''), 'aria-pressed': ht.ikOok, disabled: !g.mijnId,
-          'aria-label': (ht.ikOok ? 'Hartje weghalen bij ' : 'Hartje geven aan ') + x.naam, onClick: function () { hart.wissel(x); } },
-          h('span', { className: 'nv-hart__icoon', 'aria-hidden': true }, ht.ikOok ? mijnVorm : leegVorm)),
-        ht.gevers.length ? h('ul', { className: 'nv-gevers', 'aria-label': 'Hartjes van ' + O.hartjesTekst(ht.namen) }, ht.gevers.map(function (v, k) {
-          return h('li', { key: k, className: v.groep === 'tiener' ? 'nv-gever nv-gever--tiener' : 'nv-gever' },
-            h('span', { 'aria-hidden': true }, O.hartVorm(v.groep)), ' ' + v.naam);
-        })) : null) : null);
+      g.werkt ? h('div', { className: 'nv-gezin' }, knop, gevers) : null);
   }
   // De melding staat zowel in het plek-paneel als in Doen (zichtbaar waar je klikte); alleen die in Doen
   // heeft role=status, zodat een schermlezer hem één keer voorleest.

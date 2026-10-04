@@ -273,6 +273,14 @@
   var hartT = [{ user_id: 'u1', activiteit_id: 'a' }, { user_id: 'u2', activiteit_id: 'a' }, { user_id: 'u2', activiteit_id: 'b' }, { user_id: 'u9', activiteit_id: 'b' }, { user_id: 'u1', activiteit_id: 'z' }];
   test('telVormen: per groep, alleen eigen activiteiten', { tiener: 2, volwassene: 2 }, function () { return O.telVormen(hartT, ['a', 'b'], ledenG); });
   test('telVormen: niets', { tiener: 0, volwassene: 0 }, function () { return O.telVormen(hartT, [], ledenG); });
+  // Volgorde per plek: eerst wat geen voorstel is (geboekt e.d., op volgorde), dan de ideeën op aantal hartjes (meeste eerst), dan volgorde.
+  var actS = [{ id: 'i1', status: 'voorstel', volgorde: 1 }, { id: 'i2', status: 'voorstel', volgorde: 2 }, { id: 'g1', status: 'geboekt', volgorde: 3 }, { id: 'i3', status: 'voorstel', volgorde: 4 }];
+  var hartS = [{ user_id: 'u1', activiteit_id: 'i3' }, { user_id: 'u2', activiteit_id: 'i3' }, { user_id: 'u1', activiteit_id: 'i2' }];
+  test('sorteerTeDoen: geboekt eerst, dan meeste hartjes', ['g1', 'i3', 'i2', 'i1'], function () { return O.sorteerTeDoen(actS, hartS).map(function (a) { return a.id; }); });
+  test('sorteerTeDoen: zonder hartjes op volgorde', ['g1', 'i1', 'i2', 'i3'], function () { return O.sorteerTeDoen(actS, []).map(function (a) { return a.id; }); });
+  test('sorteerTeDoen: bron blijft ongewijzigd', 'i1', function () { O.sorteerTeDoen(actS, hartS); return actS[0].id; });
+  test('isIdee: voorstel', true, function () { return O.isIdee({ status: 'voorstel' }); });
+  test('isIdee: geboekt of onbekend is geen idee', [false, false], function () { return [O.isIdee({ status: 'geboekt' }), O.isIdee({ status: null })]; });
   test('hartVorm: tiener', '★', function () { return O.hartVorm('tiener'); });
   test('hartVorm: volwassene', '♥', function () { return O.hartVorm('volwassene'); });
   test('hartVorm: onbekend → hart', '♥', function () { return O.hartVorm(null); });

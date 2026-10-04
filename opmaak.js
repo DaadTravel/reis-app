@@ -90,6 +90,17 @@
     hartjes.forEach(function (x) { if (ids[x.activiteit_id]) uit[groep[x.user_id] === 'tiener' ? 'tiener' : 'volwassene']++; });
     return uit;
   }
+  // Een idee = activiteit met status voorstel: compacte regel zonder prijs en label (besluit gebruiker 2026-10-04).
+  // Onbekende status (null) is géén idee: dat kan geboekt zijn ("Status ?").
+  function isIdee(a) { return a.status === 'voorstel'; }
+  // Te doen per plek: eerst wat geen idee is (op volgorde), dan ideeën op aantal hartjes (meeste eerst), dan volgorde.
+  function sorteerTeDoen(acts, hartjes) {
+    var tel = {};
+    hartjes.forEach(function (x) { tel[x.activiteit_id] = (tel[x.activiteit_id] || 0) + 1; });
+    return acts.slice().sort(function (a, b) {
+      return (isIdee(a) - isIdee(b)) || (isIdee(a) ? (tel[b.id] || 0) - (tel[a.id] || 0) : 0) || a.volgorde - b.volgorde;
+    });
+  }
   // Teken per groep (besluit gebruiker 2026-10-04): tieners een ster, volwassenen (en onbekend) een hart.
   function hartVorm(groep) { return groep === 'tiener' ? '★' : '♥'; }
   // ["Jij", "Bas", "Lies"] → "Jij, Bas en Lies".
@@ -198,7 +209,7 @@
   }
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
-    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
+    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,
