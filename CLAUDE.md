@@ -307,7 +307,9 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   het zóeken naar verblijven. De kolom blijft bestaan, maar de reispagina
   toont geen sectie Randvoorwaarden. Max per nacht en
   beoordeling zijn zoekfilters; kamers en zwembad zijn sterke wensen,
-  geen eisen. Matcht niets, dan zoeken waar te verruimen. Een plafond
+  geen eisen. **Zwembad heeft bij elk verblijf voorkeur, bij elke reis**
+  (besluit gebruiker 2026-10-04), en eigen kamers voor de tieners (zie de
+  skill `tiener`). Matcht niets, dan zoeken waar te verruimen. Een plafond
   (bijv. nachten × max per nacht) is nooit een bedrag in de kosten: alleen
   echt ingegeven bedragen tellen.
 - **Per verblijf in het overzicht** (besluit gebruiker 2026-09-30):
