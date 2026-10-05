@@ -546,6 +546,29 @@
     return O.pasWijzigingenToe([{ id: 'n1', naam: 'Boottocht' }], 'activiteiten', wz).length;
   });
 
+  // ===== Nog open van gisteren (2026-10-05) =====
+  // Activiteiten, ritten (geen eigen auto) en het verblijf van gisteren die nog niet betaald zijn (nog betalen of onbekend).
+  var openReis = {
+    reis: { start_datum: '2026-07-07', eind_datum: '2026-07-20' },
+    route: [{ id: 'p0', volgorde: 1, naam: 'Thuis' },
+      { id: 'p1', volgorde: 2, naam: 'A', leg_vervoer: 'car', leg_datum: '2026-07-18', leg_status: null },
+      { id: 'p2', volgorde: 3, naam: 'B', leg_vervoer: 'boat', leg_datum: '2026-07-18', leg_status: 'geboekt' },
+      { id: 'p3', volgorde: 4, naam: 'C', leg_vervoer: 'plane', leg_datum: '2026-07-18', leg_status: 'betaald' }],
+    verblijven: [{ id: 'v1', inchecken: '2026-07-17', uitchecken: '2026-07-20', status: null },
+      { id: 'vx', inchecken: '2026-07-17', uitchecken: '2026-07-20', status: 'optie' }],
+    activiteiten: [{ id: 'a1', datum: '2026-07-18', status: null }, { id: 'a2', datum: '2026-07-18', status: 'betaald' },
+      { id: 'a3', datum: '2026-07-18', status: 'geboekt' }, { id: 'i1', datum: '2026-07-18', status: 'voorstel' }, { id: 'a4', datum: '2026-07-19', status: null }] };
+  test('openVanGisteren: onbetaald of onbekend, geen auto, geen idee, alleen gisteren', { activiteiten: ['a1', 'a3'], routes: ['p2'], verblijven: ['v1'] }, function () {
+    var x = O.openVanGisteren(openReis, '2026-07-19');
+    return { activiteiten: x.activiteiten.map(function (a) { return a.id; }), routes: x.routes.map(function (r) { return r.id; }), verblijven: x.verblijven.map(function (v) { return v.id; }) };
+  });
+  test('openVanGisteren: eerste dag van de reis → niets (gisteren was thuis)', 0, function () {
+    var x = O.openVanGisteren(openReis, '2026-07-07'); return x.activiteiten.length + x.routes.length + x.verblijven.length;
+  });
+  test('openVanGisteren: rare data → leeg', 0, function () {
+    var x = O.openVanGisteren({ route: 'x', verblijven: [null], activiteiten: 5 }, 'abc'); return x.activiteiten.length + x.routes.length + x.verblijven.length;
+  });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');

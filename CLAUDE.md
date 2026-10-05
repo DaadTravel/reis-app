@@ -90,11 +90,11 @@ ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
   onderweg" (dat zijn alleen tijden, contact, codes, betaalstatus, notities
   en nieuwe activiteiten); vraagt nadenken over route, verblijven, dagen en
   kosten tegelijk.
-- **Herinnering aan open punten van gisteren op Vandaag** (2026-10-05): staat
-  er bij een rit, verblijf of activiteit van gisteren nog iets open
-  (bijvoorbeeld "Nog betalen" of "Status ?"), dan op Vandaag een korte
-  herinnering op een logische plek, bijvoorbeeld bovenaan of bij het
-  verblijf, met de knop Wijzig om het meteen af te handelen.
+- **Aankomsttijd automatisch bij een gewijzigde vertrektijd** (2026-10-05):
+  wijzig je onderweg de vertrektijd van een rit en is de reistijd bekend
+  (`leg_minuten`), dan de aankomsttijd (en zo nodig `leg_aankomst_dagen`)
+  meteen meerekenen in het formulier. Idem eindtijd van een activiteit als
+  de duur bekend is.
 - **Ongedaan maken bij bewerken onderweg** (2026-10-05): met één tik de
   vorige waarde terugzetten uit het logboek (`reis.wijzigingen`). Nu zet
   Claude een vergissing op verzoek terug.
@@ -211,7 +211,12 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   (`O.datumIn`; na een vlucht naar Japan springt de dag mee). Testen met
   `?vandaag=JJJJ-MM-DD`: alleen lokaal of voor de beheerder (`vandaagIso`),
   er wordt niets opgeslagen; geen dummyreis in de database. Het scherm
-  Vandaag (`O.dagOverzicht`), in deze volgorde: route vandaag (betaalstatus
+  Vandaag (`O.dagOverzicht`), in deze volgorde: voor ouders vanaf dag 2 eerst
+  "Nog open van gisteren" (`O.openVanGisteren`, besluit gebruiker
+  2026-10-05: ritten zonder eigen auto, verblijf en activiteiten van gisteren
+  die nog niet betaald zijn, elk met Wijzig, plus "Schrijf je verslag van
+  gisteren" als je eigen verslag leeg is; verdwijnt als alles af is), dan
+  route vandaag (betaalstatus
   bij vlucht, ferry, bus of trein, niet bij een eigen autorit; een
   nachtvlucht ook de dag erna als aankomst; een autorit na de eerste rit
   zonder tijd vertrekt "~09:00", gewoonte van het gezin), slapen vannacht (ontbijt, zwembad, kamers als bekend; betaald / nog betalen / "Status ?"),

@@ -244,6 +244,24 @@
     if (x.kamers != null && x.kamers !== '' && isFinite(n) && n > 0) uit.push(n === 1 ? '1 kamer' : n + ' kamers');
     return uit.join(' · ');
   }
+  // Nog open van gisteren (besluit gebruiker 2026-10-05): wat gisteren gebeurde en nog niet betaald is (nog betalen
+  // of onbekend): activiteiten (geen ideeën), ritten (geen eigen auto) en het verblijf van die nacht. Op de eerste
+  // dag van de reis niets (gisteren was je thuis).
+  function openVanGisteren(d, datum) {
+    d = d && typeof d === 'object' ? d : {};
+    var r = d.reis || {}, gisteren = plusDagen(datum, -1);
+    var leeg = { gisteren: gisteren, activiteiten: [], routes: [], verblijven: [] };
+    if (!gisteren || (isDatum(r.start_datum) && gisteren < r.start_datum)) return leeg;
+    var open = function (s) { return s !== 'betaald'; };
+    return {
+      gisteren: gisteren,
+      activiteiten: rijen(d.activiteiten).filter(function (a) { return a.datum === gisteren && !isIdee(a) && open(a.status); }),
+      routes: rijen(d.route).filter(function (l) { return l.leg_vervoer && l.leg_vervoer !== 'car' && l.leg_datum === gisteren && open(l.leg_status); }),
+      verblijven: rijen(d.verblijven).filter(function (v) {
+        return inSlapen(v) && isDatum(v.inchecken) && isDatum(v.uitchecken) && v.inchecken <= gisteren && gisteren < v.uitchecken && open(v.status);
+      })
+    };
+  }
   // ===== Bewerken onderweg (besluit gebruiker 2026-10-05) =====
   // Alleen wat onderweg verandert: tijden, adres/ophaalpunt, contact, boekingscode, betaalstatus, notitie (bijv. wifi,
   // deurcode, gate). Herplannen (nachten, route, prijzen) niet. Per tabel de velden en hun soort.
@@ -484,7 +502,7 @@
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
-    WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
+    openVanGisteren: openVanGisteren, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,

@@ -387,6 +387,30 @@
     var x = Array.prototype.map.call(b, function (n) { return (n + 256).toString(16).slice(1); }).join('');
     return x.slice(0, 8) + '-' + x.slice(8, 12) + '-' + x.slice(12, 16) + '-' + x.slice(16, 20) + '-' + x.slice(20);
   }
+  // Nog open van gisteren (besluit gebruiker 2026-10-05): onbetaalde of onbekende ritten, verblijf en activiteiten
+  // van gisteren, elk met Wijzig, en het eigen reisverslag van gisteren als dat nog leeg is. Alleen ouders; weg
+  // als alles is afgehandeld.
+  function VanGisteren(p) {
+    var o = p.open, ik = mijnId(), leden = (p.gezin && p.gezin.leden) || [];
+    var s = React.useState(false), schrijf = s[0], setSchrijf = s[1];
+    var eigen = O.verslagVan(p.vs.rijen, o.gisteren, ik, leden).eigen;
+    var verslagLeeg = !(eigen && eigen.tekst && eigen.tekst.trim());
+    function regel(tabel, rij, icoon, naam, status) {
+      return h('div', { key: tabel + rij.id, className: 'nv-vandaag__regel' },
+        h(Wijzigbaar, { tabel: tabel, rij: rij, naam: naam, wz: p.wz, bewerk: true },
+          h('p', { className: 'nv-vandaag__hoofd' }, h(G.Icon, { name: icoon, size: 18 }), naam),
+          h(BetaalStatus, { status: status })));
+    }
+    var regels = o.routes.map(function (l) { return regel('route_punten', l, l.leg_vervoer || 'arrow', 'Rit naar ' + kortNaam(l.naam || '?'), l.leg_status); })
+      .concat(o.verblijven.map(function (v) { return regel('verblijven', v, 'bed', v.naam, v.status); }))
+      .concat(o.activiteiten.map(function (a) { return regel('activiteiten', a, a.icoon || 'calendar', a.naam, a.status); }));
+    if (!regels.length && !verslagLeeg && !schrijf) return null;
+    return h(VandaagBlok, { titel: 'Nog open van gisteren', icoon: 'clock' },
+      h('p', { className: 'nv-muted nv-vandaag__uitleg' }, O.dagLabel(o.gisteren) + (regels.length ? ': nog niet betaald of onbekend' : '')),
+      regels,
+      schrijf ? h(VerslagDag, { vs: p.vs, gezin: p.gezin, reisId: p.reisId, datum: o.gisteren, plek: p.plekGisteren, schrijven: true })
+        : verslagLeeg ? h('button', { type: 'button', className: 'nv-meer', onClick: function () { setSchrijf(true); } }, 'Schrijf je verslag van gisteren') : null);
+  }
   // Notitie onderweg (wifi, deurcode, gate): regels behouden.
   function Notitie(p) { return p.tekst ? h('p', { className: 'nv-vandaag__notitie' }, p.tekst) : null; }
   // Betaalstatus op Vandaag (besluit gebruiker 2026-10-04): betaald, nog betalen, of onbekend ("Status ?").
@@ -514,6 +538,7 @@
           h('h2', { className: 'nv-kop' }, titel),
           h('p', { className: 'nv-tekst nv-muted' }, sub)),
         p.beheerder ? h(WijzigStand, { wz: p.wz }) : null,
+        p.beheerder && x.dagNr > 1 && p.open ? h(VanGisteren, { open: p.open, vs: p.vs, gezin: p.gezin, wz: p.wz, reisId: p.reisId, plekGisteren: p.plekGisteren }) : null,
         x.routes.length ? h(VandaagBlok, { titel: 'Route vandaag', icoon: 'arrow' }, x.routes.map(function (r) { return h(RouteRegel, { key: r.punt.id + (r.aankomst ? '-a' : ''), x: r, wz: p.wz, bewerk: p.beheerder }); })) : null,
         v ? h(VandaagBlok, { titel: 'Slapen vannacht', icoon: 'bed' },
           h('div', { className: 'nv-vandaag__regel' },
@@ -1188,7 +1213,9 @@
       h('main', null,
         data.fotoFout && h('div', { className: 'nv-wrap' }, h(FotoMelding, { fout: data.fotoFout })),
         onderweg ? h(Vandaag, { dag: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten,
-          hartjes: hart.g.hartjes || [] }, vandaag), hart: hart, beheerder: !!gezin.beheerder, reisId: r.id, vs: vs, gezin: gezin, wz: wz }) : null,
+          hartjes: hart.g.hartjes || [] }, vandaag), hart: hart, beheerder: !!gezin.beheerder, reisId: r.id, vs: vs, gezin: gezin, wz: wz,
+          open: O.openVanGisteren({ reis: r, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten }, vandaag),
+          plekGisteren: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, O.plusDagen(vandaag, -1)).plek }) : null,
         h(Intro, p), h(Citaat, p), h(Overzicht, p), h(Programma, A(p, { plekId: plekId })), h(Slapen, p), h(Doen, p),
         toonVerslag ? h(Reisverslag, { reis: r, vs: vs, gezin: gezin, dagen: verslagDagen, plekken: plekken, beheerder: !!gezin.beheerder, vandaag: onderweg ? vandaag : null }) : null,
         h(Kosten, p)),
