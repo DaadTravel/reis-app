@@ -14,6 +14,8 @@
       return { image: f.url, credit: O.fotoCredit(f) };
     };
   }
+  // De foto-opzoeker van de reispagina, voor onderdelen diep in de boom (info bij een idee).
+  var FotoCtx = React.createContext(function () { return {}; });
   function stopOpId(stops, id) { return stops.filter(function (s) { return s.id === id; })[0]; }
   // Dagen van een plek, in volgorde (koppeling via stop_id, migratie 0009).
   function dagenVan(dagen, stopId) { return dagen.filter(function (d) { return d.stop_id === stopId; }); }
@@ -1038,17 +1040,23 @@
       return h('li', { key: k, className: v.groep === 'tiener' ? 'nv-gever nv-gever--tiener' : 'nv-gever' },
         h('span', { 'aria-hidden': true }, O.hartVorm(v.groep)), ' ' + v.naam);
     })) : null;
-    // Idee (voorstel): compact, zonder prijs en label (besluit gebruiker 2026-10-04); knop rechts, gevers onder de uitleg.
-    // Een beoogde dag (datum/wanneer) en een website blijven zichtbaar als ze er zijn; anders niets (geen "?").
+    var io = React.useState(false), infoOpen = io[0], setInfoOpen = io[1];
+    // Idee (voorstel): compact, zonder prijs en label (besluit gebruiker 2026-10-04); knoppen rechts, gevers onder de uitleg.
+    // Een beoogde dag (datum/wanneer) blijft zichtbaar als die er is; anders niets (geen "?"). Meer info (tekst, feiten,
+    // website, foto) zit achter de (i)-knop, alleen als er iets te tonen is (besluit gebruiker 2026-10-05).
     if (O.isIdee(x)) {
-      var wanneer = O.activiteitWanneer(x);
+      var wanneer = O.activiteitWanneer(x), info = O.infoVan(x, g.groep);
       return h('div', { className: 'nv-idee' },
         h('span', { className: 'rg-act__icon' }, h(G.Icon, { name: x.icoon || 'sun', size: 18 })),
         h('div', { className: 'nv-idee__main' },
-          h('p', { className: 'rg-act__name' }, O.veiligeLink(x.link) ? h('a', { href: x.link, target: '_blank', rel: 'noopener noreferrer' }, x.naam) : x.naam),
+          h('p', { className: 'rg-act__name' }, x.naam),
           wanneer || x.notitie ? h('p', { className: 'rg-act__when' }, [wanneer, x.notitie].filter(Boolean).join(' · ')) : null,
           gevers),
-        knop);
+        h('div', { className: 'nv-idee__knoppen' },
+          info ? h('button', { type: 'button', className: 'nv-info', 'aria-haspopup': 'dialog', 'aria-label': 'Meer over ' + x.naam,
+            onClick: function () { setInfoOpen(true); } }, h(InfoIcoon)) : null,
+          knop),
+        info && infoOpen ? h(InfoVenster, { x: x, info: info, knop: knop, gevers: gevers, onSluit: function () { setInfoOpen(false); } }) : null);
     }
     return h('div', { className: 'nv-activiteit' },
       h(G.ActivityRow, { name: x.naam, when: O.activiteitWanneer(x),
@@ -1057,6 +1065,41 @@
       h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, via: x.geboekt_via, boekingscode: x.boekingscode, link: x.link, naam: x.naam }),
       g.werkt ? h('div', { className: 'nv-gezin' }, knop, gevers) : null);
   }
+  // (i): cirkel met een i, in de lijnstijl van G.Icon (die heeft geen info-icoon).
+  function InfoIcoon() {
+    return h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '1.75', strokeLinecap: 'round', 'aria-hidden': 'true' },
+      h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M12 11v6M12 7.5h.01' }));
+  }
+  // Pop-up met meer info bij een idee: onderblad op de telefoon, venster op een groot scherm. Sluiten met ×, Esc of
+  // een tik naast het blad; de focus gaat terug naar de (i)-knop. Onderaan het hartje, want na het lezen weet je het.
+  function InfoVenster(p) {
+    var ref = React.useRef(null), x = p.x, info = p.info, f = React.useContext(FotoCtx)(x.foto_id), titelId = 'info-' + x.id;
+    // Sluiten = het venster uit de boom halen (dat haalt het ook uit de bovenste laag). Niet wachten op het
+    // close-event: dat komt niet altijd (bijv. in een tabblad op de achtergrond). Esc gaat via cancel.
+    React.useEffect(function () {
+      var d = ref.current, terug = document.activeElement;
+      function esc(e) { e.preventDefault(); p.onSluit(); }
+      d.addEventListener('cancel', esc);
+      if (d.showModal && !d.open) d.showModal(); else d.setAttribute('open', '');
+      return function () { d.removeEventListener('cancel', esc); if (terug && terug.focus) terug.focus(); };
+    }, []);
+    function sluit() { p.onSluit(); }
+    return h('dialog', { ref: ref, className: 'nv-infovenster', 'aria-labelledby': titelId,
+      onClick: function (e) { if (e.target === ref.current) sluit(); } },
+      h('div', { className: 'nv-infovenster__kop' },
+        h('span', { className: 'rg-act__icon' }, h(G.Icon, { name: x.icoon || 'sun', size: 18 })),
+        h('h2', { id: titelId }, x.naam),
+        h('button', { type: 'button', className: 'nv-infovenster__sluit', 'aria-label': 'Sluiten', onClick: sluit }, '×')),
+      h('div', { className: 'nv-infovenster__inhoud' },
+        f.image ? h('div', { className: 'nv-infoblok__foto' }, h('img', { src: f.image, alt: '' }), f.credit && h(G.PhotoCredit, { by: f.credit })) : null,
+        info.alineas.map(function (t, i) { return h('p', { key: i }, t); }),
+        info.feiten.length ? h('dl', { className: 'nv-infoblok__feiten' }, info.feiten.map(function (r) {
+          return h(React.Fragment, { key: r[0] }, h('dt', null, r[0]), h('dd', null, r[1]));
+        })) : null,
+        info.link ? h('p', null, h('a', { href: info.link, target: '_blank', rel: 'noopener noreferrer' }, 'Meer informatie ↗')) : null,
+        p.knop ? h('div', { className: 'nv-infovenster__hart' }, p.knop, p.gevers) : null));
+  }
+
   // De melding staat zowel in het plek-paneel als in Doen (zichtbaar waar je klikte); alleen die in Doen
   // heeft role=status, zodat een schermlezer hem één keer voorleest.
   function HartMelding(p) {
@@ -1233,7 +1276,7 @@
       verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, hart: hart, foto: maakFoto(data.fotos), kiesPlek: kiesPlek,
       // Bewerken onderweg: alleen ouders en alleen tijdens een actieve reis (ervóór is de Excel leidend).
       wz: wz, bewerk: !!gezin.beheerder && !!onderweg };
-    return h(React.Fragment, null,
+    return h(FotoCtx.Provider, { value: p.foto },
       h(Opening, p),
       h(Balk, { secties: secties, actief: actief }),
       h('main', null,

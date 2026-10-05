@@ -315,7 +315,7 @@ async function haalReis(slug) {
     if (x.route_punt_id && (!p || (x.stop_id && p.stop_id !== x.stop_id))) x.route_punt_id = null;
   });
   const fotoIds = [reis.hero_foto_id, reis.quote_foto_id, reis.kaart_foto_id]
-    .concat(d.stops.map(s => s.foto_id), d.verblijven.map(v => v.foto_id));
+    .concat(d.stops.map(s => s.foto_id), d.verblijven.map(v => v.foto_id), d.activiteiten.map(a => a.foto_id));
   const [f, gezin, verslagen] = await Promise.all([haalFotos(fotoIds), haalGezin(d.activiteiten.map(a => a.id)),
     sbFetch('verslagen?select=datum,user_id,tekst,gewijzigd&reis_id=eq.' + reis.id + '&order=datum')]);
   return {

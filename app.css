@@ -90,6 +90,26 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-idee__main { flex: 1; min-width: 0; }
 .nv-idee .nv-gevers { margin-top: var(--space-1); }
 .nv-idee > .nv-hart { flex: none; }
+.nv-idee__knoppen { flex: none; display: flex; gap: var(--space-2); align-items: flex-start; }
+/* Meer info bij een idee (2026-10-05): (i)-knop en een pop-up (onderblad op de telefoon, venster op een groot scherm). */
+.nv-info { display: inline-grid; place-items: center; min-width: 44px; min-height: 36px; padding: 0 8px; border-radius: var(--radius-pill); border: 1px solid var(--line); background: transparent; color: var(--lagoon); cursor: pointer; }
+.nv-info:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.nv-infovenster { box-sizing: border-box; border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 560px; max-height: 85vh; border-radius: var(--radius-lg) var(--radius-lg) 0 0; background: var(--paper); color: var(--ink); box-shadow: var(--shadow-card); }
+.nv-infovenster::backdrop { background: rgba(6, 20, 24, .5); }
+.nv-infovenster__kop { position: sticky; top: 0; z-index: 4; display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-4) var(--space-4) var(--space-2); background: var(--paper); }
+.nv-infovenster__kop h2 { flex: 1; margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 26px; line-height: 1.15; }
+.nv-infovenster__sluit { flex: none; min-width: 44px; min-height: 44px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; }
+.nv-infovenster__inhoud { padding: 0 var(--space-4) var(--space-5); font-size: 15px; line-height: 1.55; }
+.nv-infovenster__inhoud p { margin: 0 0 var(--space-2); }
+.nv-infovenster__inhoud a { color: var(--lagoon); font-weight: 600; }
+.nv-infoblok__foto { position: relative; margin: 0 0 var(--space-3); border-radius: var(--radius-sm); overflow: hidden; aspect-ratio: 16 / 9; background: var(--sand); }
+.nv-infoblok__foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nv-infoblok__feiten { display: grid; grid-template-columns: auto 1fr; gap: 2px var(--space-3); margin: var(--space-2) 0 var(--space-3); font-size: 14px; }
+.nv-infoblok__feiten dt { color: var(--ink-muted); font-weight: 600; }
+.nv-infoblok__feiten dd { margin: 0; }
+.nv-infovenster__hart { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--line); }
+.nv-infovenster__hart .nv-gevers { margin: 0; }
+@media (min-width: 720px) { .nv-infovenster { margin: auto; border-radius: var(--radius-lg); } }
 .nv-meer { margin-top: var(--space-2); padding: var(--space-2) 0; font: inherit; font-size: 14px; font-weight: 700; color: var(--lagoon); background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 /* Te doen in het plek-paneel: zelfde regels als in Doen. */
 .nv-plekdoen { margin-top: var(--space-5); }

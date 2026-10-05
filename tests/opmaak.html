@@ -595,6 +595,26 @@
     return [O.valideerWijziging('route_punten', { leg_aankomst_dagen: '1' }).ok, O.valideerWijziging('route_punten', { leg_aankomst_dagen: '5' }).ok];
   });
 
+  test('infoVan: niets ingevuld → null', null, function () { return O.infoVan({ naam: 'X' }, 'volwassene'); });
+  test('infoVan: ouder ziet tekst (alinea\'s), feiten en link', { alineas: ['Een.', 'Twee.'], feiten: [['Duur', '1 uur'], ['Kosten', '€ 5'], ['Let op', 'Vroeg gaan']], link: 'https://a.nl/' }, function () {
+    return O.infoVan({ info_tekst: 'Een.\n\nTwee.', info_duur: '1 uur', info_kosten: '€ 5', info_let_op: 'Vroeg gaan', link: 'https://a.nl/' }, 'volwassene');
+  });
+  test('infoVan: tiener ziet alleen de tekst', { alineas: ['Een.'], feiten: [], link: undefined }, function () {
+    return O.infoVan({ info_tekst: 'Een.', info_duur: '1 uur', link: 'https://a.nl/' }, 'tiener');
+  });
+  test('infoVan: tiener zonder tekst → null (geen lege pop-up)', null, function () {
+    return O.infoVan({ info_duur: '1 uur', info_kosten: '€ 5', link: 'https://a.nl/' }, 'tiener');
+  });
+  test('infoVan: alleen een veilige link telt; lege velden weg', { alineas: [], feiten: [['Kosten', 'Gratis']], link: undefined }, function () {
+    return O.infoVan({ info_tekst: '  ', info_duur: '', info_kosten: 'Gratis', link: 'javascript:alert(1)' }, 'volwassene');
+  });
+  test('infoVan: alleen een link → ouder krijgt info', { alineas: [], feiten: [], link: 'https://a.nl/' }, function () {
+    return O.infoVan({ link: 'https://a.nl/' }, undefined);
+  });
+  test('infoVan: alleen een foto telt voor iedereen', { alineas: [], feiten: [], link: undefined }, function () {
+    return O.infoVan({ foto_id: 'f1' }, 'tiener');
+  });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');

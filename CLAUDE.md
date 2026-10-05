@@ -210,7 +210,8 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `…0020`: nieuwste versie wint, zie Onderweg; `…0021`: `leg_notitie`,
   `verblijven.notitie` en logboek `reis.wijzigingen`, zie Bewerken onderweg;
   `…0022`: volgorde van een nieuwe activiteit door de database; `…0023`:
-  logboek ook `leg_aankomst_dagen`).
+  logboek ook `leg_aankomst_dagen`; `…0024`: info bij een activiteit, zie
+  Hartjes).
 - **Onderweg** (besluit gebruiker 2026-10-04). Een gekozen reis (geboekt of
   betaald) is **actief** van de dag vóór vertrek t/m de dag van thuiskomst
   (`O.actieveReis`). Dan staat er bovenaan het startscherm een kaart "Nu
@@ -313,7 +314,21 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   (`TE_DOEN_EERST`; geboekt eerst, dan de meeste hartjes, `O.sorteerTeDoen`)
   en "Toon nog …" voor de rest; de volgorde komt uit de stand bij het laden,
   zodat een idee niet wegspringt als je tikt. Dagtrips krijgen "(dagtrip)"
-  in de naam. Per plek met mate: liever 4–8 goede ideeën dan alles. Alle leden zien elkaars naam en groep (`leden_lezen` =
+  in de naam. Per plek met mate: liever 4–8 goede ideeën dan alles.
+  **Meer info achter de (i)-knop** (besluit gebruiker 2026-10-05): een idee
+  krijgt een (i)-knop naast het hartje als er iets te tonen is
+  (`O.infoVan`); die opent een **pop-up** (onderblad op de telefoon, venster
+  op een groot scherm; `InfoVenster`, `<dialog>`) met foto + credit,
+  `info_tekst` (alinea's gescheiden door een lege regel), voor **ouders ook**
+  `info_duur`, `info_kosten`, `info_let_op` en de link (`activiteiten.link`,
+  "Meer informatie"), en onderaan het hartje met de gevers. **Tieners zien
+  alleen foto en tekst**; is er voor jou niets, dan geen knop. De naam van
+  een idee is geen link meer. Foto (`activiteiten.foto_id`) later en alleen
+  voor ideeën met hartjes, via de foto-regels hieronder. Sluiten met ×, Esc
+  of naast het blad: het venster gaat uit de boom (niet wachten op het
+  close-event, dat komt niet in een achtergrondtab). Infoteksten: kort,
+  leesbaar voor tieners; bedragen zijn schattingen met ±, en wat onzeker is
+  ("check of hij open is") staat bij Let op. Alle leden zien elkaars naam en groep (`leden_lezen` =
   lid); elk lid, ook een kijker, geeft of haalt alleen zijn eigen hartje weg.
   Lukt het ophalen van leden/hartjes niet, dan werkt de pagina zonder
   hartjes (`haalGezin`). Suggesties uit de skill `tiener` gaan erin als

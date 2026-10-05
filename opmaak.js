@@ -506,6 +506,17 @@
 
   // Alleen http(s)-links uit de database worden een link (geen javascript: e.d.).
   function veiligeLink(url) { return /^https?:\/\//i.test(url || '') ? url : undefined; }
+  // Extra info bij een idee (de (i)-knop, besluit gebruiker 2026-10-05): tieners alleen de tekst, ouders ook duur,
+  // kosten, let op en de link. Niets te tonen → null (dan geen knop). Een foto telt voor iedereen.
+  function infoVan(a, groep) {
+    var vol = function (s) { return String(s || '').trim(); };
+    var alineas = vol(a.info_tekst).split(/\n\s*\n/).map(vol).filter(Boolean);
+    var kind = groep === 'tiener';
+    var feiten = kind ? [] : [['Duur', a.info_duur], ['Kosten', a.info_kosten], ['Let op', a.info_let_op]]
+      .map(function (f) { return [f[0], vol(f[1])]; }).filter(function (f) { return f[1]; });
+    var link = kind ? undefined : veiligeLink(a.link);
+    return alineas.length || feiten.length || link || a.foto_id ? { alineas: alineas, feiten: feiten, link: link } : null;
+  }
   // Licentielink bij een fotocredit; geen herkenbare CC-licentie → geen link.
   function licentieUrl(lic) {
     if (lic === 'CC0') return 'https://creativecommons.org/publicdomain/zero/1.0/';
@@ -524,7 +535,7 @@
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
     openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
-    licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
+    licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink, infoVan: infoVan,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,
     periodeKort: periodeKort, routeKm: routeKm, reisFeiten: reisFeiten };
