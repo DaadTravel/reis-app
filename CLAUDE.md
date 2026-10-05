@@ -83,8 +83,21 @@ ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
   reis aangeven wat écht beviel, naast het hartje van vooraf; patroon per
   soort (`activiteiten.icoon`) per groep, voor ideeën en de
   vergelijkingstabel. Vraagt een uitbreiding van `reis.hartjes` (moment).
-- **Contact en boekingscodes zelf invullen in de app** (nu alleen via de
-  Excel; valt samen met backlogpunt 1 hierboven).
+- **Contact en boekingscodes zelf invullen in de app vóór de reis** (tijdens
+  een actieve reis kan het al via bewerken onderweg; ervóór nog alleen via
+  de Excel; valt samen met backlogpunt 1 hierboven).
+- **Rooktest onderweg afmaken op de telefoon** (2026-10-05): reisverslag met
+  vliegtuigmodus aan/uit, volledig offline openen na voorladen (ook foto's),
+  installeren op het beginscherm (iPhone en Android), alle vier de accounts.
+  De Vandaag-links met `?vandaag=` werken al (getest door de gebruiker).
+- **Generale repetitie** (2026-10-05): een kort uitje of weekend als echte
+  reis in de app zetten en onderweg gebruiken.
+- **Weer per plek en noodnummers per land** (optioneel): verwachting of
+  gemiddelde temperatuur bij Vandaag; noodnummers (112, ambassade,
+  reisverzekering). Geen gezondheidsinformatie.
+- **Reisplanning 2027** (geen appwerk): vlucht Japan voor 21 dagen zoeken
+  (de prijs is nu voor 25–26 dagen), vervoer Korea kiezen (huurauto
+  Sokcho–Busan of bus), en de keuze tussen Japan, Korea en Noord-Spanje.
 - **Omboeken onderweg: nachten verschuiven, plek toevoegen** (2026-10-05):
   bijvoorbeeld ter plekke toch naar Okinawa. Bewust niet in "bewerken
   onderweg" (dat zijn alleen tijden, contact, codes, betaalstatus, notities
