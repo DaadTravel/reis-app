@@ -90,11 +90,6 @@ ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
   onderweg" (dat zijn alleen tijden, contact, codes, betaalstatus, notities
   en nieuwe activiteiten); vraagt nadenken over route, verblijven, dagen en
   kosten tegelijk.
-- **Aankomsttijd automatisch bij een gewijzigde vertrektijd** (2026-10-05):
-  wijzig je onderweg de vertrektijd van een rit en is de reistijd bekend
-  (`leg_minuten`), dan de aankomsttijd (en zo nodig `leg_aankomst_dagen`)
-  meteen meerekenen in het formulier. Idem eindtijd van een activiteit als
-  de duur bekend is.
 - **Ongedaan maken bij bewerken onderweg** (2026-10-05): met één tik de
   vorige waarde terugzetten uit het logboek (`reis.wijzigingen`). Nu zet
   Claude een vergissing op verzoek terug.
@@ -201,7 +196,8 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `leden.groep` en `reis.hartjes`, zie Hartjes; `…0019`: `reis.verslagen`,
   `…0020`: nieuwste versie wint, zie Onderweg; `…0021`: `leg_notitie`,
   `verblijven.notitie` en logboek `reis.wijzigingen`, zie Bewerken onderweg;
-  `…0022`: volgorde van een nieuwe activiteit door de database).
+  `…0022`: volgorde van een nieuwe activiteit door de database; `…0023`:
+  logboek ook `leg_aankomst_dagen`).
 - **Onderweg** (besluit gebruiker 2026-10-04). Een gekozen reis (geboekt of
   betaald) is **actief** van de dag vóór vertrek t/m de dag van thuiskomst
   (`O.actieveReis`). Dan staat er bovenaan het startscherm een kaart "Nu
@@ -248,7 +244,14 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   in Onderweg, geplande activiteiten; geen ideeën). Velden per tabel in
   `O.WIJZIGBAAR` (tijden, adres/ophaalpunt, telefoon, boekingscode,
   betaalstatus, notitie; bij een activiteit ook naam en datum), gecontroleerd
-  met `O.valideerWijziging`; leeg = wissen. "+ Activiteit toevoegen" op
+  met `O.valideerWijziging`; leeg = wissen. **Aankomst volgt vertrek**
+  (besluit gebruiker 2026-10-05, `O.volgTijd`): wijzig je de vertrektijd
+  van een rit (of de begintijd van een activiteit), dan schuift de aankomst
+  (eindtijd) evenveel mee als die al bekend was, ook over een tijdzone; was
+  alleen de reistijd bekend, dan vertrek + reistijd (niet bij een vlucht,
+  tijdzone onbekend). Over middernacht past `leg_aankomst_dagen` mee aan
+  ("(+1)"); een activiteit gaat niet over middernacht. Heb je de aankomst
+  zelf al gewijzigd, dan blijft die staan. "+ Activiteit toevoegen" op
   Vandaag (ID maakt de app, opnieuw versturen geeft geen dubbele rij; de
   volgorde kent de database toe, migratie `…0022`).
   Notitie (`leg_notitie`, `verblijven.notitie`, `activiteiten.notitie`, bijv.

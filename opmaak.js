@@ -266,7 +266,7 @@
   // Alleen wat onderweg verandert: tijden, adres/ophaalpunt, contact, boekingscode, betaalstatus, notitie (bijv. wifi,
   // deurcode, gate). Herplannen (nachten, route, prijzen) niet. Per tabel de velden en hun soort.
   var WIJZIGBAAR = {
-    route_punten: { leg_vertrek: 'tijd', leg_aankomst: 'tijd', leg_adres: 'tekst', leg_boekingscode: 'kort', leg_telefoon: 'tel', leg_status: 'status', leg_notitie: 'notitie' },
+    route_punten: { leg_vertrek: 'tijd', leg_aankomst: 'tijd', leg_aankomst_dagen: 'dagen', leg_adres: 'tekst', leg_boekingscode: 'kort', leg_telefoon: 'tel', leg_status: 'status', leg_notitie: 'notitie' },
     verblijven: { inchecktijd: 'tijd', uitchecktijd: 'tijd', adres: 'tekst', telefoon: 'tel', boekingscode: 'kort', status: 'status', notitie: 'notitie' },
     activiteiten: { naam: 'naam', datum: 'datum', begin_tijd: 'tijd', eind_tijd: 'tijd', ophaalpunt: 'tekst', telefoon: 'tel', boekingscode: 'kort', status: 'status', notitie: 'notitie' }
   };
@@ -278,12 +278,15 @@
       var s = soort[k], v = velden[k];
       if (!s) { fouten[k] = 'Dit veld kan onderweg niet gewijzigd worden.'; return; }
       var t = v == null ? '' : String(v).trim();
-      if (!t) { if (s === 'naam') fouten[k] = 'Geef een naam.'; else schoon[k] = null; return; }
+      if (!t) { if (s === 'naam') fouten[k] = 'Geef een naam.'; else schoon[k] = s === 'dagen' ? 0 : null; return; }
       var m;
       if (s === 'tijd') {
         m = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(t);
         if (!m || +m[1] > 23 || +m[2] > 59) fouten[k] = 'Tijd als UU:MM, bijv. 08:30.';
         else schoon[k] = (m[1].length === 1 ? '0' : '') + m[1] + ':' + m[2];
+      } else if (s === 'dagen') {
+        // Aankomst 0 t/m 3 dagen na vertrek (zoals de check in de database); als getal.
+        if (/^[0-3]$/.test(t)) schoon[k] = Number(t); else fouten[k] = 'Aantal dagen 0 t/m 3.';
       } else if (s === 'datum') {
         if (isDatum(t)) schoon[k] = t; else fouten[k] = 'Geen geldige datum.';
       } else if (s === 'status') {
@@ -296,6 +299,23 @@
       }
     });
     return { ok: !Object.keys(fouten).length, schoon: schoon, fouten: fouten };
+  }
+  // Aankomst- of eindtijd die meeschuift met een nieuwe vertrek- of begintijd (besluit gebruiker 2026-10-05).
+  // Waren begin én eind al bekend: het eind schuift evenveel op (klopt ook bij een vlucht naar een andere tijdzone).
+  // Anders, met een bekende reistijd en geen vlucht: begin + reistijd. Uitslag { eind: 'UU:MM', dagen } of null
+  // (niets te berekenen; bij geenDagen, een activiteit, ook null als het eind over middernacht zou gaan).
+  function volgTijd(p, nieuwBegin) {
+    var x = p || {};
+    var min = function (t) { var m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m && +m[1] < 24 && +m[2] < 60 ? +m[1] * 60 + +m[2] : null; };
+    var nb = min(nieuwBegin), ob = min(x.oudBegin), oe = min(x.oudEind), totaal = null;
+    if (nb == null) return null;
+    if (ob != null && oe != null) totaal = oe + (Number(x.eindDagen) || 0) * 1440 + (nb - ob);
+    else if (x.minuten != null && isFinite(Number(x.minuten)) && Number(x.minuten) > 0 && x.vervoer !== 'plane') totaal = nb + Number(x.minuten);
+    if (totaal == null) return null;
+    var dagen = Math.floor(totaal / 1440);
+    if (dagen < 0 || dagen > 3 || (x.geenDagen && dagen !== 0)) return null;
+    var r = totaal - dagen * 1440, uu = Math.floor(r / 60), mm = r % 60;
+    return { eind: (uu < 10 ? '0' : '') + uu + ':' + (mm < 10 ? '0' : '') + mm, dagen: dagen };
   }
   // Wachtrij van wijzigingen op de telefoon (localStorage, JSON): per veld { tabel, id, veld, waarde, gewijzigd } en
   // nieuwe rijen { tabel, id, nieuw: true, rij, gewijzigd }. Alleen geldige items; rommel → weg, nooit een fout.
@@ -311,7 +331,7 @@
       // kopie staan tot de reis opnieuw van de server is gehaald (de offline kopie kan nog oud zijn).
       var extra = { fout: typeof x.fout === 'string' ? x.fout : null, user_id: typeof x.user_id === 'string' ? x.user_id : null, verzonden: x.verzonden === true, verzondenOp: typeof x.verzondenOp === 'string' ? x.verzondenOp : null };
       if (x.nieuw === true && x.rij && typeof x.rij === 'object' && x.rij.id === x.id) uit[k] = Object.assign({ tabel: x.tabel, id: x.id, nieuw: true, rij: x.rij, gewijzigd: x.gewijzigd }, extra);
-      else if (typeof x.veld === 'string' && WIJZIGBAAR[x.tabel][x.veld] && (x.waarde === null || typeof x.waarde === 'string'))
+      else if (typeof x.veld === 'string' && WIJZIGBAAR[x.tabel][x.veld] && (x.waarde === null || typeof x.waarde === 'string' || (typeof x.waarde === 'number' && isFinite(x.waarde))))
         uit[k] = Object.assign({ tabel: x.tabel, id: x.id, veld: x.veld, waarde: x.waarde, gewijzigd: x.gewijzigd }, extra);
     });
     return uit;
@@ -502,7 +522,7 @@
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
-    openVanGisteren: openVanGisteren, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
+    openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,

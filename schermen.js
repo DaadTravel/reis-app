@@ -302,24 +302,46 @@
     activiteiten: [['naam', 'Wat'], ['datum', 'Datum'], ['begin_tijd', 'Begin'], ['eind_tijd', 'Eind'], ['ophaalpunt', 'Ophaalpunt'], ['telefoon', 'Telefoon'],
       ['boekingscode', 'Boekingscode'], ['status', 'Betaalstatus'], ['notitie', 'Notitie']]
   };
+  // Welke tijd volgt welke: [begin, eind, dagen-veld of null].
+  var VOLGT = { route_punten: ['leg_vertrek', 'leg_aankomst', 'leg_aankomst_dagen'], activiteiten: ['begin_tijd', 'eind_tijd', null] };
   function veldWaarde(soort, v) { return v == null ? '' : soort === 'tijd' ? String(v).slice(0, 5) : String(v); }
   // Formulier in het blok zelf; alleen gewijzigde velden gaan mee (bij een nieuwe activiteit alles).
   function WijzigForm(p) {
     var soorten = O.WIJZIGBAAR[p.tabel], velden = VELDEN[p.tabel];
     // Beginstand bij het openen vastleggen: alleen wat je zelf wijzigt gaat mee, ook als de rij intussen opnieuw is
     // opgehaald (anders zou een open formulier de wijziging van de andere ouder met oude waarden overschrijven).
+    // Aankomst- of eindtijd volgt de vertrek- of begintijd (O.volgTijd), tot je hem zelf aanpast. Bij een rit ook
+    // het aantal dagen (verborgen veld leg_aankomst_dagen: "(+1)" bij een aankomst na middernacht).
+    var volgt = VOLGT[p.tabel];
     var begin = React.useRef(null);
-    if (!begin.current) { begin.current = {}; velden.forEach(function (f) { begin.current[f[0]] = veldWaarde(soorten[f[0]], p.rij[f[0]]); }); }
+    if (!begin.current) {
+      begin.current = {};
+      velden.forEach(function (f) { begin.current[f[0]] = veldWaarde(soorten[f[0]], p.rij[f[0]]); });
+      if (volgt && volgt[2]) begin.current[volgt[2]] = String(p.rij[volgt[2]] || 0);
+    }
     var s = React.useState(function () { return A(begin.current, {}); }), w = s[0], setW = s[1];
     var f = React.useState({}), fouten = f[0], setFouten = f[1];
     var m = React.useState(''), melding = m[0], setMelding = m[1];
-    var bezig = React.useRef(false);
+    var bk = React.useState(''), berekend = bk[0], setBerekend = bk[1];
+    var bezig = React.useRef(false), zelf = React.useRef({});
     function zet(k, v) { setW(function (o) { var n = A(o, {}); n[k] = v; return n; }); }
+    function typ(k, v) {
+      zet(k, v);
+      zelf.current[k] = true;
+      if (!volgt || k !== volgt[0] || zelf.current[volgt[1]]) return;
+      var r = O.volgTijd({ oudBegin: begin.current[volgt[0]] || null, oudEind: begin.current[volgt[1]] || null,
+        eindDagen: volgt[2] ? Number(begin.current[volgt[2]]) : 0, minuten: p.rij.leg_minuten, vervoer: p.rij.leg_vervoer, geenDagen: !volgt[2] }, v);
+      if (!r) return setBerekend('');
+      zet(volgt[1], r.eind);
+      if (volgt[2]) zet(volgt[2], String(r.dagen));
+      setBerekend('Meegeschoven: ' + (volgt[2] ? 'aankomst ' : 'eind ') + r.eind + (r.dagen ? ' (+' + r.dagen + (r.dagen === 1 ? ' dag)' : ' dagen)') : '') + '. Klopt het niet, pas het dan zelf aan.');
+    }
     function opslaan(e) {
       e.preventDefault();
       if (bezig.current) return;
       var gewijzigd = {};
       velden.forEach(function (x) { if (p.nieuw || w[x[0]] !== begin.current[x[0]]) gewijzigd[x[0]] = w[x[0]]; });
+      if (volgt && volgt[2] && w[volgt[2]] !== begin.current[volgt[2]]) gewijzigd[volgt[2]] = w[volgt[2]];
       var c = O.valideerWijziging(p.tabel, gewijzigd);
       if (!c.ok) return setFouten(c.fouten);
       bezig.current = true;
@@ -343,10 +365,14 @@
           : h('label', { className: 'nv-veld', htmlFor: id }, x[1],
             soort === 'notitie'
               ? h('textarea', { id: id, rows: 3, maxLength: 2000, value: w[k], onChange: function (e) { zet(k, e.target.value); }, 'aria-invalid': !!fout })
-              : h('input', { id: id, value: w[k], 'aria-invalid': !!fout, onChange: function (e) { zet(k, e.target.value); },
+              : h('input', { id: id, value: w[k], 'aria-invalid': !!fout, onChange: function (e) { typ(k, e.target.value); },
                 type: soort === 'tijd' ? 'time' : soort === 'datum' ? 'date' : soort === 'tel' ? 'tel' : 'text',
-                inputMode: soort === 'tel' ? 'tel' : undefined, autoComplete: 'off', maxLength: soort === 'kort' ? 100 : 300 }));
-        return h('div', { key: k, className: 'nv-wijzig__veld' }, veld, fout ? h('p', { className: 'nv-melding', role: 'alert' }, fout) : null);
+                inputMode: soort === 'tel' ? 'tel' : undefined, autoComplete: 'off', maxLength: soort === 'kort' ? 80 : 300 }));
+        var dagen = volgt && volgt[2] && k === volgt[1] && Number(w[volgt[2]]) > 0 ? ' (+' + w[volgt[2]] + ')' : '';
+        return h('div', { key: k, className: 'nv-wijzig__veld' }, veld,
+          dagen ? h('p', { className: 'nv-muted' }, 'Aankomst ' + w[volgt[2]] + (Number(w[volgt[2]]) === 1 ? ' dag' : ' dagen') + ' na vertrek') : null,
+          volgt && k === volgt[1] && berekend ? h('p', { className: 'nv-muted', role: 'status' }, berekend) : null,
+          fout ? h('p', { className: 'nv-melding', role: 'alert' }, fout) : null);
       }),
       h('div', { className: 'nv-wijzig__knoppen' },
         h('button', { type: 'button', className: 'nv-knop', onClick: p.onAnnuleer }, 'Annuleren'),

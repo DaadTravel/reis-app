@@ -569,6 +569,32 @@
     var x = O.openVanGisteren({ route: 'x', verblijven: [null], activiteiten: 5 }, 'abc'); return x.activiteiten.length + x.routes.length + x.verblijven.length;
   });
 
+  // ===== Aankomst/eindtijd volgt de vertrek/begintijd (2026-10-05) =====
+  test('volgTijd: beide bekend → schuift evenveel mee (ook met tijdzone)', { eind: '14:55', dagen: 1 }, function () {
+    return O.volgTijd({ oudBegin: '21:40', oudEind: '13:55', eindDagen: 1, minuten: 675, vervoer: 'plane' }, '22:40');
+  });
+  test('volgTijd: over middernacht → dagen +1', { eind: '00:30', dagen: 1 }, function () {
+    return O.volgTijd({ oudBegin: '20:00', oudEind: '23:30', eindDagen: 0, minuten: 210, vervoer: 'bus' }, '21:00');
+  });
+  test('volgTijd: eerder vertrekken → terug naar dezelfde dag', { eind: '23:30', dagen: 0 }, function () {
+    return O.volgTijd({ oudBegin: '21:00', oudEind: '00:30', eindDagen: 1, minuten: 210, vervoer: 'bus' }, '20:00');
+  });
+  test('volgTijd: alleen reistijd bekend (bus) → vertrek + reistijd', { eind: '12:00', dagen: 0 }, function () {
+    return O.volgTijd({ oudBegin: null, oudEind: null, eindDagen: 0, minuten: 210, vervoer: 'bus' }, '08:30');
+  });
+  test('volgTijd: alleen reistijd bij een vlucht → niets (tijdzone onbekend)', null, function () {
+    return O.volgTijd({ oudBegin: null, oudEind: null, minuten: 675, vervoer: 'plane' }, '21:40');
+  });
+  test('volgTijd: niets bekend of foute tijd → niets', [null, null], function () {
+    return [O.volgTijd({ minuten: null }, '08:00'), O.volgTijd({ oudBegin: '08:00', oudEind: '10:00', minuten: 120 }, '25:00')];
+  });
+  test('volgTijd: activiteit (geen dagen) over middernacht → niets', null, function () {
+    return O.volgTijd({ oudBegin: '22:00', oudEind: '23:30', geenDagen: true }, '23:00');
+  });
+  test('valideerWijziging: aankomstdagen 0 t/m 3', [true, false], function () {
+    return [O.valideerWijziging('route_punten', { leg_aankomst_dagen: '1' }).ok, O.valideerWijziging('route_punten', { leg_aankomst_dagen: '5' }).ok];
+  });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');
