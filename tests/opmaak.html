@@ -491,6 +491,61 @@
     return O.verslagExport({ titel: 'Reis', start_datum: '2026-07-07', eind_datum: '2026-07-10' }, versl, ledenG, { '2026-07-08': 'Corvara' });
   });
 
+  // ===== Bewerken onderweg (2026-10-05) =====
+  // Controle van ingevoerde velden: tijd UU:MM, datum, betaalstatus, tekst niet te lang; leeg = wissen (null).
+  test('valideerWijziging: geldige invoer, schoongemaakt', { ok: true, schoon: { leg_vertrek: '08:30', leg_status: 'betaald', leg_notitie: 'Gate D14', leg_telefoon: null } }, function () {
+    var x = O.valideerWijziging('route_punten', { leg_vertrek: '8:30', leg_status: 'betaald', leg_notitie: '  Gate D14 ', leg_telefoon: '' });
+    return { ok: x.ok, schoon: x.schoon };
+  });
+  test('valideerWijziging: foute tijd, status en datum', ['begin_tijd', 'status', 'datum'], function () {
+    return Object.keys(O.valideerWijziging('activiteiten', { begin_tijd: '25:99', status: 'gratis', datum: '2026-13-01' }).fouten);
+  });
+  test('valideerWijziging: onbekend veld of tabel wordt geweigerd', [false, false], function () {
+    return [O.valideerWijziging('activiteiten', { prijs: 5 }).ok, O.valideerWijziging('reizen', { titel: 'x' }).ok];
+  });
+  test('valideerWijziging: te lange notitie', false, function () { return O.valideerWijziging('verblijven', { notitie: 'x'.repeat(2001) }).ok; });
+  test('valideerWijziging: telefoon alleen cijfers, +, spaties, streepjes en haakjes', [true, false], function () {
+    return [O.valideerWijziging('verblijven', { telefoon: '+39 (0471) 836-311' }).ok, O.valideerWijziging('verblijven', { telefoon: 'bel mij' }).ok];
+  });
+  test('valideerWijziging: naam van een activiteit is verplicht', false, function () { return O.valideerWijziging('activiteiten', { naam: '  ' }).ok; });
+  // Wachtrij van wijzigingen: { "tabel|id|veld": {tabel, id, veld, waarde, gewijzigd} } en nieuwe rijen { "nieuw|id": {tabel, rij, gewijzigd} }.
+  var wz = { 'verblijven|v1|notitie': { tabel: 'verblijven', id: 'v1', veld: 'notitie', waarde: 'Wifi: zon', gewijzigd: '2026-07-18T10:00:00Z' },
+    'nieuw|n1': { tabel: 'activiteiten', id: 'n1', nieuw: true, rij: { id: 'n1', naam: 'Boottocht', datum: '2026-07-18' }, gewijzigd: '2026-07-18T11:00:00Z' } };
+  test('wijzigWachtrijLees: geldig blijft, rommel valt af', ['verblijven|v1|notitie', 'nieuw|n1'], function () {
+    return Object.keys(O.wijzigWachtrijLees(JSON.stringify(Object.assign({ rommel: 5, x: { tabel: 'reizen', id: 'a', veld: 'titel', waarde: 'x', gewijzigd: 'g' } }, wz))));
+  });
+  test('wijzigWachtrijLees: kapot of geen object → leeg', [{}, {}], function () { return [O.wijzigWachtrijLees('{kapot'), O.wijzigWachtrijLees('[1]')]; });
+  test('pasWijzigingenToe: veld vervangen en nieuwe rij erbij, bron ongewijzigd', [['Wifi: zon', 'oud'], ['a1', 'n1']], function () {
+    var verbl = [{ id: 'v1', notitie: 'oud' }], acts = [{ id: 'a1', naam: 'Strand' }];
+    return [[O.pasWijzigingenToe(verbl, 'verblijven', wz)[0].notitie, verbl[0].notitie], O.pasWijzigingenToe(acts, 'activiteiten', wz).map(function (a) { return a.id; })];
+  });
+  test('pasWijzigingenToe: geweigerde wijziging niet tonen', 'oud', function () {
+    var w = { k: { tabel: 'verblijven', id: 'v1', veld: 'notitie', waarde: 'geweigerd', gewijzigd: 'g', fout: 'geen toegang' } };
+    return O.pasWijzigingenToe([{ id: 'v1', notitie: 'oud' }], 'verblijven', w)[0].notitie;
+  });
+  test('pasWijzigingenToe: alleen eigen wijzigingen (ander account op dit toestel niet)', ['van mij', 'oud'], function () {
+    var w = { a: { tabel: 'verblijven', id: 'v1', veld: 'notitie', waarde: 'van mij', gewijzigd: 'g', user_id: 'u1' },
+      b: { tabel: 'verblijven', id: 'v2', veld: 'notitie', waarde: 'van ander', gewijzigd: 'g', user_id: 'u2' } };
+    return O.pasWijzigingenToe([{ id: 'v1', notitie: 'oud' }, { id: 'v2', notitie: 'oud' }], 'verblijven', w, 'u1').map(function (r) { return r.notitie; });
+  });
+  test('wijzigWachtrijLees: user_id en verzonden blijven bewaard', ['u1', true], function () {
+    var w = O.wijzigWachtrijLees(JSON.stringify({ k: { tabel: 'verblijven', id: 'v1', veld: 'notitie', waarde: 'x', gewijzigd: 'g', user_id: 'u1', verzonden: true } }));
+    return [w.k.user_id, w.k.verzonden];
+  });
+  test('valideerWijziging: boekingscode max. 80 tekens (zoals de database)', [true, false], function () {
+    return [O.valideerWijziging('verblijven', { boekingscode: 'x'.repeat(80) }).ok, O.valideerWijziging('verblijven', { boekingscode: 'x'.repeat(81) }).ok];
+  });
+  test('pasWijzigingenToe: nieuwe rij zonder volgorde krijgt in beeld max+1 (wachtrij ongemoeid)', [8, undefined], function () {
+    var w = { n: { tabel: 'activiteiten', id: 'n1', nieuw: true, rij: { id: 'n1', naam: 'Nieuw' }, gewijzigd: 'g' } };
+    return [O.pasWijzigingenToe([{ id: 'a', volgorde: 7 }], 'activiteiten', w)[1].volgorde, w.n.rij.volgorde];
+  });
+  test('wijzigWachtrijLees: verzondenOp blijft bewaard', '2026-07-18T10:00:00.000Z', function () {
+    return O.wijzigWachtrijLees(JSON.stringify({ k: { tabel: 'verblijven', id: 'v1', veld: 'notitie', waarde: 'x', gewijzigd: 'g', verzonden: true, verzondenOp: '2026-07-18T10:00:00.000Z' } })).k.verzondenOp;
+  });
+  test('pasWijzigingenToe: nieuwe rij die al op de server staat niet dubbel', 1, function () {
+    return O.pasWijzigingenToe([{ id: 'n1', naam: 'Boottocht' }], 'activiteiten', wz).length;
+  });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');

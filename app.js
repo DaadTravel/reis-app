@@ -148,7 +148,8 @@ function verwerkAuthFragment() {
 // ─── REST ───
 // Altijd schema reis (Accept-Profile/Content-Profile). Fouten komen terug
 // als { _error, status, message }, nooit als stille lege lijst.
-async function sbFetch(path, method, body, extraHeaders) {
+// opties.vers: langs de cache van de service worker heen (alleen het netwerk; geen bewaarde versie als terugval).
+async function sbFetch(path, method, body, extraHeaders, opties) {
   method = method || 'GET';
   const token = await huidigeAuthToken();
   if (!token) return { _error: true, status: 401, message: 'Niet ingelogd.' };
@@ -157,7 +158,7 @@ async function sbFetch(path, method, body, extraHeaders) {
     'Accept-Profile': SCHEMA, 'Content-Profile': SCHEMA,
   }, (method === 'POST' || method === 'PATCH') ? { Prefer: 'return=representation' } : {}, extraHeaders || {});
   try {
-    const r = await fetch(SB_URL + '/rest/v1/' + path, { method: method, headers: headers, body: body ? JSON.stringify(body) : undefined });
+    const r = await fetch(SB_URL + '/rest/v1/' + path, { method: method, headers: headers, body: body ? JSON.stringify(body) : undefined, cache: opties && opties.vers ? 'no-store' : 'default' });
     if (!r.ok) {
       const j = await r.json().catch(() => ({}));
       return { _error: true, status: r.status, message: j.message || j.error || r.statusText };
@@ -278,6 +279,16 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && !/[?&]vandaag=/.test(location.search) && Opmaak.datumIn(new Date()) !== DAG_BIJ_START) location.reload();
 });
 
+// Alleen route, verblijven en activiteiten van een reis, vers van het netwerk (na het versturen van wijzigingen).
+// Dezelfde adressen als haalReis, zodat de service worker ook de offline kopie bijwerkt. Geen netwerk → fout.
+async function haalReisVers(reisId) {
+  const delen = await Promise.all(['route_punten', 'verblijven', 'activiteiten']
+    .map(t => sbFetch(t + '?select=*&reis_id=eq.' + reisId + '&order=volgorde', 'GET', null, null, { vers: true })));
+  const fout = delen.filter(isFout)[0];
+  if (fout) return fout;
+  return { route: delen[0], verblijven: delen[1], activiteiten: delen[2] };
+}
+
 // Eén reis met alles erbij, of null als die niet bestaat (of niet zichtbaar is).
 const REIS_TABELLEN = ['stops', 'dagen', 'route_punten', 'verblijven', 'activiteiten', 'budget_posten'];
 async function haalReis(slug) {
@@ -387,6 +398,102 @@ window.addEventListener('online', () => { if (isIngelogd()) verstuurVerslagen();
 // App naar de achtergrond of dicht: nog één poging (het concept staat al op de telefoon).
 window.addEventListener('pagehide', () => { if (isIngelogd()) verstuurVerslagen(); });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && isIngelogd()) verstuurVerslagen(); });
+
+// ─── DATALAAG: BEWERKEN ONDERWEG (besluit gebruiker 2026-10-05) ───
+// Ouders wijzigen onderweg tijden, adres, contact, codes, betaalstatus en notities, en voegen activiteiten toe.
+// Zelfde patroon als het reisverslag: eerst op de telefoon (wachtrij per veld), dan versturen; zonder bereik
+// later. De laatste synchronisatie overschrijft (besluit gebruiker). Per veld, zodat twee ouders die elk een
+// ander veld wijzigen elkaar niet overschrijven. Wijzigingen in de app winnen van de Excel (CLAUDE.md).
+const WIJZIG_WACHT = 'reis-wijziging-wachtrij';
+function leesWijzigingen() { return Opmaak.wijzigWachtrijLees(leesOpslag(WIJZIG_WACHT)); }
+function bewaarWijzigingen(w) { return zetOpslag(WIJZIG_WACHT, Object.keys(w).length ? JSON.stringify(w) : ''); }
+// Items van jou (elk item onthoudt van wie het is: een ander account op dit toestel verstuurt of ziet het niet).
+function eigenWijzigingen(filter) {
+  const ik = mijnId(), w = leesWijzigingen();
+  return Object.keys(w).filter(k => ik && w[k].user_id === ik && (!filter || filter(w[k])));
+}
+// Velden opslaan (al gecontroleerd met Opmaak.valideerWijziging). Uitslag 'ok', 'uitgelogd' of 'vol'.
+function zetWijziging(tabel, id, velden) {
+  const ik = mijnId();
+  if (!ik) return 'uitgelogd';
+  const w = leesWijzigingen(), nu = new Date().toISOString();
+  Object.keys(velden).forEach(veld => { w[tabel + '|' + id + '|' + veld] = { tabel: tabel, id: id, veld: veld, waarde: velden[veld], gewijzigd: nu, user_id: ik, verzonden: false, fout: null }; });
+  return bewaarWijzigingen(w) ? 'ok' : 'vol';
+}
+// Nieuwe activiteit; het ID maakt de app zelf (opnieuw versturen geeft nooit een dubbele rij), de volgorde de
+// database (migratie …0022), zodat twee nieuwe activiteiten nooit botsen.
+function nieuweActiviteit(rij) {
+  const ik = mijnId();
+  if (!ik) return 'uitgelogd';
+  const w = leesWijzigingen();
+  w['nieuw|' + rij.id] = { tabel: 'activiteiten', id: rij.id, nieuw: true, rij: rij, gewijzigd: new Date().toISOString(), user_id: ik, verzonden: false, fout: null };
+  return bewaarWijzigingen(w) ? 'ok' : 'vol';
+}
+function heeftOnverzondenWijziging() { return eigenWijzigingen(x => !x.verzonden && !x.fout).length > 0; }
+// Geweigerde wijzigingen weggooien (knop "Verwerpen"); de waarde op de server blijft dan staan.
+function wisGeweigerdeWijzigingen() {
+  const w = leesWijzigingen();
+  eigenWijzigingen(x => !!x.fout).forEach(k => { delete w[k]; });
+  bewaarWijzigingen(w);
+}
+// Verstuurde kopieën van vóór dit moment zijn overbodig zodra de reis opnieuw van de server is gehaald.
+function vergeetVerzondenWijzigingen(voor) {
+  const w = leesWijzigingen();
+  eigenWijzigingen(x => x.verzonden && x.gewijzigd < voor).forEach(k => { delete w[k]; });
+  bewaarWijzigingen(w);
+}
+// Eén ronde: eerst nieuwe rijen (een wijziging kan erover gaan), dan per rij alle gewijzigde velden in één PATCH.
+// Geslaagd → verzonden (kopie blijft staan tot de volgende verse ophaalronde, max. 2 dagen); geweigerd → fout;
+// geen verbinding, verlopen sessie of serverfout → stoppen en later opnieuw. Uitslag: aantal verstuurde items.
+let wijzigVersturen = null, wijzigNogEens = false;
+async function wijzigRonde() {
+  let w = leesWijzigingen(), verstuurd = 0;
+  const oud = Object.keys(w).filter(k => w[k].verzonden && Date.now() - Date.parse(w[k].verzondenOp || w[k].gewijzigd) > 2 * 24 * 3600 * 1000);
+  if (oud.length) { oud.forEach(k => { delete w[k]; }); bewaarWijzigingen(w); }
+  const open = eigenWijzigingen(x => !x.verzonden && !x.fout);
+  const perRij = {};
+  open.filter(k => !w[k].nieuw).forEach(k => { const r = w[k].tabel + '|' + w[k].id; (perRij[r] = perRij[r] || []).push(k); });
+  const klaar = (sleutels, r, versie) => {
+    const nu = leesWijzigingen();
+    sleutels.forEach(k => {
+      if (!nu[k] || nu[k].gewijzigd !== versie[k]) return; // intussen opnieuw gewijzigd: die versie gaat de volgende ronde
+      nu[k] = Object.assign({}, nu[k], isFout(r) ? { fout: r.message || ('fout ' + r.status) } : { verzonden: true, verzondenOp: new Date().toISOString(), fout: null });
+      if (!isFout(r)) verstuurd++;
+    });
+    bewaarWijzigingen(nu);
+  };
+  const later = r => isFout(r) && (r.status === 0 || r.status === 401 || r.status >= 500);
+  for (const k of open.filter(k => w[k].nieuw)) {
+    const x = w[k];
+    const r = await sbWrite('activiteiten?on_conflict=id', 'POST', x.rij, 2, { Prefer: 'resolution=ignore-duplicates,return=minimal' });
+    if (later(r)) return verstuurd;
+    klaar([k], r, { [k]: x.gewijzigd });
+  }
+  for (const rij of Object.keys(perRij)) {
+    const sleutels = perRij[rij], eerste = w[sleutels[0]], velden = {}, versie = {};
+    sleutels.forEach(k => { velden[w[k].veld] = w[k].waarde; versie[k] = w[k].gewijzigd; });
+    const r = await sbWrite(eerste.tabel + '?id=eq.' + encodeURIComponent(eerste.id), 'PATCH', velden, 2);
+    if (later(r)) return verstuurd;
+    klaar(sleutels, r, versie);
+  }
+  return verstuurd;
+}
+// Na de ronde een gebeurtenis met het aantal verstuurde items (de reispagina haalt dan, en alleen dan, opnieuw op).
+function verstuurWijzigingen() {
+  if (wijzigVersturen) { wijzigNogEens = true; return wijzigVersturen; }
+  wijzigNogEens = false;
+  wijzigVersturen = Promise.resolve().then(wijzigRonde).catch(() => 0)
+    .then(n => {
+      wijzigVersturen = null;
+      if (wijzigNogEens) return verstuurWijzigingen();
+      window.dispatchEvent(new CustomEvent('reis-wijziging-verstuurd', { detail: { verstuurd: n || 0 } }));
+    });
+  return wijzigVersturen;
+}
+function verstuurAlles() { verstuurVerslagen(); verstuurWijzigingen(); }
+window.addEventListener('online', () => { if (isIngelogd()) verstuurWijzigingen(); });
+window.addEventListener('pagehide', () => { if (isIngelogd()) verstuurWijzigingen(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && isIngelogd()) verstuurWijzigingen(); });
 
 // ─── DATALAAG: GEZIN (groep per lid en hartjes) ───
 // Eigen user-ID uit de access-token (JWT, veld sub); geen geldige token → null.

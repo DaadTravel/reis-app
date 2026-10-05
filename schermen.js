@@ -283,13 +283,112 @@
     var x = p.x, l = x.punt;
     var tijden = x.aankomst ? [x.aankomstTijd ? 'aankomst ' + x.aankomstTijd : 'aankomst vandaag']
       : [x.vertrek ? 'vertrek ' + x.vertrek : null, x.aankomstTijd ? 'aankomst ' + x.aankomstTijd + (l.leg_aankomst_dagen ? ' (+' + l.leg_aankomst_dagen + ')' : '') : null];
+    var naam = (x.van ? kortNaam(x.van) + ' → ' : '') + kortNaam(x.naar || '?');
     return h('div', { className: 'nv-vandaag__regel' },
-      h('p', { className: 'nv-vandaag__hoofd' }, h(G.Icon, { name: l.leg_vervoer || 'arrow', size: 18 }), (x.van ? kortNaam(x.van) + ' → ' : '') + kortNaam(x.naar || '?')),
-      tijden.filter(Boolean).length ? h('p', { className: 'nv-vandaag__tijd' }, tijden.filter(Boolean).join(' · ')) : null,
-      // Betaalstatus bij een kaartje (vlucht, ferry, bus, trein); niet bij een eigen autorit.
-      x.aankomst || l.leg_vervoer === 'car' ? null : h(BetaalStatus, { status: l.leg_status }),
-      x.aankomst ? null : h(Contact, { vertrekpunt: l.leg_adres, telefoon: l.leg_telefoon, via: l.leg_geboekt_via, boekingscode: l.leg_boekingscode }));
+      h(Wijzigbaar, { tabel: 'route_punten', rij: l, naam: 'route ' + naam, wz: p.wz, bewerk: p.bewerk && !x.aankomst },
+        h('p', { className: 'nv-vandaag__hoofd' }, h(G.Icon, { name: l.leg_vervoer || 'arrow', size: 18 }), naam),
+        tijden.filter(Boolean).length ? h('p', { className: 'nv-vandaag__tijd' }, tijden.filter(Boolean).join(' · ')) : null,
+        // Betaalstatus bij een kaartje (vlucht, ferry, bus, trein); niet bij een eigen autorit.
+        x.aankomst || l.leg_vervoer === 'car' ? null : h(BetaalStatus, { status: l.leg_status }),
+        h(Notitie, { tekst: l.leg_notitie }),
+        x.aankomst ? null : h(Contact, { vertrekpunt: l.leg_adres, telefoon: l.leg_telefoon, via: l.leg_geboekt_via, boekingscode: l.leg_boekingscode })));
   }
+  // ── Bewerken onderweg (besluit gebruiker 2026-10-05): alleen ouders; velden per soort uit O.WIJZIGBAAR. ──
+  var VELDEN = {
+    route_punten: [['leg_vertrek', 'Vertrek'], ['leg_aankomst', 'Aankomst'], ['leg_adres', 'Vertrekadres of ophaalpunt'], ['leg_boekingscode', 'Boekingscode'],
+      ['leg_telefoon', 'Telefoon'], ['leg_status', 'Betaalstatus'], ['leg_notitie', 'Notitie (bijv. gate of perron)']],
+    verblijven: [['inchecktijd', 'Inchecken vanaf'], ['uitchecktijd', 'Uitchecken uiterlijk'], ['adres', 'Adres'], ['telefoon', 'Telefoon'], ['boekingscode', 'Boekingscode'],
+      ['status', 'Betaalstatus'], ['notitie', 'Notitie (bijv. wifi, deurcode)']],
+    activiteiten: [['naam', 'Wat'], ['datum', 'Datum'], ['begin_tijd', 'Begin'], ['eind_tijd', 'Eind'], ['ophaalpunt', 'Ophaalpunt'], ['telefoon', 'Telefoon'],
+      ['boekingscode', 'Boekingscode'], ['status', 'Betaalstatus'], ['notitie', 'Notitie']]
+  };
+  function veldWaarde(soort, v) { return v == null ? '' : soort === 'tijd' ? String(v).slice(0, 5) : String(v); }
+  // Formulier in het blok zelf; alleen gewijzigde velden gaan mee (bij een nieuwe activiteit alles).
+  function WijzigForm(p) {
+    var soorten = O.WIJZIGBAAR[p.tabel], velden = VELDEN[p.tabel];
+    // Beginstand bij het openen vastleggen: alleen wat je zelf wijzigt gaat mee, ook als de rij intussen opnieuw is
+    // opgehaald (anders zou een open formulier de wijziging van de andere ouder met oude waarden overschrijven).
+    var begin = React.useRef(null);
+    if (!begin.current) { begin.current = {}; velden.forEach(function (f) { begin.current[f[0]] = veldWaarde(soorten[f[0]], p.rij[f[0]]); }); }
+    var s = React.useState(function () { return A(begin.current, {}); }), w = s[0], setW = s[1];
+    var f = React.useState({}), fouten = f[0], setFouten = f[1];
+    var m = React.useState(''), melding = m[0], setMelding = m[1];
+    var bezig = React.useRef(false);
+    function zet(k, v) { setW(function (o) { var n = A(o, {}); n[k] = v; return n; }); }
+    function opslaan(e) {
+      e.preventDefault();
+      if (bezig.current) return;
+      var gewijzigd = {};
+      velden.forEach(function (x) { if (p.nieuw || w[x[0]] !== begin.current[x[0]]) gewijzigd[x[0]] = w[x[0]]; });
+      var c = O.valideerWijziging(p.tabel, gewijzigd);
+      if (!c.ok) return setFouten(c.fouten);
+      bezig.current = true;
+      // Lukt bewaren niet (uitgelogd, opslag vol), dan blijft het formulier open met je invoer.
+      var uitslag = p.onOpslaan(c.schoon);
+      if (uitslag && uitslag !== 'ok') {
+        bezig.current = false;
+        setMelding(uitslag === 'uitgelogd' ? 'Je bent niet ingelogd: niet bewaard. Log opnieuw in.' : 'De opslag van deze telefoon is vol: niet bewaard.');
+      }
+    }
+    return h('form', { className: 'nv-wijzig', onSubmit: opslaan, noValidate: true },
+      melding ? h('p', { className: 'nv-melding', role: 'alert' }, melding) : null,
+      p.titel ? h('p', { className: 'nv-label' }, p.titel) : null,
+      velden.map(function (x) {
+        var k = x[0], soort = soorten[k], id = 'w-' + p.tabel + '-' + p.rij.id + '-' + k, fout = fouten[k];
+        var veld = soort === 'status'
+          ? h('fieldset', { className: 'nv-wijzig__status' }, h('legend', { className: 'nv-veld' }, x[1]),
+            [['betaald', 'Betaald'], ['geboekt', 'Nog betalen'], ['', 'Onbekend']].map(function (o) {
+              return h('button', { key: o[0], type: 'button', className: 'nv-tab', 'aria-pressed': w[k] === o[0], onClick: function () { zet(k, o[0]); } }, o[1]);
+            }))
+          : h('label', { className: 'nv-veld', htmlFor: id }, x[1],
+            soort === 'notitie'
+              ? h('textarea', { id: id, rows: 3, maxLength: 2000, value: w[k], onChange: function (e) { zet(k, e.target.value); }, 'aria-invalid': !!fout })
+              : h('input', { id: id, value: w[k], 'aria-invalid': !!fout, onChange: function (e) { zet(k, e.target.value); },
+                type: soort === 'tijd' ? 'time' : soort === 'datum' ? 'date' : soort === 'tel' ? 'tel' : 'text',
+                inputMode: soort === 'tel' ? 'tel' : undefined, autoComplete: 'off', maxLength: soort === 'kort' ? 100 : 300 }));
+        return h('div', { key: k, className: 'nv-wijzig__veld' }, veld, fout ? h('p', { className: 'nv-melding', role: 'alert' }, fout) : null);
+      }),
+      h('div', { className: 'nv-wijzig__knoppen' },
+        h('button', { type: 'button', className: 'nv-knop', onClick: p.onAnnuleer }, 'Annuleren'),
+        h('button', { type: 'submit', className: 'nv-hoofdknop' }, 'Opslaan')));
+  }
+  // Een blok dat een ouder kan wijzigen: inhoud plus knop "Wijzig", of het formulier.
+  function Wijzigbaar(p) {
+    var o = React.useState(false), open = o[0], setOpen = o[1];
+    if (open) return h(WijzigForm, { tabel: p.tabel, rij: p.rij, onAnnuleer: function () { setOpen(false); },
+      onOpslaan: function (velden) {
+        var uitslag = Object.keys(velden).length ? p.wz.wijzig(p.tabel, p.rij.id, velden) : 'ok';
+        if (uitslag === 'ok') setOpen(false);
+        return uitslag;
+      } });
+    return h(React.Fragment, null, p.children,
+      p.bewerk ? h('button', { type: 'button', className: 'nv-meer nv-wijzig__knop', onClick: function () { setOpen(true); }, 'aria-label': 'Wijzig ' + p.naam }, 'Wijzig') : null);
+  }
+  // Nieuwe activiteit (bijv. ter plekke geboekt); standaard op deze dag en deze plek.
+  function NieuweActiviteit(p) {
+    var o = React.useState(null), rij = o[0], setRij = o[1];
+    if (!rij) return h('button', { type: 'button', className: 'nv-meer nv-vandaag__toevoegen', onClick: function () {
+      setRij({ id: nieuwId(), datum: p.datum });
+    } }, '+ Activiteit toevoegen');
+    return h(VandaagBlok, { titel: 'Activiteit toevoegen', icoon: 'calendar' },
+      h(WijzigForm, { tabel: 'activiteiten', rij: rij, nieuw: true, onAnnuleer: function () { setRij(null); },
+        onOpslaan: function (velden) {
+          // Geen volgorde meesturen: die kent de database toe (migratie …0022).
+          var uitslag = p.wz.voegToe(A({ id: rij.id, reis_id: p.reisId, stop_id: p.plekId || null, icoon: 'calendar' }, velden));
+          if (uitslag === 'ok') setRij(null);
+          return uitslag;
+        } }));
+  }
+  // UUID v4 (ook op toestellen zonder crypto.randomUUID).
+  function nieuwId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    var b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+    var x = Array.prototype.map.call(b, function (n) { return (n + 256).toString(16).slice(1); }).join('');
+    return x.slice(0, 8) + '-' + x.slice(8, 12) + '-' + x.slice(12, 16) + '-' + x.slice(16, 20) + '-' + x.slice(20);
+  }
+  // Notitie onderweg (wifi, deurcode, gate): regels behouden.
+  function Notitie(p) { return p.tekst ? h('p', { className: 'nv-vandaag__notitie' }, p.tekst) : null; }
   // Betaalstatus op Vandaag (besluit gebruiker 2026-10-04): betaald, nog betalen, of onbekend ("Status ?").
   function BetaalStatus(p) {
     var label = p.status === 'betaald' ? 'Betaald' : p.status === 'geboekt' ? 'Nog betalen' : !p.status ? 'Status ?' : null;
@@ -302,11 +401,13 @@
     var tijd = [a.begin_tijd ? O.tijd(a.begin_tijd) : '', a.eind_tijd ? O.tijd(a.eind_tijd) : ''].filter(Boolean).join(' – ');
     var betaal = a.status === 'betaald' || a.status === 'geboekt';
     return h('div', { className: 'nv-vandaag__regel' },
-      h('p', { className: 'nv-vandaag__hoofd' }, h(G.Icon, { name: a.icoon || 'calendar', size: 18 }),
-        O.veiligeLink(a.link) ? h('a', { href: a.link, target: '_blank', rel: 'noopener noreferrer' }, a.naam) : a.naam),
-      tijd || a.notitie ? h('p', { className: 'nv-vandaag__tijd' }, [tijd, a.notitie].filter(Boolean).join(' · ')) : null,
-      betaal ? h(BetaalStatus, { status: a.status }) : null,
-      h(Contact, { ophaalpunt: a.ophaalpunt, telefoon: a.telefoon, email: a.email, via: a.geboekt_via, boekingscode: a.boekingscode }));
+      h(Wijzigbaar, { tabel: 'activiteiten', rij: a, naam: a.naam, wz: p.wz, bewerk: p.bewerk },
+        h('p', { className: 'nv-vandaag__hoofd' }, h(G.Icon, { name: a.icoon || 'calendar', size: 18 }),
+          O.veiligeLink(a.link) ? h('a', { href: a.link, target: '_blank', rel: 'noopener noreferrer' }, a.naam) : a.naam),
+        tijd ? h('p', { className: 'nv-vandaag__tijd' }, tijd) : null,
+        betaal ? h(BetaalStatus, { status: a.status }) : null,
+        h(Notitie, { tekst: a.notitie }),
+        h(Contact, { ophaalpunt: a.ophaalpunt, telefoon: a.telefoon, email: a.email, via: a.geboekt_via, boekingscode: a.boekingscode })));
   }
 
   function tijdVan(x) { var t = x && Date.parse(x.gewijzigd); return isNaN(t) ? 0 : t; }
@@ -412,19 +513,23 @@
           h('span', { className: 'nv-label' }, x.dagNr === 0 ? 'Vandaag · de dag vóór vertrek' : 'Vandaag · dag ' + x.dagNr + ' van ' + x.dagen),
           h('h2', { className: 'nv-kop' }, titel),
           h('p', { className: 'nv-tekst nv-muted' }, sub)),
-        x.routes.length ? h(VandaagBlok, { titel: 'Route vandaag', icoon: 'arrow' }, x.routes.map(function (r) { return h(RouteRegel, { key: r.punt.id, x: r }); })) : null,
+        p.beheerder ? h(WijzigStand, { wz: p.wz }) : null,
+        x.routes.length ? h(VandaagBlok, { titel: 'Route vandaag', icoon: 'arrow' }, x.routes.map(function (r) { return h(RouteRegel, { key: r.punt.id + (r.aankomst ? '-a' : ''), x: r, wz: p.wz, bewerk: p.beheerder }); })) : null,
         v ? h(VandaagBlok, { titel: 'Slapen vannacht', icoon: 'bed' },
           h('div', { className: 'nv-vandaag__regel' },
-            h('p', { className: 'nv-vandaag__hoofd' }, O.veiligeLink(v.link) ? h('a', { href: v.link, target: '_blank', rel: 'noopener noreferrer' }, v.naam) : v.naam),
-            O.verblijfKenmerken(v) ? h('p', { className: 'nv-vandaag__tijd' }, O.verblijfKenmerken(v)) : null,
-            x.nachtNr === 1 && v.inchecktijd ? h('p', { className: 'nv-vandaag__tijd' }, 'inchecken vanaf ' + O.tijd(v.inchecktijd)) : null,
-            h(BetaalStatus, { status: v.status }),
-            h(Contact, { adres: v.adres, telefoon: v.telefoon, email: v.email, via: v.geboekt_via, boekingscode: v.boekingscode }))) : null,
-        x.activiteiten.length ? h(VandaagBlok, { titel: 'Gepland', icoon: 'calendar' }, x.activiteiten.map(function (a) { return h(GeplandRegel, { key: a.id, x: a }); })) : null,
+            h(Wijzigbaar, { tabel: 'verblijven', rij: v, naam: v.naam, wz: p.wz, bewerk: p.beheerder },
+              h('p', { className: 'nv-vandaag__hoofd' }, O.veiligeLink(v.link) ? h('a', { href: v.link, target: '_blank', rel: 'noopener noreferrer' }, v.naam) : v.naam),
+              O.verblijfKenmerken(v) ? h('p', { className: 'nv-vandaag__tijd' }, O.verblijfKenmerken(v)) : null,
+              x.nachtNr === 1 && v.inchecktijd ? h('p', { className: 'nv-vandaag__tijd' }, 'inchecken vanaf ' + O.tijd(v.inchecktijd)) : null,
+              h(BetaalStatus, { status: v.status }),
+              h(Notitie, { tekst: v.notitie }),
+              h(Contact, { adres: v.adres, telefoon: v.telefoon, email: v.email, via: v.geboekt_via, boekingscode: v.boekingscode })))) : null,
+        x.activiteiten.length ? h(VandaagBlok, { titel: 'Gepland', icoon: 'calendar' }, x.activiteiten.map(function (a) { return h(GeplandRegel, { key: a.id, x: a, wz: p.wz, bewerk: p.beheerder }); })) : null,
         x.vrij ? h(VandaagBlok, { titel: 'Vrije dag', icoon: 'sun' },
           x.ideeen.length ? h(React.Fragment, null, h('p', { className: 'nv-muted nv-vandaag__uitleg' }, 'Niets gepland. Dit vinden jullie het leukst hier:'),
             x.ideeen.map(function (a) { return h(ActiviteitRij, { key: a.id, x: a, hart: p.hart }); }))
             : h('p', { className: 'nv-muted' }, 'Niets gepland: tijd om bij te komen.')) : null,
+        p.beheerder ? h(NieuweActiviteit, { wz: p.wz, reisId: p.reisId, datum: x.datum, plekId: x.plekId }) : null,
         h(HartMelding, { hart: p.hart, stil: true }),
         x.laatsteDag ? null : h(VandaagBlok, { titel: 'Morgen', icoon: 'clock' },
           morgen.length ? h('ul', { className: 'nv-vandaag__morgen' }, morgen.map(function (t, i) { return h('li', { key: i }, t); }))
@@ -724,11 +829,17 @@
             d && d.beleving && d.beleving !== s.lede && h('p', { className: 'nv-tekst nv-muted' }, d.beleving),
             !etappes.length && notities.length ? h('div', { className: 'nv-logistiek' }, h(G.Icon, { name: 'clock', size: 18 }), h('span', null, notities.join(' · '))) : null,
             tips.length ? h(G.TipNote, { title: 'Tips voor ' + kortNaam(s.naam), items: tips }) : null,
+            // Bewerken onderweg: dezelfde melding als op Vandaag (nog niet verstuurd, geweigerd).
+            p.bewerk ? h(WijzigStand, { wz: p.wz }) : null,
             // Alles rond een plek bij elkaar (besluit gebruiker 2026-10-04): de activiteiten van deze plek met hartjes.
             hier.length ? h('div', { className: 'nv-plekdoen' },
               h('span', { className: 'nv-label' }, p.herinnering ? 'Wat we deden' : 'Te doen in ' + kortNaam(s.naam)),
               h(HartMelding, { hart: p.hart, stil: true }),
-              (toonAlles ? hier : hier.slice(0, TE_DOEN_EERST)).map(function (a) { return h(ActiviteitRij, { key: a.id, x: a, hart: p.hart }); }),
+              (toonAlles ? hier : hier.slice(0, TE_DOEN_EERST)).map(function (a) {
+                // Geplande activiteiten kan een ouder onderweg wijzigen; ideeën niet (die hebben hartjes, geen tijden).
+                return O.isIdee(a) || !p.bewerk ? h(ActiviteitRij, { key: a.id, x: a, hart: p.hart })
+                  : h(Wijzigbaar, { key: a.id, tabel: 'activiteiten', rij: a, naam: a.naam, wz: p.wz, bewerk: true }, h(ActiviteitRij, { x: a, hart: p.hart }));
+              }),
               hier.length > TE_DOEN_EERST ? h('button', { type: 'button', className: 'nv-meer', 'aria-expanded': toonAlles, onClick: function () { setToonAlles(!toonAlles); } },
                 toonAlles ? 'Toon minder' : 'Toon nog ' + (hier.length - TE_DOEN_EERST)) : null) : null,
             // Geboekt of status onbekend (O.inSlapen): per verblijf naam, data en contact (onderweg in twee tikken). Anders de stand
@@ -737,13 +848,15 @@
               h('span', { className: 'nv-label' }, 'Slapen'),
               geboekt.map(function (v) {
                 return h('div', { key: v.id, className: 'nv-verblijf' },
-                  h('div', { className: 'nv-verblijf__kop' },
-                    h('span', { className: 'nv-verblijf__naam' }, O.veiligeLink(v.link) ? h('a', { href: v.link, target: '_blank', rel: 'noopener noreferrer' }, v.naam) : v.naam),
-                    h(G.StatusBadge, { status: v.status || undefined, label: O.statusLabel(v) })),
-                  h('span', { className: 'nv-verblijf__wanneer' }, [O.verblijfPeriode(v), nachtenTekst(v.nachten),
-                    O.tijd(v.inchecktijd) && 'inchecken ' + O.tijd(v.inchecktijd), O.tijd(v.uitchecktijd) && 'uitchecken ' + O.tijd(v.uitchecktijd)].filter(Boolean).join(' · ')),
-                  // Alleen de contactvelden; de website staat al op de naam.
-                  h(Contact, { adres: v.adres, telefoon: v.telefoon, email: v.email, via: v.geboekt_via, boekingscode: v.boekingscode }));
+                  h(Wijzigbaar, { tabel: 'verblijven', rij: v, naam: v.naam, wz: p.wz, bewerk: p.bewerk },
+                    h('div', { className: 'nv-verblijf__kop' },
+                      h('span', { className: 'nv-verblijf__naam' }, O.veiligeLink(v.link) ? h('a', { href: v.link, target: '_blank', rel: 'noopener noreferrer' }, v.naam) : v.naam),
+                      h(G.StatusBadge, { status: v.status || undefined, label: O.statusLabel(v) })),
+                    h('span', { className: 'nv-verblijf__wanneer' }, [O.verblijfPeriode(v), nachtenTekst(v.nachten),
+                      O.tijd(v.inchecktijd) && 'inchecken ' + O.tijd(v.inchecktijd), O.tijd(v.uitchecktijd) && 'uitchecken ' + O.tijd(v.uitchecktijd)].filter(Boolean).join(' · ')),
+                    h(Notitie, { tekst: v.notitie }),
+                    // Alleen de contactvelden; de website staat al op de naam.
+                    h(Contact, { adres: v.adres, telefoon: v.telefoon, email: v.email, via: v.geboekt_via, boekingscode: v.boekingscode })));
               })) :
             h('p', { className: 'nv-slapen' },
               h(G.StatusBadge, { status: opties.length ? 'optie' : 'open', label: opties.length ? 'Opties' : 'Nog te bepalen' }),
@@ -752,7 +865,7 @@
                 h('a', { href: '#slapen', onClick: function (e) { e.preventDefault(); naar('slapen'); } }, 'bekijk')) :
                 h('span', { className: 'nv-muted' }, 'Nog geen verblijf gekozen')),
             // Met route: het kader Onderweg is ook de navigatie naar de vorige/volgende plek.
-            etappes.length ? h(Onderweg, { etappes: etappes, notities: notities, dagen: p.dagen, stops: p.stops, hier: s.id, herinnering: p.herinnering, kies: kies }) :
+            etappes.length ? h(Onderweg, { etappes: etappes, notities: notities, dagen: p.dagen, stops: p.stops, hier: s.id, herinnering: p.herinnering, kies: kies, wz: p.wz, bewerk: p.bewerk }) :
             h('div', { className: 'nv-bladeren' },
               vorige && h('button', { type: 'button', className: 'nv-knop', onClick: function () { kies(vorige.id); } }, '← ' + kortNaam(vorige.naam)),
               volgende && h('button', { type: 'button', className: 'nv-knop', onClick: function () { kies(volgende.id); } }, kortNaam(volgende.naam) + ' →'))))));
@@ -797,9 +910,10 @@
           doel ? h('span', { key: 'p', className: 'nv-onderweg__pijl', 'aria-hidden': true }, e.aankomst ? '←' : '→') : null];
         // Contact van de rit (bijv. busje) los onder de rij: een link mag niet in een knop.
         var contact = h(Contact, { vertrekpunt: l.leg_adres, telefoon: l.leg_telefoon, email: l.leg_email, via: l.leg_geboekt_via, boekingscode: l.leg_boekingscode });
-        return h(React.Fragment, { key: k }, doel ?
+        // Onderweg kan een ouder de rit wijzigen (tijden, adres, code, betaalstatus, notitie).
+        return h(Wijzigbaar, { key: l.id + (e.aankomst ? '-a' : '-v'), tabel: 'route_punten', rij: l, naam: 'route ' + kortNaam(e.van.naam) + ' → ' + kortNaam(e.naar.naam), wz: p.wz, bewerk: p.bewerk }, doel ?
           h('button', { type: 'button', className: 'nv-onderweg__rij', onClick: function () { p.kies(doel.id); } }, inhoud) :
-          h('div', { className: 'nv-onderweg__rij' }, inhoud), contact);
+          h('div', { className: 'nv-onderweg__rij' }, inhoud), h(Notitie, { tekst: l.leg_notitie }), contact);
       }),
       p.notities.length ? h('p', { className: 'nv-onderweg__notitie' }, h(G.Icon, { name: 'clock', size: 16 }), h('span', null, p.notities.join(' · '))) : null);
   }
@@ -953,8 +1067,74 @@
   // Elke reis dezelfde onderdelen, ook als er (nog) niets in staat.
   var SECTIES = [['overzicht', 'Overzicht'], ['programma', 'Programma'], ['slapen', 'Slapen'], ['doen', 'Doen'], ['kosten', 'Kosten']];
 
+  // Bewerken onderweg: de reisdata met de wijzigingen uit de wachtrij erop (meteen zichtbaar, ook zonder bereik).
+  // Stand van de pagina = de data bij het openen, plus wat er in deze sessie is opgeslagen (blijft staan na het
+  // versturen), plus je eigen wijzigingen uit de wachtrij (nog niet verstuurd, of verstuurd maar nog niet opnieuw
+  // opgehaald). Is er iets verstuurd, of staan er verstuurde kopieën: de reis opnieuw ophalen (dan staan ook de
+  // wijzigingen van de andere ouder erin en heeft de offline kopie de nieuwste stand). Alleen het laatst gestarte
+  // ophalen telt, en alleen als er sindsdien niets is opgeslagen.
+  function useWijzigingen(data) {
+    var b = React.useState(function () { return { route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten }; }), basis = b[0], setBasis = b[1];
+    var t = React.useState(0), setTik = t[1];
+    var u = React.useState('ok'), opslag = u[0], setOpslag = u[1];
+    var volg = React.useRef(0), laatsteOpslag = React.useRef(0);
+    function tik() { setTik(function (n) { return n + 1; }); }
+    React.useEffect(function () {
+      function bij(e) {
+        tik();
+        var verstuurd = (e && e.detail && e.detail.verstuurd) || 0;
+        if (!navigator.onLine || (!verstuurd && !eigenWijzigingen(function (x) { return x.verzonden; }).length)) return;
+        var mijn = ++volg.current, start = Date.now(), startIso = new Date(start).toISOString();
+        haalReisVers(data.reis.id).then(function (vers) {
+          if (mijn !== volg.current || laatsteOpslag.current > start || !vers || isFout(vers)) return;
+          vergeetVerzondenWijzigingen(startIso);
+          setBasis({ route: vers.route, verblijven: vers.verblijven, activiteiten: vers.activiteiten });
+        });
+      }
+      window.addEventListener('reis-wijziging-verstuurd', bij);
+      // Eén keer bij het openen: verstuurde kopieën uit een vorige sessie na een verse ophaalronde opruimen
+      // (de gebeurtenis van de verzendronde bij het laden kan al voorbij zijn).
+      bij({ detail: { verstuurd: 0 } });
+      return function () { window.removeEventListener('reis-wijziging-verstuurd', bij); };
+    }, []);
+    var w = leesWijzigingen(), ik = mijnId();
+    function klaar(uitslag) {
+      setOpslag(uitslag);
+      // De wijziging staat in de wachtrij (ook na versturen, tot de verse ophaalronde) en is zo meteen zichtbaar;
+      // wordt ze geweigerd, dan verdwijnt ze weer uit beeld (de basis blijft de stand van de server).
+      if (uitslag === 'ok') { laatsteOpslag.current = Date.now(); verstuurWijzigingen(); }
+      tik();
+      return uitslag;
+    }
+    var eigen = Object.keys(w).filter(function (k) { return ik && w[k].user_id === ik; });
+    var fouten = eigen.filter(function (k) { return w[k].fout; }).length;
+    var wachtend = eigen.filter(function (k) { return !w[k].fout && !w[k].verzonden; }).length;
+    return {
+      route: O.pasWijzigingenToe(basis.route, 'route_punten', w, ik),
+      verblijven: O.pasWijzigingenToe(basis.verblijven, 'verblijven', w, ik),
+      activiteiten: O.pasWijzigingenToe(basis.activiteiten, 'activiteiten', w, ik),
+      wijzig: function (tabel, id, velden) { return klaar(zetWijziging(tabel, id, velden)); },
+      voegToe: function (rij) { return klaar(nieuweActiviteit(rij)); },
+      verwerp: function () { wisGeweigerdeWijzigingen(); setOpslag('ok'); tik(); },
+      opslag: opslag, wachtend: wachtend, fouten: fouten
+    };
+  }
+  // Melding over wijzigingen die nog niet (of niet) zijn aangekomen; geweigerde kun je verwerpen.
+  function WijzigStand(p) {
+    var wz = p.wz;
+    var t = wz.opslag === 'uitgelogd' ? 'Je bent niet ingelogd: je laatste wijziging is níet bewaard.'
+      : wz.opslag === 'vol' ? 'De opslag van deze telefoon is vol: je laatste wijziging is níet bewaard.'
+      : wz.fouten ? wz.fouten + (wz.fouten === 1 ? ' wijziging is' : ' wijzigingen zijn') + ' geweigerd en niet opgeslagen.'
+      : wz.wachtend ? wz.wachtend + (wz.wachtend === 1 ? ' wijziging staat' : ' wijzigingen staan') + ' op deze telefoon en gaan mee zodra er verbinding is.' : '';
+    if (!t) return null;
+    return h('div', { className: wz.opslag !== 'ok' || wz.fouten ? 'nv-melding nv-wijzig__stand' : 'nv-muted nv-wijzig__stand', role: 'status' }, t,
+      wz.fouten ? h('button', { type: 'button', className: 'nv-knop', onClick: wz.verwerp }, 'Verwerpen') : null);
+  }
+
   function Reispagina(props) {
-    var data = props.data, r = data.reis, stops = data.stops;
+    var data0 = props.data, r = data0.reis, stops = data0.stops;
+    var wz = useWijzigingen(data0);
+    var data = A(data0, { route: wz.route, verblijven: wz.verblijven, activiteiten: wz.activiteiten });
     // Onderweg: is deze reis actief (vanaf de dag vóór vertrek), dan staat Vandaag vooraan en opent Plek voor plek
     // op de plek van vandaag (besluit gebruiker 2026-10-04).
     var gezin = data.gezin || {};
@@ -999,14 +1179,16 @@
 
     var hart = useHartjes(data.gezin);
     var p = { reis: r, herinnering: r.stemming === 'herinnering', stops: stops, dagen: data.dagen, route: data.route,
-      verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, hart: hart, foto: maakFoto(data.fotos), kiesPlek: kiesPlek };
+      verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, hart: hart, foto: maakFoto(data.fotos), kiesPlek: kiesPlek,
+      // Bewerken onderweg: alleen ouders en alleen tijdens een actieve reis (ervóór is de Excel leidend).
+      wz: wz, bewerk: !!gezin.beheerder && !!onderweg };
     return h(React.Fragment, null,
       h(Opening, p),
       h(Balk, { secties: secties, actief: actief }),
       h('main', null,
         data.fotoFout && h('div', { className: 'nv-wrap' }, h(FotoMelding, { fout: data.fotoFout })),
         onderweg ? h(Vandaag, { dag: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten,
-          hartjes: hart.g.hartjes || [] }, vandaag), hart: hart, beheerder: !!gezin.beheerder, reisId: r.id, vs: vs, gezin: gezin }) : null,
+          hartjes: hart.g.hartjes || [] }, vandaag), hart: hart, beheerder: !!gezin.beheerder, reisId: r.id, vs: vs, gezin: gezin, wz: wz }) : null,
         h(Intro, p), h(Citaat, p), h(Overzicht, p), h(Programma, A(p, { plekId: plekId })), h(Slapen, p), h(Doen, p),
         toonVerslag ? h(Reisverslag, { reis: r, vs: vs, gezin: gezin, dagen: verslagDagen, plekken: plekken, beheerder: !!gezin.beheerder, vandaag: onderweg ? vandaag : null }) : null,
         h(Kosten, p)),
@@ -1040,13 +1222,13 @@
         if (res._error && res.status === 401) { clearAuthSession(); return zet({ scherm: 'inloggen', melding: 'Je sessie is verlopen. Log opnieuw in.' }); }
         if (isFout(res)) return zet({ scherm: 'fout', tekst: res.status === 0 ? 'Geen verbinding. Controleer je internet en probeer het opnieuw.' : 'Laden mislukt: ' + res.message });
         zet({ scherm: slug ? 'reis' : 'start', data: res });
-        verstuurVerslagen(); // wat zonder bereik geschreven is, alsnog versturen
+        verstuurAlles(); // wat zonder bereik geschreven of gewijzigd is, alsnog versturen
       });
     }
     React.useEffect(function () { if (st.scherm === 'laden') laad(); }, []);
     function uitloggen() {
       // Niet-verstuurd reisverslag blijft op deze telefoon staan (gaat mee als je weer inlogt); wel eerst waarschuwen.
-      if (heeftOnverzondenVerslag() && !window.confirm('Er staat nog een reisverslag op deze telefoon dat niet is verstuurd. Het blijft bewaard en gaat mee zodra je weer inlogt met verbinding. Toch uitloggen?')) return;
+      if ((heeftOnverzondenVerslag() || heeftOnverzondenWijziging()) && !window.confirm('Er staat nog een reisverslag of wijziging op deze telefoon die niet is verstuurd. Het blijft bewaard en gaat mee zodra je weer inlogt met verbinding. Toch uitloggen?')) return;
       signOut().then(function () { zet({ scherm: 'inloggen' }); });
     }
 

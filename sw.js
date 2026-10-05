@@ -1,7 +1,7 @@
 // Service worker: installeerbaar en onderweg zonder bereik te gebruiken.
 // Verhoog CACHE bij elke wijziging aan de app (CLAUDE.md), anders blijft
 // de oude versie in gebruik.
-const CACHE = 'reis-app-v27';
+const CACHE = 'reis-app-v29';
 // De app heeft een eigen domein (daadtravel.github.io), maar voor de
 // zekerheid ruimt hij alleen caches met dit voorvoegsel op.
 const VOORVOEGSEL = 'reis-app-';
@@ -85,6 +85,13 @@ async function uitSchil(e, req) {
 // Bewaard onder de kale URL: zonder de Authorization-header van het verzoek.
 async function dataNetwerkEerst(e, req) {
   const gestart = Date.now();
+  // "Vers" (cache: no-store, na het versturen van wijzigingen): alleen het netwerk, geen bewaarde versie als
+  // terugval (anders lijkt een verstuurde wijziging verdwenen); wel de bewaarde versie bijwerken.
+  if (req.cache === 'no-store') {
+    const r = await fetch(req);
+    if (r.ok) e.waitUntil(bewaar(DATA, req.url, r.clone(), gestart));
+    return r;
+  }
   const netwerk = fetch(req).then(r => {
     if (r.ok) return bewaar(DATA, req.url, r.clone(), gestart).then(() => r);
     return r;

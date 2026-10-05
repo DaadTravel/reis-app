@@ -55,6 +55,49 @@ voor beschrijving en beleving.
 (gitignored) — daarin staan de actuele stand, de open vragen en de
 afspraken uit eerdere sessies.
 
+## Backlog (geparkeerd, besluit gebruiker)
+
+Niet aan beginnen zonder dat de gebruiker erom vraagt; wel meenemen in
+ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
+
+- **App ook voor bevriende gezinnen, zonder Claude** (2026-10-05, nog lang
+  niet relevant). Nodig, van groot naar klein:
+  1. invoeren in de app: bewerkschermen (reis, plekken, route, verblijven,
+     activiteiten, kosten, contact), foto-upload met credit en een
+     Excel-import van het sjabloon met een overzicht van de wijzigingen vóór
+     opslaan. Eerste stap, want ook zelf nuttig;
+  2. meerdere huishoudens: leden en reizen per huishouden (eventueel delen
+     per reis), RLS daarop, uitnodigen en rollen in de app;
+  3. wat Claude nu doet (teksten, ideeën, vervoersopties, kostenschatting,
+     foto's) handmatig, of optioneel via een AI-functie aan de serverkant
+     (kosten, eigen sleutel);
+  4. gezinsgewoontes als instelling per huishouden (vertrek ~09:00,
+     aantal personen in de kosten, startplaats, taal en valuta, groepen);
+  5. eigen Supabase-project (betaald plan), privacy (verklaring, export en
+     wissen, verwerkersovereenkomst; opslag in de EU) en onderhoud.
+  Routes: A "kopie per gezin" (eigen database en hosting, plus een
+  installatiehandleiding; klein, maar zonder punt 1 nog afhankelijk van
+  iemand die invoert) of B "één app voor meerdere gezinnen" (punt 1 t/m 5;
+  weken tot maanden).
+- **Hartjes vooraf en achteraf, en een smaakprofiel** (2026-10-04): na de
+  reis aangeven wat écht beviel, naast het hartje van vooraf; patroon per
+  soort (`activiteiten.icoon`) per groep, voor ideeën en de
+  vergelijkingstabel. Vraagt een uitbreiding van `reis.hartjes` (moment).
+- **Contact en boekingscodes zelf invullen in de app** (nu alleen via de
+  Excel; valt samen met backlogpunt 1 hierboven).
+- **Omboeken onderweg: nachten verschuiven, plek toevoegen** (2026-10-05):
+  bijvoorbeeld ter plekke toch naar Okinawa. Bewust niet in "bewerken
+  onderweg" (dat zijn alleen tijden, contact, codes, betaalstatus, notities
+  en nieuwe activiteiten); vraagt nadenken over route, verblijven, dagen en
+  kosten tegelijk.
+- **Ongedaan maken bij bewerken onderweg** (2026-10-05): met één tik de
+  vorige waarde terugzetten uit het logboek (`reis.wijzigingen`). Nu zet
+  Claude een vergissing op verzoek terug.
+- **Donker thema** (2026-09-30) en **foto's te hoog op een liggende
+  telefoon**.
+- **Na een tijdje gebruik beoordelen:** Doen onderaan nog nodig, en welke
+  kolommen van de vergelijkingstabel echt gebruikt worden.
+
 ## Structuur
 
 Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
@@ -151,7 +194,9 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `leg_adres` bij een rit, `geboekt_via` bij een activiteit; `…0016`: `reizen.km_gereden`;
   `…0017`: `route_punten.leg_opties`, zie Vervoersopties; `…0018`:
   `leden.groep` en `reis.hartjes`, zie Hartjes; `…0019`: `reis.verslagen`,
-  `…0020`: nieuwste versie wint, zie Onderweg).
+  `…0020`: nieuwste versie wint, zie Onderweg; `…0021`: `leg_notitie`,
+  `verblijven.notitie` en logboek `reis.wijzigingen`, zie Bewerken onderweg;
+  `…0022`: volgorde van een nieuwe activiteit door de database).
 - **Onderweg** (besluit gebruiker 2026-10-04). Een gekozen reis (geboekt of
   betaald) is **actief** van de dag vóór vertrek t/m de dag van thuiskomst
   (`O.actieveReis`). Dan staat er bovenaan het startscherm een kaart "Nu
@@ -187,6 +232,39 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   "Download verslag" (tekstbestand); **altijd met de naam van de
   schrijver** (besluit gebruiker 2026-10-04). Geen foto's in het verslag.
   Rollen: beide ouders bewerker, kinderen kijker.
+- **Bewerken onderweg** (besluit gebruiker 2026-10-05). Alleen ouders
+  (bewerker) en alleen tijdens een actieve reis (ervóór is de Excel
+  leidend): knop "Wijzig" op Vandaag en in Plek voor plek (verblijf, routes
+  in Onderweg, geplande activiteiten; geen ideeën). Velden per tabel in
+  `O.WIJZIGBAAR` (tijden, adres/ophaalpunt, telefoon, boekingscode,
+  betaalstatus, notitie; bij een activiteit ook naam en datum), gecontroleerd
+  met `O.valideerWijziging`; leeg = wissen. "+ Activiteit toevoegen" op
+  Vandaag (ID maakt de app, opnieuw versturen geeft geen dubbele rij; de
+  volgorde kent de database toe, migratie `…0022`).
+  Notitie (`leg_notitie`, `verblijven.notitie`, `activiteiten.notitie`, bijv.
+  wifi, deurcode, gate) is zichtbaar voor het hele gezin. Opslaan: eerst op
+  de telefoon (localStorage `reis-wijziging-wachtrij`, per veld, met
+  `user_id`: alleen eigen items worden verstuurd en getoond), dan
+  versturen (PATCH per rij); zonder bereik later. **De laatste
+  synchronisatie overschrijft**, per veld (twee ouders die elk een ander
+  veld wijzigen overschrijven elkaar niet; een open formulier stuurt alleen
+  wat je zelf veranderde t.o.v. de stand bij openen). Na versturen blijft
+  een kopie (`verzonden`) zichtbaar tot de reis vers is opgehaald (max. 2
+  dagen na versturen, `verzondenOp`); die ophaalronde (`haalReisVers`: route,
+  verblijven, activiteiten, met `cache: 'no-store'`, zodat de service worker
+  alleen het netwerk gebruikt en geen oude kopie teruggeeft) gebeurt alleen
+  als er iets verstuurd is of er nog kopieën staan (ook één keer bij openen).
+  Geweigerd (4xx, behalve een verlopen sessie): niet meer tonen, niet
+  opnieuw proberen, melding met knop "Verwerpen". Lukt bewaren niet
+  (uitgelogd, opslag vol), dan blijft het formulier open.
+  **Wijzigingen in de app winnen van de Excel**:
+  elke wijziging vanuit de app komt via een trigger in het logboek
+  `reis.wijzigingen` (tabel, rij, veld, oud, nieuw, door, op; alleen
+  bewerkers lezen; aanpassingen via SQL worden niet gelogd). Bij het
+  inlezen van de Excel eerst het logboek bekijken en verschillen aan de
+  gebruiker voorleggen; na de reis werkt Claude de Excel bij uit het
+  logboek (op verzoek, met overzicht vooraf). Niet onderweg: nachten,
+  route, prijzen (zie Backlog).
 - **Hartjes** (migratie `…0018`, besluit gebruiker 2026-10-04): tieners
   moeten ook zin hebben in de reis. Elk lid heeft een groep
   (`leden.groep`: `tiener` of `volwassene`; geen leeftijd of geboortedatum)

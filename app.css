@@ -246,6 +246,20 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-verslag__dag { padding: var(--space-4) 0; border-top: 1px solid var(--line); }
 .nv-verslag__dag .nv-doengroep__plek { margin-top: 0; }
 .nv-vandaag__status { margin: 6px 0 0; }
+.nv-vandaag__notitie { margin: 8px 0 0; padding: 8px 12px; font-size: 15px; line-height: 1.5; color: var(--ink); background: var(--lagoon-soft); border-radius: var(--radius-sm); white-space: pre-wrap; overflow-wrap: anywhere; }
+.nv-vandaag__toevoegen { display: block; margin: 0 0 var(--space-4); }
+/* Bewerken onderweg: formulier in het blok zelf, met de velden van het inlogscherm (nv-veld). */
+.nv-wijzig { display: grid; gap: var(--space-3); }
+.nv-wijzig__knop { margin-top: var(--space-2); }
+.nv-wijzig .nv-veld input, .nv-wijzig .nv-veld textarea { font: inherit; font-size: 16px; letter-spacing: 0; text-transform: none; color: var(--ink); background: var(--paper);
+  border: 1px solid var(--line-strong); border-radius: var(--radius-md); padding: var(--space-3); min-height: 44px; box-sizing: border-box; width: 100%; }
+.nv-wijzig .nv-veld textarea { resize: vertical; }
+.nv-wijzig .nv-veld input:focus-visible, .nv-wijzig .nv-veld textarea:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+.nv-wijzig [aria-invalid="true"] { border-color: var(--terracotta); }
+.nv-wijzig__status { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; border: 0; }
+.nv-wijzig__status legend { width: 100%; margin-bottom: var(--space-1); padding: 0; }
+.nv-wijzig__knoppen { display: flex; justify-content: flex-end; gap: var(--space-3); }
+.nv-wijzig__stand { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin: 0 0 var(--space-4); }
 
 /* Vergelijkingstabel (alleen beheerder): schuift zelf zijwaarts op een smal scherm, de pagina niet. */
 .nv-vergelijk { margin: var(--space-8) 0 var(--space-6); border-top: 1px solid var(--line); }

@@ -244,6 +244,83 @@
     if (x.kamers != null && x.kamers !== '' && isFinite(n) && n > 0) uit.push(n === 1 ? '1 kamer' : n + ' kamers');
     return uit.join(' · ');
   }
+  // ===== Bewerken onderweg (besluit gebruiker 2026-10-05) =====
+  // Alleen wat onderweg verandert: tijden, adres/ophaalpunt, contact, boekingscode, betaalstatus, notitie (bijv. wifi,
+  // deurcode, gate). Herplannen (nachten, route, prijzen) niet. Per tabel de velden en hun soort.
+  var WIJZIGBAAR = {
+    route_punten: { leg_vertrek: 'tijd', leg_aankomst: 'tijd', leg_adres: 'tekst', leg_boekingscode: 'kort', leg_telefoon: 'tel', leg_status: 'status', leg_notitie: 'notitie' },
+    verblijven: { inchecktijd: 'tijd', uitchecktijd: 'tijd', adres: 'tekst', telefoon: 'tel', boekingscode: 'kort', status: 'status', notitie: 'notitie' },
+    activiteiten: { naam: 'naam', datum: 'datum', begin_tijd: 'tijd', eind_tijd: 'tijd', ophaalpunt: 'tekst', telefoon: 'tel', boekingscode: 'kort', status: 'status', notitie: 'notitie' }
+  };
+  // Controle vóór opslaan. Leeg = wissen (null), behalve een naam (verplicht). Uitslag { ok, schoon, fouten }.
+  function valideerWijziging(tabel, velden) {
+    var soort = WIJZIGBAAR[tabel], schoon = {}, fouten = {};
+    if (!soort || !velden || typeof velden !== 'object') return { ok: false, schoon: {}, fouten: { tabel: 'Kan hier niet gewijzigd worden.' } };
+    Object.keys(velden).forEach(function (k) {
+      var s = soort[k], v = velden[k];
+      if (!s) { fouten[k] = 'Dit veld kan onderweg niet gewijzigd worden.'; return; }
+      var t = v == null ? '' : String(v).trim();
+      if (!t) { if (s === 'naam') fouten[k] = 'Geef een naam.'; else schoon[k] = null; return; }
+      var m;
+      if (s === 'tijd') {
+        m = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(t);
+        if (!m || +m[1] > 23 || +m[2] > 59) fouten[k] = 'Tijd als UU:MM, bijv. 08:30.';
+        else schoon[k] = (m[1].length === 1 ? '0' : '') + m[1] + ':' + m[2];
+      } else if (s === 'datum') {
+        if (isDatum(t)) schoon[k] = t; else fouten[k] = 'Geen geldige datum.';
+      } else if (s === 'status') {
+        if (t === 'betaald' || t === 'geboekt') schoon[k] = t; else fouten[k] = 'Kies betaald of nog betalen.';
+      } else if (s === 'tel') {
+        if (/^\+?[\d\s()\-./]{3,30}$/.test(t)) schoon[k] = t; else fouten[k] = 'Alleen cijfers, +, spaties, streepjes en haakjes.';
+      } else {
+        var max = s === 'notitie' ? 2000 : s === 'kort' ? 80 : 300; // zoals de checks in de database
+        if (t.length > max) fouten[k] = 'Te lang (max. ' + max + ' tekens).'; else schoon[k] = t;
+      }
+    });
+    return { ok: !Object.keys(fouten).length, schoon: schoon, fouten: fouten };
+  }
+  // Wachtrij van wijzigingen op de telefoon (localStorage, JSON): per veld { tabel, id, veld, waarde, gewijzigd } en
+  // nieuwe rijen { tabel, id, nieuw: true, rij, gewijzigd }. Alleen geldige items; rommel → weg, nooit een fout.
+  function wijzigWachtrijLees(json) {
+    var w;
+    try { w = JSON.parse(json || '{}'); } catch (e) { return {}; }
+    if (!w || typeof w !== 'object' || Array.isArray(w)) return {};
+    var uit = {};
+    Object.keys(w).forEach(function (k) {
+      var x = w[k];
+      if (!x || typeof x !== 'object' || !WIJZIGBAAR[x.tabel] || typeof x.id !== 'string' || typeof x.gewijzigd !== 'string') return;
+      // fout: geweigerd; user_id: van wie (alleen eigen items versturen en tonen); verzonden: aangekomen, blijft als
+      // kopie staan tot de reis opnieuw van de server is gehaald (de offline kopie kan nog oud zijn).
+      var extra = { fout: typeof x.fout === 'string' ? x.fout : null, user_id: typeof x.user_id === 'string' ? x.user_id : null, verzonden: x.verzonden === true, verzondenOp: typeof x.verzondenOp === 'string' ? x.verzondenOp : null };
+      if (x.nieuw === true && x.rij && typeof x.rij === 'object' && x.rij.id === x.id) uit[k] = Object.assign({ tabel: x.tabel, id: x.id, nieuw: true, rij: x.rij, gewijzigd: x.gewijzigd }, extra);
+      else if (typeof x.veld === 'string' && WIJZIGBAAR[x.tabel][x.veld] && (x.waarde === null || typeof x.waarde === 'string'))
+        uit[k] = Object.assign({ tabel: x.tabel, id: x.id, veld: x.veld, waarde: x.waarde, gewijzigd: x.gewijzigd }, extra);
+    });
+    return uit;
+  }
+  // Rijen met de wijzigingen uit de wachtrij erop (nieuwe kopieën; de bron blijft ongewijzigd). Een nieuwe rij die al
+  // op de server staat, komt er niet nog een keer bij.
+  function pasWijzigingenToe(rijenIn, tabel, wachtrij, ik) {
+    var lijst = rijen(rijenIn).map(function (r) { return Object.assign({}, r); }), opId = {};
+    lijst.forEach(function (r) { opId[r.id] = r; });
+    var w = wachtrij || {};
+    Object.keys(w).sort(function (a, b) { return String(w[a].gewijzigd).localeCompare(String(w[b].gewijzigd)); }).forEach(function (k) {
+      var x = w[k];
+      // Geweigerde wijzigingen niet tonen; met ik alleen je eigen (een ander account op dit toestel niet).
+      if (!x || x.tabel !== tabel || x.fout || (ik && x.user_id && x.user_id !== ik)) return;
+      if (x.nieuw) {
+        if (!opId[x.id]) {
+          // Volgorde kent de database toe; in beeld alvast max+1, zodat sorteren klopt (de wachtrij blijft ongemoeid).
+          var n = Object.assign({}, x.rij);
+          if (n.volgorde == null) n.volgorde = lijst.reduce(function (m, r) { return Math.max(m, Number(r.volgorde) || 0); }, 0) + 1;
+          lijst.push(n); opId[x.id] = n;
+        }
+        return;
+      }
+      if (opId[x.id]) opId[x.id][x.veld] = x.waarde;
+    });
+    return lijst;
+  }
   // ===== Reisverslag (besluit gebruiker 2026-10-04) =====
   // Wachtrij op de telefoon: { "reis|datum|user": {reis_id, datum, user_id, tekst, gewijzigd, verzonden, fout} }.
   // Kapotte of rare inhoud → leeg (wat kapot is, kan niet meer verstuurd worden; nooit een fout).
@@ -407,6 +484,7 @@
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
+    WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
