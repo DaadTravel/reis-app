@@ -330,7 +330,7 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-activiteit { border-bottom: 1px solid var(--line); }
 /* Doen: per plek, filter op tieners/ouders en hartjes van het gezin. */
 .nv-doenfilter { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
-.nv-doenfilter .nv-tab[aria-pressed="true"] { background: var(--lagoon); border-color: var(--lagoon); color: var(--on-lagoon); }
+.nv-doenfilter .nv-tab[aria-pressed="true"], .nv-wijzig__status .nv-tab[aria-pressed="true"] { background: var(--lagoon); border-color: var(--lagoon); color: var(--on-lagoon); }
 .nv-doenmelding { margin: 0 0 var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--terracotta-soft); color: var(--ink); font-size: 14px; }
 .nv-doengroep + .nv-doengroep { margin-top: var(--space-5); }
 .nv-doengroep__plek { margin: 0 0 var(--space-1); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-muted); }

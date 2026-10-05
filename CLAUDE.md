@@ -90,6 +90,11 @@ ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
   onderweg" (dat zijn alleen tijden, contact, codes, betaalstatus, notities
   en nieuwe activiteiten); vraagt nadenken over route, verblijven, dagen en
   kosten tegelijk.
+- **Herinnering aan open punten van gisteren op Vandaag** (2026-10-05): staat
+  er bij een rit, verblijf of activiteit van gisteren nog iets open
+  (bijvoorbeeld "Nog betalen" of "Status ?"), dan op Vandaag een korte
+  herinnering op een logische plek, bijvoorbeeld bovenaan of bij het
+  verblijf, met de knop Wijzig om het meteen af te handelen.
 - **Ongedaan maken bij bewerken onderweg** (2026-10-05): met één tik de
   vorige waarde terugzetten uit het logboek (`reis.wijzigingen`). Nu zet
   Claude een vergissing op verzoek terug.
