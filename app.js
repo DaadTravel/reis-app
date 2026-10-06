@@ -224,11 +224,13 @@ async function haalReizen() {
   if (isFout(reizen)) return reizen;
   const [f, rol] = await Promise.all([haalFotos(reizen.map(r => r.kaart_foto_id || r.hero_foto_id)), haalRol()]);
   const beheerder = rol === 'bewerker';
-  const vergelijk = beheerder ? await haalVergelijk(reizen) : null;
+  // Smaakprofiel en vergelijkingstabel alleen voor ouders (beheerder; besluit gebruiker 2026-10-06), in één ophaalronde.
+  const v = beheerder ? await haalVergelijk(reizen) : null;
+  const vergelijk = v && v.rijen, smaak = v && v.smaak;
   // Onderweg: de actieve reis (vanaf de dag vóór vertrek) bovenaan, en alvast helemaal op de telefoon.
   const actief = Opmaak.actieveReis(reizen, vandaagIso(beheerder));
   if (actief) voorlaadReis(actief.reis.slug);
-  return { reizen: reizen, fotos: f.fotos, fotoFout: f.fout, vergelijk: vergelijk, actief: actief, beheerder: beheerder };
+  return { reizen: reizen, fotos: f.fotos, fotoFout: f.fout, vergelijk: vergelijk, smaak: smaak, actief: actief, beheerder: beheerder };
 }
 // Eigen rol (bewerker = beheerder, kijker); onbekend of fout → null.
 async function haalRol() {
@@ -238,15 +240,37 @@ async function haalRol() {
   return isFout(zelf) || !zelf[0] ? null : zelf[0].rol;
 }
 // Vergelijkingstabel op het startscherm, alleen voor de beheerder (haalReizen vraagt de rol).
-// Gaat iets mis, dan null: het startscherm werkt gewoon zonder tabel.
+// Met dezelfde gegevens ook het smaakprofiel → { rijen, smaak }. Gaat iets mis, dan null: het startscherm
+// werkt gewoon zonder tabel en profiel.
 async function haalVergelijk(reizen) {
   if (!reizen.length) return null;
   const delen = await Promise.all(['budget_posten?select=reis_id,label,totaal', 'stops?select=reis_id', 'route_punten?select=reis_id,volgorde,nachten,leg_vervoer,leg_opties,leg_minuten,leg_benadering',
-    'activiteiten?select=id,reis_id', 'hartjes?select=user_id,activiteit_id', 'leden?select=user_id,groep'].map(p => sbFetch(p)));
+    'activiteiten?select=id,reis_id,icoon', 'hartjes?select=user_id,activiteit_id,moment', 'leden?select=user_id,groep'].map(p => sbFetch(p)));
   if (delen.some(isFout)) return null;
   // Een fout in het rekenen mag het startscherm nooit blokkeren.
   try {
-    return Opmaak.vergelijk(reizen, { budget: delen[0], stops: delen[1], route: delen[2], activiteiten: delen[3], hartjes: delen[4], leden: delen[5] });
+    const smaak = maakSmaak(delen[3], delen[4], delen[5]);
+    // ★/♥ in de tabel = hartjes vooraf (zin in); achteraf staat in het smaakprofiel.
+    const rijen = Opmaak.vergelijk(reizen, { budget: delen[0], stops: delen[1], route: delen[2], activiteiten: delen[3], hartjes: Opmaak.splitsMoment(delen[4]).vooraf, leden: delen[5] });
+    // Past bij ons: per reis het deel van de activiteiten in de top 3 soorten per groep (Opmaak.pastBijOns).
+    rijen.forEach(x => { x.past = Opmaak.pastBijOns(delen[3].filter(a => a.reis_id === x.id), smaak.profiel); });
+    return { rijen: rijen, smaak: smaak };
+  } catch (e) { return null; }
+}
+// Smaakprofiel uit activiteiten (id, icoon), hartjes (met moment) en leden (groep), plus de aantallen per moment.
+function maakSmaak(activiteiten, hartjes, leden) {
+  const s = Opmaak.splitsMoment(hartjes);
+  return { profiel: Opmaak.smaakprofiel(hartjes, activiteiten, leden), vooraf: s.vooraf.length, achteraf: s.achteraf.length };
+}
+
+// Smaakprofiel voor de reispagina (2026-10-06): voor iedereen, ook tieners, maar alleen als volgorde van ideeën
+// (niet zichtbaar; het profiel zelf staat alleen voor ouders op het startscherm, via haalVergelijk). De gegevens
+// zijn voor elk lid toch al leesbaar (RLS). Gaat iets mis, dan null: de pagina werkt gewoon zonder.
+async function haalSmaak() {
+  const delen = await Promise.all(['activiteiten?select=id,icoon', 'hartjes?select=user_id,activiteit_id,moment', 'leden?select=user_id,groep'].map(p => sbFetch(p)));
+  if (delen.some(isFout)) return null;
+  try {
+    return maakSmaak(delen[0], delen[1], delen[2]);
   } catch (e) { return null; }
 }
 
@@ -316,11 +340,12 @@ async function haalReis(slug) {
   });
   const fotoIds = [reis.hero_foto_id, reis.quote_foto_id, reis.kaart_foto_id]
     .concat(d.stops.map(s => s.foto_id), d.verblijven.map(v => v.foto_id), d.activiteiten.map(a => a.foto_id));
-  const [f, gezin, verslagen] = await Promise.all([haalFotos(fotoIds), haalGezin(d.activiteiten.map(a => a.id)),
-    sbFetch('verslagen?select=datum,user_id,tekst,gewijzigd&reis_id=eq.' + reis.id + '&order=datum')]);
+  // Smaak (alle reizen) alleen voor de volgorde van ideeën; lukt het niet, dan gewoon zonder.
+  const [f, gezin, verslagen, smaak] = await Promise.all([haalFotos(fotoIds), haalGezin(d.activiteiten.map(a => a.id)),
+    sbFetch('verslagen?select=datum,user_id,tekst,gewijzigd&reis_id=eq.' + reis.id + '&order=datum'), haalSmaak()]);
   return {
     reis: reis, stops: d.stops, dagen: d.dagen, route: d.route_punten, verblijven: d.verblijven,
-    activiteiten: d.activiteiten, budget: d.budget_posten, fotos: f.fotos, fotoFout: f.fout, gezin: gezin,
+    activiteiten: d.activiteiten, budget: d.budget_posten, fotos: f.fotos, fotoFout: f.fout, gezin: gezin, smaak: smaak ? Opmaak.smaakScore(smaak.profiel) : {},
     // Het verslag is een extra: lukt ophalen niet, dan werkt de reispagina gewoon (en meldt het verslag dat).
     verslagen: isFout(verslagen) ? [] : verslagen, verslagFout: isFout(verslagen),
   };
@@ -509,19 +534,22 @@ async function haalGezin(activiteitIds) {
   const ik = mijnId();
   const leden = await sbFetch('leden?select=user_id,weergavenaam,groep,rol');
   const hartjes = activiteitIds.length
-    ? await sbFetch('hartjes?select=user_id,activiteit_id,aangemaakt&activiteit_id=in.(' + activiteitIds.join(',') + ')&order=aangemaakt')
+    ? await sbFetch('hartjes?select=user_id,activiteit_id,aangemaakt,moment&activiteit_id=in.(' + activiteitIds.join(',') + ')&order=aangemaakt')
     : [];
-  if (isFout(leden) || isFout(hartjes)) return { werkt: false, leden: [], hartjes: [], mijnId: ik, groep: null, beheerder: false };
+  if (isFout(leden) || isFout(hartjes)) return { werkt: false, leden: [], hartjes: [], achteraf: [], mijnId: ik, groep: null, beheerder: false };
   const zelf = leden.filter(l => l.user_id === ik)[0];
-  return { werkt: true, leden: leden, hartjes: hartjes, mijnId: ik, groep: (zelf && zelf.groep) || null, beheerder: !!zelf && zelf.rol === 'bewerker' };
+  // hartjes = vooraf (zoals altijd: ideeën, tegels, Vandaag); achteraf apart (wat echt goed viel).
+  const s = Opmaak.splitsMoment(hartjes);
+  return { werkt: true, leden: leden, hartjes: s.vooraf, achteraf: s.achteraf, mijnId: ik, groep: (zelf && zelf.groep) || null, beheerder: !!zelf && zelf.rol === 'bewerker' };
 }
-// Hartje geven (aan) of weghalen bij een activiteit; alleen het eigen hartje (RLS).
+// Hartje geven (aan) of weghalen bij een activiteit, vooraf of achteraf; alleen het eigen hartje (RLS).
 // Bestaat het al (herhaalpoging na een hapering, of verouderde data uit de offline-cache),
 // dan is dat geen fout: dubbel wordt genegeerd. Weghalen van iets dat er niet is, is ook goed.
-async function zetHartje(activiteitId, aan) {
-  if (aan) return sbWrite('hartjes?on_conflict=user_id,activiteit_id', 'POST', { activiteit_id: activiteitId }, 3,
+async function zetHartje(activiteitId, aan, moment) {
+  moment = moment === 'achteraf' ? 'achteraf' : 'vooraf';
+  if (aan) return sbWrite('hartjes?on_conflict=user_id,activiteit_id,moment', 'POST', { activiteit_id: activiteitId, moment: moment }, 3,
     { Prefer: 'return=representation,resolution=ignore-duplicates' });
   const ik = mijnId();
   if (!ik) return { _error: true, status: 401, message: 'Niet ingelogd.' };
-  return sbWrite('hartjes?activiteit_id=eq.' + activiteitId + '&user_id=eq.' + ik, 'DELETE');
+  return sbWrite('hartjes?activiteit_id=eq.' + activiteitId + '&user_id=eq.' + ik + '&moment=eq.' + moment, 'DELETE');
 }

@@ -365,3 +365,18 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-gever--tiener > span { color: var(--lagoon); }
 .nv-activiteit .rg-act { border-bottom: 0; }
 .nv-activiteit .nv-contact { margin: calc(-1 * var(--space-2)) 0 var(--space-3) calc(36px + var(--space-3)); }
+/* Hartjes achteraf (2026-10-06): knop met tekst "Viel goed", vooraf klein eronder. */
+.nv-hart--tekst { gap: 6px; }
+.nv-hart__label { font-size: 14px; }
+.nv-achteraf__vooraf { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--ink-muted); }
+/* Smaakprofiel op het startscherm (2026-10-06), in de stijl van de vergelijkingstabel. */
+.nv-smaak { margin-top: var(--space-6); }
+.nv-smaak + .nv-vergelijk { margin-top: 0; }
+.nv-smaak__groep { margin: 0 0 var(--space-5); max-width: 560px; }
+.nv-smaak__kop { margin: 0 0 var(--space-2); font-size: 16px; color: var(--ink); }
+.nv-smaak__kop > span { color: var(--terracotta); }
+.nv-smaak__kop > .nv-smaak__vorm--tiener { color: var(--lagoon); }
+.nv-smaak__lijst { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.nv-smaak__lijst li { display: flex; align-items: center; gap: var(--space-3); }
+.nv-smaak__naam { flex: 1; min-width: 0; color: var(--ink); }
+.nv-smaak__tel { font-size: 13px; color: var(--ink-muted); white-space: nowrap; }

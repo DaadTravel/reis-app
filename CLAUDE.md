@@ -55,13 +55,31 @@ voor beschrijving en beleving.
 (gitignored) — daarin staan de actuele stand, de open vragen en de
 afspraken uit eerdere sessies.
 
-## Backlog (geparkeerd, besluit gebruiker)
+## Backlog (besluit gebruiker, bijgewerkt 2026-10-06)
+
+### Mag gebouwd worden (2026-10-06)
+
+Nog niet begonnen; per punt eerst vragen welke skills.
+
+- **Weer per plek:** bij Vandaag (en waar nuttig per plek) voor die datum
+  op die locatie de actuele weersverwachting; is die er nog niet (te ver
+  vooruit), dan klimaatcijfers voor die periode (gemiddelde temperatuur,
+  regen).
+- **Noodnummers:** uitklapbaar onderaan per reis (112, ambassade,
+  reisverzekering); verschillen ze per plek (bijv. ander land), dan per
+  plek aangeven. Geen gezondheidsinformatie.
+- **Contact en boekingscodes vóór de reis:** inladen via de Excel (zoals
+  nu), daarna in de app bewerken, ook vóór de reis (tijdens een actieve
+  reis kan het al via bewerken onderweg).
+
+### Geparkeerd
 
 Niet aan beginnen zonder dat de gebruiker erom vraagt; wel meenemen in
 ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
 
-- **App ook voor bevriende gezinnen, zonder Claude** (2026-10-05, nog lang
-  niet relevant). Nodig, van groot naar klein:
+- **App ook voor bevriende gezinnen, zonder Claude** (2026-10-05; sinds
+  2026-10-06 dichterbij: de gebruiker wil de app laten testen en feedback
+  ophalen). Nodig, van groot naar klein:
   1. invoeren in de app: bewerkschermen (reis, plekken, route, verblijven,
      activiteiten, kosten, contact), foto-upload met credit en een
      Excel-import van het sjabloon met een overzicht van de wijzigingen vóór
@@ -75,44 +93,38 @@ ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
      aantal personen in de kosten, startplaats, taal en valuta, groepen);
   5. eigen Supabase-project (betaald plan), privacy (verklaring, export en
      wissen, verwerkersovereenkomst; opslag in de EU) en onderhoud.
+     Leaked password protection (Supabase Auth) kan pas op het Pro-plan.
   Routes: A "kopie per gezin" (eigen database en hosting, plus een
   installatiehandleiding; klein, maar zonder punt 1 nog afhankelijk van
   iemand die invoert) of B "één app voor meerdere gezinnen" (punt 1 t/m 5;
   weken tot maanden).
-- **Hartjes vooraf en achteraf, en een smaakprofiel** (2026-10-04): na de
-  reis aangeven wat écht beviel, naast het hartje van vooraf; patroon per
-  soort (`activiteiten.icoon`) per groep, voor ideeën en de
-  vergelijkingstabel. Vraagt een uitbreiding van `reis.hartjes` (moment).
-- **Contact en boekingscodes zelf invullen in de app vóór de reis** (tijdens
-  een actieve reis kan het al via bewerken onderweg; ervóór nog alleen via
-  de Excel; valt samen met backlogpunt 1 hierboven).
-- **Rooktest onderweg afmaken op de telefoon** (2026-10-05): reisverslag met
-  vliegtuigmodus aan/uit, volledig offline openen na voorladen (ook foto's),
-  installeren op het beginscherm (iPhone en Android), alle vier de accounts.
-  De Vandaag-links met `?vandaag=` werken al (getest door de gebruiker).
-- **Generale repetitie** (2026-10-05): een kort uitje of weekend als echte
-  reis in de app zetten en onderweg gebruiken.
-- **Weer per plek en noodnummers per land** (optioneel): verwachting of
-  gemiddelde temperatuur bij Vandaag; noodnummers (112, ambassade,
-  reisverzekering). Geen gezondheidsinformatie.
-- **Reisplanning 2027** (geen appwerk): vlucht Japan voor 21 dagen zoeken
-  (de prijs is nu voor 25–26 dagen), vervoer Korea kiezen (huurauto
-  Sokcho–Busan of bus), en de keuze tussen Japan, Korea en Noord-Spanje.
-  Korea: **Nami Island** en **Danyang** staan als idee bij Seoraksan
-  (2026-10-05): Nami als tussenstop op de reisdag vanuit Seoul, Danyang
-  als eigen plek (1 nacht minder Seoraksan) als het hartjes krijgt.
-- **Omboeken onderweg: nachten verschuiven, plek toevoegen** (2026-10-05):
-  bijvoorbeeld ter plekke toch naar Okinawa. Bewust niet in "bewerken
-  onderweg" (dat zijn alleen tijden, contact, codes, betaalstatus, notities
-  en nieuwe activiteiten); vraagt nadenken over route, verblijven, dagen en
-  kosten tegelijk.
+- **Omboeken onderweg: nachten en plekken aanpassen** (2026-10-05): waar
+  nodig de reis aanpassen qua hoeveel nachten op welke plek, bij bestaande
+  of nieuwe plekken (bijvoorbeeld ter plekke toch naar Okinawa). Bewust
+  niet in "bewerken onderweg" (dat zijn alleen tijden, contact, codes,
+  betaalstatus, notities en nieuwe activiteiten); intensief: raakt route,
+  verblijven, dagen en kosten tegelijk.
 - **Ongedaan maken bij bewerken onderweg** (2026-10-05): met één tik de
   vorige waarde terugzetten uit het logboek (`reis.wijzigingen`). Nu zet
   Claude een vergissing op verzoek terug.
-- **Donker thema** (2026-09-30) en **foto's te hoog op een liggende
-  telefoon**.
-- **Na een tijdje gebruik beoordelen:** Doen onderaan nog nodig, en welke
+- **Tweede thema, goed leesbaar in vol zonlicht** (2026-10-06; eerder
+  "donker thema"), en **foto's te hoog op een liggende telefoon**.
+- **Doen onderaan als statusoverzicht** (2026-10-06, idee gebruiker): wat
+  het overzicht relevant zou maken is per activiteit de datum, status
+  (optie/geboekt/betaald), adres van het startpunt en de reistijd vanaf de
+  gekozen accommodatie. Daarnaast na een tijdje gebruik beoordelen welke
   kolommen van de vergelijkingstabel echt gebruikt worden.
+- **Generale repetitie** (2026-10-05): de gebruiker zet zelf een kort uitje
+  of weekend als echte reis in de app als het zover is.
+- **Rooktest onderweg op de telefoon** (2026-10-05): volgens de gebruiker
+  werkt het op basis van een paar eigen tests (2026-10-06); niet verder
+  uitgewerkt.
+- **Reisplanning 2027** (geen appwerk, gebruiker zoekt zelf): vlucht Japan
+  voor 21 dagen zoeken (de prijs is nu voor 25–26 dagen), vervoer Korea
+  kiezen (huurauto Sokcho–Busan of bus), en de keuze tussen Japan, Korea en
+  Noord-Spanje. Korea: **Nami Island** en **Danyang** staan als idee bij
+  Seoraksan (2026-10-05): Nami als tussenstop op de reisdag vanuit Seoul,
+  Danyang als eigen plek (1 nacht minder Seoraksan) als het hartjes krijgt.
 
 ## Structuur
 
@@ -214,7 +226,7 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `verblijven.notitie` en logboek `reis.wijzigingen`, zie Bewerken onderweg;
   `…0022`: volgorde van een nieuwe activiteit door de database; `…0023`:
   logboek ook `leg_aankomst_dagen`; `…0024`: info bij een activiteit, zie
-  Hartjes).
+  Hartjes; `…0025`: `hartjes.moment` (vooraf/achteraf), zie Hartjes).
 - **Onderweg** (besluit gebruiker 2026-10-04). Een gekozen reis (geboekt of
   betaald) is **actief** van de dag vóór vertrek t/m de dag van thuiskomst
   (`O.actieveReis`). Dan staat er bovenaan het startscherm een kaart "Nu
@@ -338,6 +350,32 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   voorstel-activiteit (alleen in de app). Een voorstel toont een beoogde
   dag en website alleen als die er zijn (nooit "Wanneer ?"). Namen (`leden.weergavenaam`) vult de gebruiker later in;
   zonder naam toont de app "Iemand".
+- **Hartjes achteraf en smaakprofiel** (migratie `…0025`, besluit gebruiker
+  2026-10-06). `reis.hartjes.moment`: `vooraf` (zin in; standaard, ook alle
+  oude rijen) of `achteraf` (viel echt goed); sleutel lid + activiteit +
+  moment, policies ongewijzigd. **Alleen positief**: geen hartje achteraf =
+  viel niet zo goed, er is geen tegenknop. Bij wat je echt deed (geen idee)
+  staat de knop "Viel goed" in de vorm van je groep, met klein eronder wie
+  er vooraf zin in had (`Achteraf`); niet bij een optie (niet geboekt). Wanneer
+  (`O.magAchteraf`): na de reis (herinnering, of een gekozen reis na de
+  einddatum: `O.naReis`, ook als de stemming nog niet is omgezet)
+  altijd; onderweg vanaf de datum van de activiteit, zonder (geldige) datum
+  vanaf de aankomst op de plek (`O.aankomstPlekken` = vroegste inchecken).
+  `haalGezin` geeft `hartjes` (= vooraf, zoals altijd: ideeën, tegels,
+  Vandaag, ★/♥ in de vergelijkingstabel) en `achteraf` apart
+  (`O.splitsMoment`); bij een afgeronde reis filtert Doen op achteraf.
+  **Smaakprofiel** (`O.smaakprofiel`): per groep per soort (= `activiteiten.icoon`,
+  namen in `SOORTEN`; vervoer/slapen tellen niet) het aantal hartjes vooraf en
+  achteraf; achteraf telt dubbel. **Alleen voor ouders** (beheerder): blok
+  "Onze smaak" ingeklapt op het startscherm (top 4 per groep), en in de
+  vergelijkingstabel de kolom **Past bij ons** (`O.pastBijOns`: % van de
+  activiteiten van een reis in de top 3 soorten per groep). Voor iedereen,
+  maar onzichtbaar: ideeën met evenveel hartjes staan op smaak
+  (`O.smaakScore`, derde argument van `O.sorteerTeDoen`; plek-paneel en
+  Vandaag top 3; `haalSmaak` op de reispagina, ook voor tieners: de gegevens
+  zijn voor elk lid al leesbaar, alleen de score wordt gebruikt). Tieners zien
+  het profiel nergens; het startscherm haalt het (samen met de tabel, één
+  ophaalronde in `haalVergelijk`) alleen voor ouders op.
 - **Vervoersopties** (migratie `…0017`, besluit gebruiker 2026-10-04): zolang
   het vervoer van een rit niet gekozen is (`leg_vervoer` leeg), toont de app
   de opties uit `route_punten.leg_opties` (lijst van `{vervoer, label,

@@ -615,6 +615,107 @@
     return O.infoVan({ foto_id: 'f1' }, 'tiener');
   });
 
+  // Hartjes vooraf en achteraf (2026-10-06): een hartje zonder moment is van vooraf (rijen van vóór de migratie).
+  test('splitsMoment: zonder moment = vooraf', { vooraf: ['a', 'b'], achteraf: ['c'] }, function () {
+    var s = O.splitsMoment([{ activiteit_id: 'a' }, { activiteit_id: 'b', moment: 'vooraf' }, { activiteit_id: 'c', moment: 'achteraf' }]);
+    return { vooraf: s.vooraf.map(function (x) { return x.activiteit_id; }), achteraf: s.achteraf.map(function (x) { return x.activiteit_id; }) };
+  });
+  test('splitsMoment: geen lijst → leeg', { vooraf: [], achteraf: [] }, function () { return O.splitsMoment(null); });
+  test('splitsMoment: onbekend moment telt niet mee', { vooraf: [], achteraf: [] }, function () { return O.splitsMoment([{ activiteit_id: 'a', moment: 'ooit' }, null]); });
+  // Achteraf kan bij wat je echt deed (geen idee): na de reis, of onderweg vanaf de dag zelf.
+  test('magAchteraf: idee nooit', false, function () { return O.magAchteraf({ status: 'voorstel' }, true, '2026-07-10'); });
+  test('magAchteraf: afgeronde reis, gedaan', true, function () { return O.magAchteraf({ status: 'betaald' }, true, '2026-07-10'); });
+  test('magAchteraf: onderweg, dag geweest of vandaag', [true, true], function () {
+    return [O.magAchteraf({ status: 'geboekt', datum: '2026-07-09' }, false, '2026-07-10'), O.magAchteraf({ status: 'geboekt', datum: '2026-07-10' }, false, '2026-07-10')];
+  });
+  test('magAchteraf: nog niet geweest of geen datum', [false, false, false], function () {
+    return [O.magAchteraf({ status: 'geboekt', datum: '2026-07-11' }, false, '2026-07-10'), O.magAchteraf({ status: 'geboekt' }, false, '2026-07-10'),
+      O.magAchteraf({ status: 'geboekt', datum: '2026-07-09' }, false, null)];
+  });
+  // Smaakprofiel: per groep de soorten (activiteiten.icoon), achteraf telt dubbel; groep onbekend = volwassene.
+  var actP = [{ id: 'a', icoon: 'wave' }, { id: 'b', icoon: 'wave' }, { id: 'c', icoon: 'temple' }, { id: 'd', icoon: 'hike' }, { id: 'e', icoon: 'bed' }, { id: 'f', icoon: null }];
+  var hartP = [
+    { user_id: 'u2', activiteit_id: 'a', moment: 'achteraf' }, { user_id: 'u2', activiteit_id: 'b' }, { user_id: 'u2', activiteit_id: 'c' }, { user_id: 'u2', activiteit_id: 'd' },
+    { user_id: 'u1', activiteit_id: 'c', moment: 'achteraf' }, { user_id: 'u9', activiteit_id: 'd' },
+    { user_id: 'u1', activiteit_id: 'e' }, { user_id: 'u1', activiteit_id: 'f' }, { user_id: 'u1', activiteit_id: 'zz' }];
+  test('smaakprofiel: per groep, achteraf dubbel, dan naam', {
+    tiener: [{ soort: 'wave', achteraf: 1, vooraf: 1 }, { soort: 'temple', achteraf: 0, vooraf: 1 }, { soort: 'hike', achteraf: 0, vooraf: 1 }],
+    volwassene: [{ soort: 'temple', achteraf: 1, vooraf: 0 }, { soort: 'hike', achteraf: 0, vooraf: 1 }] }, function () {
+    var p = O.smaakprofiel(hartP, actP, ledenG), kort = function (r) { return { soort: r.soort, achteraf: r.achteraf, vooraf: r.vooraf }; };
+    return { tiener: p.tiener.map(kort), volwassene: p.volwassene.map(kort) };
+  });
+  test('smaakprofiel: naam per soort', ['Water en strand', 'Cultuur en tempels'], function () {
+    var p = O.smaakprofiel(hartP, actP, ledenG); return [p.tiener[0].naam, p.volwassene[0].naam];
+  });
+  test('smaakprofiel: rare data → leeg, geen fout', { tiener: [], volwassene: [] }, function () { return O.smaakprofiel(null, 'x', undefined); });
+  // Monkey 2026-10-06: namen van ingebouwde eigenschappen als moment of soort mogen niets doen (geen crash, niet meetellen).
+  test('splitsMoment: moment constructor/toString/__proto__ telt niet', { vooraf: 0, achteraf: 0 }, function () {
+    var s = O.splitsMoment([{ moment: 'constructor' }, { moment: 'toString' }, { moment: '__proto__' }, { moment: 5 }]);
+    return { vooraf: s.vooraf.length, achteraf: s.achteraf.length };
+  });
+  test('smaakprofiel: icoon constructor/toString telt niet', { tiener: [], volwassene: [] }, function () {
+    return O.smaakprofiel([{ user_id: 'u1', activiteit_id: 'a' }, { user_id: 'u1', activiteit_id: 'b' }], [{ id: 'a', icoon: 'constructor' }, { id: 'b', icoon: 'toString' }], ledenG);
+  });
+  test('pastBijOns: icoon constructor telt niet als bekende soort', { tiener: null, volwassene: null }, function () {
+    return O.pastBijOns([{ icoon: 'constructor' }, { icoon: 'hasOwnProperty' }], { tiener: [{ soort: 'constructor' }], volwassene: [{ soort: 'wave' }] });
+  });
+  test('smaakScore: soort __proto__ of constructor wordt genegeerd', { wave: 1 }, function () {
+    return O.smaakScore({ tiener: [{ soort: '__proto__', vooraf: 1 }, { soort: 'constructor', vooraf: 1 }, { soort: 'wave', vooraf: 1 }], volwassene: [] });
+  });
+  test('sorteerTeDoen: smaak met rare waarden geeft een vaste volgorde', ['i1', 'i2', 'i3'], function () {
+    var acts = [{ id: 'i1', status: 'voorstel', volgorde: 1, icoon: 'constructor' }, { id: 'i2', status: 'voorstel', volgorde: 2, icoon: 'wave' }, { id: 'i3', status: 'voorstel', volgorde: 3, icoon: 'city' }];
+    return O.sorteerTeDoen(acts, [], { wave: 'abc', city: NaN }).map(function (a) { return a.id; });
+  });
+  // Zonder datum: vanaf de aankomst op de plek (besluit gebruiker 2026-10-06) = vroegste inchecken van die plek.
+  test('aankomstPlekken: vroegste inchecken per plek', { s1: '2026-07-08', s2: '2026-07-12' }, function () {
+    return O.aankomstPlekken([{ stop_id: 's1', inchecken: '2026-07-09' }, { stop_id: 's1', inchecken: '2026-07-08' }, { stop_id: 's2', inchecken: '2026-07-12' },
+      { stop_id: 's3', inchecken: 'onzin' }, { stop_id: null, inchecken: '2026-07-01' }, null]);
+  });
+  test('magAchteraf: zonder datum vanaf aankomst op de plek', [true, true, false, false], function () {
+    var aank = { s1: '2026-07-08', s2: '2026-07-12' };
+    return [O.magAchteraf({ status: 'geboekt', stop_id: 's1' }, false, '2026-07-10', aank), O.magAchteraf({ status: 'geboekt', stop_id: 's1' }, false, '2026-07-08', aank),
+      O.magAchteraf({ status: 'geboekt', stop_id: 's2' }, false, '2026-07-10', aank), O.magAchteraf({ status: 'geboekt', stop_id: 's9' }, false, '2026-07-10', aank)];
+  });
+  test('magAchteraf: ongeldige datum telt als geen datum (dan de plek)', [false, true], function () {
+    return [O.magAchteraf({ status: 'geboekt', datum: '2026-02-31' }, false, '2026-07-10', {}),
+      O.magAchteraf({ status: 'geboekt', datum: 'onzin', stop_id: 's1' }, false, '2026-07-10', { s1: '2026-07-08' })];
+  });
+  test('magAchteraf: ongeldige vandaag → nee', false, function () { return O.magAchteraf({ status: 'geboekt', datum: '2026-07-01' }, false, '2026-99-99', {}); });
+  // Code-controleur 2026-10-06: een optie (niet geboekt) kan niet goed gevallen zijn; status onbekend wel (kan gedaan zijn).
+  test('magAchteraf: optie nooit, status onbekend wel', [false, true], function () {
+    return [O.magAchteraf({ status: 'optie' }, true, '2026-07-10'), O.magAchteraf({ status: null }, true, '2026-07-10')];
+  });
+  // Na thuiskomst geldt een gekozen reis als afgerond, ook als de stemming nog niet op herinnering staat.
+  test('naReis: gekozen reis na de einddatum', [true, false, false, false, false], function () {
+    var r = { status: 'betaald', eind_datum: '2026-07-30' };
+    return [O.naReis(r, '2026-07-31'), O.naReis(r, '2026-07-30'), O.naReis({ status: 'voorstel', eind_datum: '2026-07-30' }, '2026-08-10'),
+      O.naReis({ status: 'geboekt', eind_datum: 'onzin' }, '2026-08-10'), O.naReis(null, '2026-08-10')];
+  });
+  test('magAchteraf: datum gaat vóór plek', false, function () {
+    return O.magAchteraf({ status: 'geboekt', stop_id: 's1', datum: '2026-07-11' }, false, '2026-07-10', { s1: '2026-07-08' });
+  });
+  // Smaak als score per soort (beide groepen samen), voor de volgorde van ideeën.
+  test('smaakScore: som van beide groepen, achteraf dubbel', { wave: 3, temple: 3, hike: 2 }, function () { return O.smaakScore(O.smaakprofiel(hartP, actP, ledenG)); });
+  test('smaakScore: rare data → leeg', {}, function () { return O.smaakScore(null); });
+  test('sorteerTeDoen: bij gelijke hartjes eerst wat bij onze smaak past', ['g1', 'i3', 'i2', 'i1'], function () {
+    var acts = [{ id: 'i1', status: 'voorstel', volgorde: 1, icoon: 'city' }, { id: 'i2', status: 'voorstel', volgorde: 2, icoon: 'wave' },
+      { id: 'g1', status: 'geboekt', volgorde: 3 }, { id: 'i3', status: 'voorstel', volgorde: 4, icoon: 'temple' }];
+    return O.sorteerTeDoen(acts, [{ user_id: 'u1', activiteit_id: 'i3' }], { wave: 3 }).map(function (a) { return a.id; });
+  });
+  test('sorteerTeDoen: zonder smaak zoals voorheen', ['g1', 'i3', 'i1', 'i2'], function () {
+    var acts = [{ id: 'i1', status: 'voorstel', volgorde: 1, icoon: 'city' }, { id: 'i2', status: 'voorstel', volgorde: 2, icoon: 'wave' },
+      { id: 'g1', status: 'geboekt', volgorde: 3 }, { id: 'i3', status: 'voorstel', volgorde: 4 }];
+    return O.sorteerTeDoen(acts, [{ user_id: 'u1', activiteit_id: 'i3' }]).map(function (a) { return a.id; });
+  });
+  // Past bij ons (vergelijkingstabel): per groep het deel van de activiteiten van een reis in de top 3 soorten van die groep.
+  test('pastBijOns: percentage per groep, soort onbekend telt niet', { tiener: 67, volwassene: 33 }, function () {
+    var p = { tiener: [{ soort: 'wave' }, { soort: 'temple' }, { soort: 'hike' }, { soort: 'food' }], volwassene: [{ soort: 'temple' }] };
+    return O.pastBijOns([{ icoon: 'wave' }, { icoon: 'city' }, { icoon: 'temple' }, { icoon: 'bed' }, { icoon: null }], p);
+  });
+  test('pastBijOns: geen profiel of geen activiteiten → null', [{ tiener: null, volwassene: null }, { tiener: null, volwassene: null }], function () {
+    return [O.pastBijOns([{ icoon: 'wave' }], { tiener: [], volwassene: [] }), O.pastBijOns([], { tiener: [{ soort: 'wave' }], volwassene: [{ soort: 'wave' }] })];
+  });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');

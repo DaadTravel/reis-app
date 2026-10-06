@@ -217,8 +217,33 @@
                 href: reisUrl(r.slug) }));
             })));
         }),
+        p.data.smaak ? h(Smaak, { smaak: p.data.smaak }) : null,
         p.data.vergelijk && p.data.vergelijk.length ? h(Vergelijk, { rijen: p.data.vergelijk }) : null),
       h(Voet, { onUitloggen: p.onUitloggen }));
+  }
+
+  // Smaakprofiel (2026-10-06, alleen ouders = beheerder): per groep de soorten met de meeste hartjes; achteraf telt dubbel.
+  // Ingeklapt onderaan, zoals de vergelijkingstabel. Top 4 per groep; zonder hartjes van een groep een korte zin.
+  function Smaak(p) {
+    var s = p.smaak, groepen = [['tiener', 'Tieners'], ['volwassene', 'Ouders']];
+    if (!s.vooraf && !s.achteraf) return null;
+    return h('details', { className: 'nv-vergelijk nv-smaak' },
+      h('summary', null,
+        h('span', { className: 'nv-label' }, 'Alleen voor ouders'),
+        h('span', { className: 'nv-vergelijk__titel' }, 'Onze smaak')),
+      h('p', { className: 'nv-tekst nv-muted' }, 'Per soort uitje: hoe vaak iemand vooraf zin had, en hoe vaak het achteraf echt goed viel (telt dubbel). Op basis van ' +
+        s.vooraf + ' keer vooraf en ' + s.achteraf + ' keer achteraf.'),
+      groepen.map(function (gr) {
+        var lijst = s.profiel[gr[0]].slice(0, 4), vorm = O.hartVorm(gr[0]);
+        return h('section', { key: gr[0], className: 'nv-smaak__groep', 'aria-label': gr[1] },
+          h('h3', { className: 'nv-smaak__kop' }, h('span', { 'aria-hidden': true, className: gr[0] === 'tiener' ? 'nv-smaak__vorm--tiener' : undefined }, vorm), ' ' + gr[1]),
+          lijst.length ? h('ol', { className: 'nv-smaak__lijst' }, lijst.map(function (x) {
+            return h('li', { key: x.soort },
+              h('span', { className: 'rg-act__icon' }, h(G.Icon, { name: x.soort, size: 18 })),
+              h('span', { className: 'nv-smaak__naam' }, x.naam),
+              h('span', { className: 'nv-smaak__tel' }, [x.achteraf ? x.achteraf + '× achteraf' : null, x.vooraf ? x.vooraf + '× vooraf' : null].filter(Boolean).join(' · ')));
+          })) : h('p', { className: 'nv-muted' }, 'Nog geen ' + vorm + ' gegeven.'));
+      }));
   }
 
   // Vergelijkingstabel (alleen beheerder, app.js haalVergelijk): de reizen naast elkaar op de kerngegevens.
@@ -230,17 +255,17 @@
       return (x.schatting ? '~' : '') + O.euro(x.totaal) + (x.onbekend ? ' + ?' : '');
     };
     var groepen = [['voorpret', 'Nog te gaan'], ['herinnering', 'Al gemaakt']];
-    var kop = ['Reis', 'Status', 'Periode', 'Dagen', 'Plekken', 'Erheen', 'Weer', 'Totaal', 'Per dag', O.hartVorm('tiener') + ' ' + O.hartVorm('volwassene')];
-    var getal = [3, 4, 7, 8, 9];
+    var kop = ['Reis', 'Status', 'Periode', 'Dagen', 'Plekken', 'Erheen', 'Weer', 'Totaal', 'Per dag', O.hartVorm('tiener') + ' ' + O.hartVorm('volwassene'), 'Past bij ons'];
+    var getal = [3, 4, 7, 8, 9, 10];
     return h('details', { className: 'nv-vergelijk' },
       h('summary', null,
-        h('span', { className: 'nv-label' }, 'Alleen voor beheerder'),
+        h('span', { className: 'nv-label' }, 'Alleen voor ouders'),
         h('span', { className: 'nv-vergelijk__titel' }, 'Reizen vergelijken')),
-      h('p', { className: 'nv-tekst nv-muted' }, 'Totaal met ~ is (deels) een schatting. Per dag is voor het hele gezin, inclusief reisdagen.'),
+      h('p', { className: 'nv-tekst nv-muted' }, 'Totaal met ~ is (deels) een schatting. Per dag is voor het hele gezin, inclusief reisdagen. Past bij ons: welk deel van de activiteiten en ideeën hoort bij de 3 soorten die tieners en ouders het leukst vinden (zie Onze smaak).'),
       h('div', { className: 'nv-vergelijk__schuif', tabIndex: 0, role: 'region', 'aria-label': 'Tabel, schuif zijwaarts voor alle kolommen' },
         h('table', { className: 'nv-vergelijk__tabel' },
           h('thead', null, h('tr', null, kop.map(function (k, i) {
-            return h('th', { key: i, scope: 'col', className: getal.indexOf(i) > -1 ? 'nv-getal' : undefined, 'aria-label': i === kop.length - 1 ? 'Sterren van tieners en hartjes van ouders' : undefined }, k);
+            return h('th', { key: i, scope: 'col', className: getal.indexOf(i) > -1 ? 'nv-getal' : undefined, 'aria-label': i === kop.length - 2 ? 'Sterren van tieners en hartjes van ouders' : undefined }, k);
           }))),
           groepen.map(function (g) {
             var rijen = p.rijen.filter(function (x) { return x.stemming === g[0]; });
@@ -259,7 +284,10 @@
                   h('td', null, x.weer || '?'),
                   h('td', { className: 'nv-getal' }, euro(x)),
                   h('td', { className: 'nv-getal' }, x.perDag == null ? '?' : (x.schatting ? '~' : '') + O.euro(x.perDag) + (x.onbekend ? ' + ?' : '')),
-                  h('td', { className: 'nv-getal' }, x.tiener || x.volwassene ? O.hartVorm('tiener') + ' ' + x.tiener + '  ' + O.hartVorm('volwassene') + ' ' + x.volwassene : '–'));
+                  h('td', { className: 'nv-getal' }, x.tiener || x.volwassene ? O.hartVorm('tiener') + ' ' + x.tiener + '  ' + O.hartVorm('volwassene') + ' ' + x.volwassene : '–'),
+                  // Past bij ons: deel van de activiteiten in de top 3 soorten van tieners en van ouders (O.pastBijOns).
+                  h('td', { className: 'nv-getal' }, x.past && (x.past.tiener != null || x.past.volwassene != null)
+                    ? O.hartVorm('tiener') + ' ' + (x.past.tiener == null ? '?' : x.past.tiener + '%') + '  ' + O.hartVorm('volwassene') + ' ' + (x.past.volwassene == null ? '?' : x.past.volwassene + '%') : '–'));
               }));
           }))));
   }
@@ -839,7 +867,7 @@
     var tips = tipsVan(s, meer ? dagen.filter(function (x) { return bezoekDagen.indexOf(x) < 0; }) : dagen);
     // Geboekte dingen eerst, dan de ideeën met de meeste sterren en hartjes (wat het gezin wil staat bovenaan).
     // Op de stand bij het laden, niet de live stand: anders springt een idee weg onder je vinger als je tikt.
-    var hier = O.sorteerTeDoen(p.activiteiten.filter(function (a) { return a.stop_id === s.id; }), p.hart.g.hartjes || []);
+    var hier = O.sorteerTeDoen(p.activiteiten.filter(function (a) { return a.stop_id === s.id; }), p.hart.g.hartjes || [], p.hart.smaak);
     // Tijden staan onder hun rit; alleen wat aan geen getoonde rit hangt blijft een losse notitie.
     var notities = dagen.filter(function (x) {
       return !etappes.some(function (e) { return e.naar.id === x.route_punt_id; });
@@ -1002,29 +1030,34 @@
 
   // Hartjes van het gezin (reis.hartjes), gedeeld door plek-paneel, tegels en Doen: één stand per reispagina.
   // wissel: meteen tonen, bij een fout alleen déze activiteit terugzetten (functioneel) en melden.
-  function useHartjes(gezin) {
-    var g = gezin || { werkt: false, hartjes: [], leden: [] };
+  // Twee momenten (2026-10-06): vooraf (zin in; ideeën, tegels, Vandaag) en achteraf (viel echt goed; bij wat je
+  // deed, na de reis of onderweg vanaf de dag zelf: O.magAchteraf). hartjes = vooraf, zoals altijd.
+  function useHartjes(gezin, opties) {
+    var g = gezin || { werkt: false, hartjes: [], achteraf: [], leden: [] }, o = opties || {};
     var hs = React.useState(g.hartjes || []), hartjes = hs[0], setHartjes = hs[1];
+    var as = React.useState(g.achteraf || []), achteraf = as[0], setAchteraf = as[1];
     var ms = React.useState(''), melding = ms[0], setMelding = ms[1];
     var bezig = React.useRef({});
-    function wissel(a) {
-      if (bezig.current[a.id]) return;
-      var ik = O.hartjesVan(hartjes, a.id, g.leden, g.mijnId).ikOok;
+    function wissel(a, moment) {
+      var na = moment === 'achteraf', sleutel = a.id + (na ? ':na' : '');
+      if (bezig.current[sleutel]) return;
+      var ik = O.hartjesVan(na ? achteraf : hartjes, a.id, g.leden, g.mijnId).ikOok;
       function zet(aan) {
-        setHartjes(function (cur) {
+        (na ? setAchteraf : setHartjes)(function (cur) {
           var zonder = cur.filter(function (x) { return !(x.activiteit_id === a.id && x.user_id === g.mijnId); });
-          return aan ? zonder.concat([{ user_id: g.mijnId, activiteit_id: a.id }]) : zonder;
+          return aan ? zonder.concat([{ user_id: g.mijnId, activiteit_id: a.id, moment: na ? 'achteraf' : 'vooraf' }]) : zonder;
         });
       }
       zet(!ik);
       setMelding('');
-      bezig.current[a.id] = true;
-      zetHartje(a.id, !ik).then(function (r) {
-        bezig.current[a.id] = false;
+      bezig.current[sleutel] = true;
+      zetHartje(a.id, !ik, na ? 'achteraf' : 'vooraf').then(function (r) {
+        bezig.current[sleutel] = false;
         if (isFout(r)) { zet(ik); setMelding(r.status === 0 ? 'Geen verbinding: je hartje is niet opgeslagen.' : 'Je hartje kon niet worden opgeslagen.'); }
       });
     }
-    return { g: g, hartjes: hartjes, wissel: wissel, melding: melding };
+    function magAchteraf(a) { return g.werkt && O.magAchteraf(a, !!o.herinnering, o.vandaag || null, o.aankomst); }
+    return { g: g, hartjes: hartjes, achteraf: achteraf, wissel: wissel, magAchteraf: magAchteraf, smaak: o.smaak || {}, melding: melding };
   }
 
   // Eén activiteit met (als er gezinsdata is) je eigen knop in de vorm van jouw groep en wie er een gaf,
@@ -1063,7 +1096,23 @@
         price: x.prijs != null ? Number(x.prijs) : '€ ?',
         note: x.notitie || undefined, status: x.status || undefined, statusLabel: O.statusLabel(x), icon: x.icoon || undefined }),
       h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, via: x.geboekt_via, boekingscode: x.boekingscode, link: x.link, naam: x.naam }),
+      hart.magAchteraf && hart.magAchteraf(x) ? h(Achteraf, { x: x, hart: hart, vooraf: ht.gevers }) :
       g.werkt ? h('div', { className: 'nv-gezin' }, knop, gevers) : null);
+  }
+  // Achteraf (2026-10-06): bij wat je echt deed geef je aan of het goed viel, in de vorm van je groep. Wie er
+  // vooraf zin in had, staat er klein onder, zodat je verwachting en werkelijkheid naast elkaar ziet.
+  function Achteraf(p) {
+    var x = p.x, hart = p.hart, g = hart.g;
+    var ht = O.hartjesVan(hart.achteraf, x.id, g.leden, g.mijnId);
+    var vorm = O.hartVorm(g.groep), leeg = vorm === '★' ? '☆' : '♡';
+    return h('div', { className: 'nv-gezin nv-achteraf' },
+      h('button', { type: 'button', className: 'nv-hart nv-hart--tekst' + (vorm === '★' ? ' nv-hart--tiener' : ''), 'aria-pressed': ht.ikOok, disabled: !g.mijnId,
+        'aria-label': (ht.ikOok ? 'Toch niet: weghalen bij ' : 'Viel goed: ') + x.naam, onClick: function () { hart.wissel(x, 'achteraf'); } },
+        h('span', { className: 'nv-hart__icoon', 'aria-hidden': true }, ht.ikOok ? vorm : leeg), h('span', { className: 'nv-hart__label' }, 'Viel goed')),
+      ht.gevers.length ? h('ul', { className: 'nv-gevers', 'aria-label': 'Viel goed bij ' + O.hartjesTekst(ht.namen) }, ht.gevers.map(function (v, k) {
+        return h('li', { key: k, className: v.groep === 'tiener' ? 'nv-gever nv-gever--tiener' : 'nv-gever' }, h('span', { 'aria-hidden': true }, O.hartVorm(v.groep)), ' ' + v.naam);
+      })) : null,
+      p.vooraf.length ? h('p', { className: 'nv-achteraf__vooraf' }, 'Vooraf zin in: ', p.vooraf.map(function (v) { return O.hartVorm(v.groep) + ' ' + v.naam; }).join(', ')) : null);
   }
   // (i): cirkel met een i, in de lijnstijl van G.Icon (die heeft geen info-icoon).
   function InfoIcoon() {
@@ -1120,7 +1169,7 @@
     // Filter op wie er een hartje gaf: tieners (★) of ouders (♥); groep onbekend telt als ouder (zelfde vorm).
     var zichtbaar = lijst.filter(function (a) {
       if (filter === 'alles') return true;
-      return O.hartjesVan(hart.hartjes, a.id, g.leden, g.mijnId).gevers.some(function (x) { return (x.groep === 'tiener') === (filter === 'tiener'); });
+      return O.hartjesVan(p.herinnering && !O.isIdee(a) ? hart.achteraf : hart.hartjes, a.id, g.leden, g.mijnId).gevers.some(function (x) { return (x.groep === 'tiener') === (filter === 'tiener'); });
     });
     // Groepen per plek in routevolgorde; zonder plek achteraan.
     var groepen = p.stops.map(function (s) { return { s: s, items: zichtbaar.filter(function (a) { return a.stop_id === s.id; }) }; })
@@ -1132,7 +1181,8 @@
         h('div', { className: 'nv-kopblok' },
           h('span', { className: 'nv-label' }, p.herinnering ? 'Wat we deden' : 'Wat we willen doen'),
           h('h2', { className: 'nv-kop' }, kop.title || (p.herinnering ? 'Wat we deden' : 'Op het verlanglijstje')),
-          kop.intro && h('p', { className: 'nv-tekst nv-muted' }, kop.intro)),
+          kop.intro && h('p', { className: 'nv-tekst nv-muted' }, kop.intro),
+          p.herinnering && g.werkt && lijst.length ? h('p', { className: 'nv-tekst nv-muted' }, 'Wat viel echt goed? Tik op ‘Viel goed’; dat telt mee in ons smaakprofiel op het startscherm.') : null),
         g.werkt && lijst.length ? h('div', { className: 'nv-doenfilter', role: 'group', 'aria-label': 'Toon' }, filters.map(function (f) {
           return h('button', { key: f[0], type: 'button', className: 'nv-tab', 'aria-pressed': filter === f[0], onClick: function () { setFilter(f[0]); } }, f[1]);
         })) : null,
@@ -1271,7 +1321,9 @@
       return function () { window.removeEventListener('scroll', bijScroll); };
     }, []);
 
-    var hart = useHartjes(data.gezin);
+    // "Viel goed" na de reis: afgerond (herinnering) of na thuiskomst (O.naReis); onderweg vanaf de dag of de plek.
+    var hart = useHartjes(data.gezin, { herinnering: r.stemming === 'herinnering' || O.naReis(r, vandaag), vandaag: onderweg ? vandaag : null,
+      aankomst: O.aankomstPlekken(data.verblijven), smaak: data.smaak });
     var p = { reis: r, herinnering: r.stemming === 'herinnering', stops: stops, dagen: data.dagen, route: data.route,
       verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, hart: hart, foto: maakFoto(data.fotos), kiesPlek: kiesPlek,
       // Bewerken onderweg: alleen ouders en alleen tijdens een actieve reis (ervóór is de Excel leidend).
@@ -1282,7 +1334,7 @@
       h('main', null,
         data.fotoFout && h('div', { className: 'nv-wrap' }, h(FotoMelding, { fout: data.fotoFout })),
         onderweg ? h(Vandaag, { dag: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten,
-          hartjes: hart.g.hartjes || [] }, vandaag), hart: hart, beheerder: !!gezin.beheerder, reisId: r.id, vs: vs, gezin: gezin, wz: wz,
+          hartjes: hart.g.hartjes || [], smaak: data.smaak }, vandaag), hart: hart, beheerder: !!gezin.beheerder, reisId: r.id, vs: vs, gezin: gezin, wz: wz,
           open: O.openVanGisteren({ reis: r, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten }, vandaag),
           plekGisteren: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, O.plusDagen(vandaag, -1)).plek }) : null,
         h(Intro, p), h(Citaat, p), h(Overzicht, p), h(Programma, A(p, { plekId: plekId })), h(Slapen, p), h(Doen, p),

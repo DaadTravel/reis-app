@@ -93,12 +93,16 @@
   // Een idee = activiteit met status voorstel: compacte regel zonder prijs en label (besluit gebruiker 2026-10-04).
   // Onbekende status (null) is géén idee: dat kan geboekt zijn ("Status ?").
   function isIdee(a) { return a.status === 'voorstel'; }
-  // Te doen per plek: eerst wat geen idee is (op volgorde), dan ideeën op aantal hartjes (meeste eerst), dan volgorde.
-  function sorteerTeDoen(acts, hartjes) {
+  // Te doen per plek: eerst wat geen idee is (op volgorde), dan ideeën op aantal hartjes (meeste eerst), dan wat bij
+  // onze smaak past (O.smaakScore per soort, besluit gebruiker 2026-10-06; zonder smaak telt dat niet), dan volgorde.
+  function sorteerTeDoen(acts, hartjes, smaak) {
+    var sm = smaak && typeof smaak === 'object' ? smaak : {};
+    // Score per soort: alleen een eigen, eindig getal telt (rare waarden → 0, zodat de volgorde vast blijft).
+    function score(a) { var v = isSoort(a.icoon) && Object.prototype.hasOwnProperty.call(sm, a.icoon) ? Number(sm[a.icoon]) : 0; return isFinite(v) ? v : 0; }
     var tel = {};
     hartjes.forEach(function (x) { tel[x.activiteit_id] = (tel[x.activiteit_id] || 0) + 1; });
     return acts.slice().sort(function (a, b) {
-      return (isIdee(a) - isIdee(b)) || (isIdee(a) ? (tel[b.id] || 0) - (tel[a.id] || 0) : 0) || a.volgorde - b.volgorde;
+      return (isIdee(a) - isIdee(b)) || (isIdee(a) ? (tel[b.id] || 0) - (tel[a.id] || 0) || score(b) - score(a) : 0) || a.volgorde - b.volgorde;
     });
   }
   // Verlanglijstje (besluit gebruiker 2026-10-04): een idee alleen met minstens één hartje of ster; wat geen idee
@@ -107,6 +111,81 @@
     var met = {};
     hartjes.forEach(function (x) { met[x.activiteit_id] = true; });
     return acts.filter(function (a) { return !isIdee(a) || met[a.id]; });
+  }
+  // Hartjes vooraf (zin in) en achteraf (viel echt goed), besluit gebruiker 2026-10-06. Zonder moment = vooraf
+  // (rijen van vóór de kolom); een onbekend moment telt nergens mee.
+  function splitsMoment(hartjes) {
+    var uit = { vooraf: [], achteraf: [] };
+    rijen(hartjes).forEach(function (x) { var m = x.moment || 'vooraf'; if (m === 'vooraf' || m === 'achteraf') uit[m].push(x); });
+    return uit;
+  }
+  // Achteraf kan alleen bij wat je echt deed (geen idee, geen optie): na de reis, of onderweg vanaf de datum van de activiteit;
+  // zonder datum vanaf de aankomst op de plek (aankomst: stop_id → datum, O.aankomstPlekken). Besluit gebruiker 2026-10-06.
+  function magAchteraf(a, herinnering, vandaag, aankomst) {
+    if (isIdee(a) || a.status === 'optie') return false;
+    if (herinnering) return true;
+    if (!isDatum(vandaag)) return false;
+    if (isDatum(a.datum)) return a.datum <= vandaag;
+    var plek = aankomst && typeof aankomst === 'object' ? aankomst[a.stop_id] : null;
+    return !!(plek && plek <= vandaag);
+  }
+  // Na thuiskomst (code-controleur 2026-10-06): een gekozen reis (geboekt/betaald) geldt na de einddatum als
+  // afgerond voor "Viel goed", ook als de stemming nog niet met de hand op herinnering staat.
+  function naReis(r, vandaag) {
+    return !!(r && typeof r === 'object' && (r.status === 'geboekt' || r.status === 'betaald') && isDatum(r.eind_datum) && isDatum(vandaag) && r.eind_datum < vandaag);
+  }
+  // Aankomst per plek = het vroegste inchecken van de verblijven daar (ook opties: die liggen op dezelfde dagen).
+  function aankomstPlekken(verblijven) {
+    var uit = {};
+    rijen(verblijven).forEach(function (v) { if (v.stop_id && isDatum(v.inchecken) && (!uit[v.stop_id] || v.inchecken < uit[v.stop_id])) uit[v.stop_id] = v.inchecken; });
+    return uit;
+  }
+  // Soorten voor het smaakprofiel (activiteiten.icoon); vervoer, slapen en hulpiconen tellen niet mee.
+  var SOORTEN = { wave: 'Water en strand', pool: 'Zwemmen en ontspannen', hike: 'Natuur en uitzicht', city: 'Stad en musea',
+    food: 'Eten en markten', temple: 'Cultuur en tempels', village: 'Dorpjes', boat: 'Boottochten', sun: 'Pretparken en uitjes', cup: 'Proeven' };
+  // Alleen echte soorten (eigen sleutel van SOORTEN), niet 'constructor' en dergelijke van elk object.
+  function isSoort(k) { return typeof k === 'string' && Object.prototype.hasOwnProperty.call(SOORTEN, k); }
+  // Smaakprofiel per groep (tiener; volwassene of onbekend): per soort het aantal hartjes vooraf en achteraf.
+  // Volgorde: achteraf telt dubbel (dat weet je zeker), dan op naam. Rare data → leeg, nooit een fout.
+  function smaakprofiel(hartjes, activiteiten, leden) {
+    var soort = {}, groep = {}, tel = { tiener: {}, volwassene: {} };
+    rijen(activiteiten).forEach(function (a) { if (isSoort(a.icoon)) soort[a.id] = a.icoon; });
+    rijen(leden).forEach(function (l) { groep[l.user_id] = l.groep; });
+    var s = splitsMoment(hartjes);
+    ['vooraf', 'achteraf'].forEach(function (m) {
+      s[m].forEach(function (x) {
+        var k = Object.prototype.hasOwnProperty.call(soort, x.activiteit_id) ? soort[x.activiteit_id] : null;
+        if (!k) return;
+        var t = tel[groep[x.user_id] === 'tiener' ? 'tiener' : 'volwassene'];
+        t[k] = t[k] || { soort: k, naam: SOORTEN[k], vooraf: 0, achteraf: 0 };
+        t[k][m]++;
+      });
+    });
+    function lijst(t) {
+      return Object.keys(t).map(function (k) { return t[k]; }).sort(function (a, b) {
+        return (b.achteraf * 2 + b.vooraf) - (a.achteraf * 2 + a.vooraf) || (a.naam < b.naam ? -1 : 1);
+      });
+    }
+    return { tiener: lijst(tel.tiener), volwassene: lijst(tel.volwassene) };
+  }
+  // Smaak als score per soort voor de volgorde van ideeën: beide groepen samen, achteraf dubbel.
+  function smaakScore(profiel) {
+    var uit = {};
+    if (!profiel || typeof profiel !== 'object') return uit;
+    ['tiener', 'volwassene'].forEach(function (g) {
+      rijen(profiel[g]).forEach(function (x) { if (isSoort(x.soort)) uit[x.soort] = (uit[x.soort] || 0) + (Number(x.achteraf) || 0) * 2 + (Number(x.vooraf) || 0); });
+    });
+    return uit;
+  }
+  // Past bij ons (vergelijkingstabel): per groep het deel (%) van de activiteiten van een reis waarvan de soort in de
+  // top 3 van die groep staat. Alleen activiteiten met een bekende soort tellen; geen profiel of niets te tellen → null.
+  function pastBijOns(activiteiten, profiel) {
+    var acts = rijen(activiteiten).filter(function (a) { return isSoort(a.icoon); }), uit = {};
+    ['tiener', 'volwassene'].forEach(function (g) {
+      var top = rijen(profiel && profiel[g]).filter(function (x) { return isSoort(x.soort); }).slice(0, 3).map(function (x) { return x.soort; });
+      uit[g] = top.length && acts.length ? Math.round(100 * acts.filter(function (a) { return top.indexOf(a.icoon) > -1; }).length / acts.length) : null;
+    });
+    return uit;
   }
   // Vergelijkingstabel voor de beheerder (2026-10-04): per reis de kerngegevens naast elkaar. Onbekend blijft
   // null ("?"), nooit 0. Totaal = som van de bekende posten; onbekend = er is een post zonder (geldig) bedrag,
@@ -223,7 +302,7 @@
     var laatste = vertrekt[vertrekt.length - 1];
     var plekId = slapen ? slapen.stop_id : laatste && laatste.punt.stop_id;
     var vrij = !routes.length && !activiteiten.length && !!slapen;
-    var ideeen = vrij ? sorteerTeDoen(acts.filter(function (a) { return isIdee(a) && a.stop_id === plekId; }), rijen(d.hartjes)).slice(0, 3) : [];
+    var ideeen = vrij ? sorteerTeDoen(acts.filter(function (a) { return isIdee(a) && a.stop_id === plekId; }), rijen(d.hartjes), d.smaak).slice(0, 3) : [];
     var morgenSlapen = slaapOp(morgenDatum);
     var dagNr = dagenTussen(r.start_datum, datum), dagen = dagenTussen(r.start_datum, r.eind_datum);
     return {
@@ -532,7 +611,7 @@
   }
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
-    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
+    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, splitsMoment: splitsMoment, magAchteraf: magAchteraf, naReis: naReis, smaakprofiel: smaakprofiel, smaakScore: smaakScore, pastBijOns: pastBijOns, aankomstPlekken: aankomstPlekken, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
     openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink, infoVan: infoVan,
