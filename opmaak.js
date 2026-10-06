@@ -189,7 +189,8 @@
   }
   // Vergelijkingstabel voor de beheerder (2026-10-04): per reis de kerngegevens naast elkaar. Onbekend blijft
   // null ("?"), nooit 0. Totaal = som van de bekende posten; onbekend = er is een post zonder (geldig) bedrag,
-  // of geen post. Dagen = van vertrek t/m thuiskomst (incl. reisdagen); per dag = totaal / dagen, voor het
+  // of geen post. Dagen = van vertrek t/m thuiskomst (incl. reisdagen). Per nacht = totaal / nachten in het land
+  // (reizen.nachten; besluit gebruiker 2026-10-06: een nachtvlucht maakt een reis niet duurder per dag), voor het
   // hele gezin. Erheen = de eerste rit na het vertrekpunt (nog niet gekozen → onbekend): de vlucht, of bij een
   // roadtrip de rijuren tot de eerste plek met 3+ nachten (besluit gebruiker 2026-10-04); komt die plek er niet
   // of ontbreekt een tijd → onbekend. Weer = het feit met icoon 'sun'.
@@ -225,7 +226,7 @@
         weer: weer ? weer[1] : null,
         onbekend: !posten.length || bekend.length < posten.length,
         schatting: posten.some(function (b) { return /schatting|geschat/i.test(b.label || ''); }),
-        perDag: totaal != null && dagen ? Math.round(totaal / dagen) : null,
+        perNacht: totaal != null && Number(r.nachten) > 0 ? Math.round(totaal / Number(r.nachten)) : null,
         tiener: vormen.tiener, volwassene: vormen.volwassene };
     });
   }

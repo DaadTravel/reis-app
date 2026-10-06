@@ -293,9 +293,10 @@
     activiteiten: [{ id: 'x1', reis_id: 'r1' }, { id: 'x2', reis_id: 'r2' }],
     hartjes: [{ user_id: 'u1', activiteit_id: 'x1' }, { user_id: 'u2', activiteit_id: 'x1' }, { user_id: 'u2', activiteit_id: 'x2' }],
     leden: ledenG };
-  test('vergelijk: kerngegevens van een reis', { status: 'Optie', dagen: 23, nachten: 21, plekken: 2, erheen: 'plane', totaal: 8000, onbekend: false, schatting: true, perDag: 348, tiener: 1, volwassene: 1 }, function () {
+  // Per nacht (besluit gebruiker 2026-10-06): totaal ÷ nachten in het land (reizen.nachten), niet ÷ dagen incl. reisdagen.
+  test('vergelijk: kerngegevens van een reis', { status: 'Optie', dagen: 23, nachten: 21, plekken: 2, erheen: 'plane', totaal: 8000, onbekend: false, schatting: true, perNacht: 381, tiener: 1, volwassene: 1 }, function () {
     var x = O.vergelijk(reizenV, dV)[0];
-    return { status: x.status, dagen: x.dagen, nachten: x.nachten, plekken: x.plekken, erheen: x.erheen, totaal: x.totaal, onbekend: x.onbekend, schatting: x.schatting, perDag: x.perDag, tiener: x.tiener, volwassene: x.volwassene };
+    return { status: x.status, dagen: x.dagen, nachten: x.nachten, plekken: x.plekken, erheen: x.erheen, totaal: x.totaal, onbekend: x.onbekend, schatting: x.schatting, perNacht: x.perNacht, tiener: x.tiener, volwassene: x.volwassene };
   });
   test('vergelijk: reistijd erheen en weer', { erheenMin: 810, erheenBenadering: true, weer: '31–34°C' }, function () {
     var r = Object.assign({}, reizenV[0], { feiten: [['plane', 'retour Tokyo'], ['sun', '31–34°C']] });
@@ -337,9 +338,15 @@
     var x = O.vergelijk(reizenV, dV)[0];
     return { erheenMin: x.erheenMin, weer: x.weer };
   });
-  test('vergelijk: onbekend blijft onbekend', { status: 'Afgerond', dagen: null, erheen: null, totaal: null, onbekend: true, perDag: null }, function () {
+  test('vergelijk: onbekend blijft onbekend', { status: 'Afgerond', dagen: null, erheen: null, totaal: null, onbekend: true, perNacht: null }, function () {
     var x = O.vergelijk(reizenV, dV)[1];
-    return { status: x.status, dagen: x.dagen, erheen: x.erheen, totaal: x.totaal, onbekend: x.onbekend, perDag: x.perDag };
+    return { status: x.status, dagen: x.dagen, erheen: x.erheen, totaal: x.totaal, onbekend: x.onbekend, perNacht: x.perNacht };
+  });
+  test('vergelijk: per nacht zonder nachten of met 0 of rare nachten → onbekend', [null, null, null], function () {
+    return [{ nachten: null }, { nachten: 0 }, { nachten: 'abc' }].map(function (n) { return O.vergelijk([Object.assign({}, reizenV[0], n)], dV)[0].perNacht; });
+  });
+  test('vergelijk: per nacht ook bij onbekende datums', 381, function () {
+    return O.vergelijk([Object.assign({}, reizenV[0], { start_datum: null, eind_datum: null })], dV)[0].perNacht;
   });
   test('isIdee: voorstel', true, function () { return O.isIdee({ status: 'voorstel' }); });
   test('isIdee: geboekt of onbekend is geen idee', [false, false], function () { return [O.isIdee({ status: 'geboekt' }), O.isIdee({ status: null })]; });

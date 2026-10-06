@@ -255,13 +255,13 @@
       return (x.schatting ? '~' : '') + O.euro(x.totaal) + (x.onbekend ? ' + ?' : '');
     };
     var groepen = [['voorpret', 'Nog te gaan'], ['herinnering', 'Al gemaakt']];
-    var kop = ['Reis', 'Status', 'Periode', 'Dagen', 'Plekken', 'Erheen', 'Weer', 'Totaal', 'Per dag', O.hartVorm('tiener') + ' ' + O.hartVorm('volwassene'), 'Past bij ons'];
+    var kop = ['Reis', 'Status', 'Periode', 'Nachten', 'Plekken', 'Erheen', 'Weer', 'Totaal', 'Per nacht', O.hartVorm('tiener') + ' ' + O.hartVorm('volwassene'), 'Past bij ons'];
     var getal = [3, 4, 7, 8, 9, 10];
     return h('details', { className: 'nv-vergelijk' },
       h('summary', null,
         h('span', { className: 'nv-label' }, 'Alleen voor ouders'),
         h('span', { className: 'nv-vergelijk__titel' }, 'Reizen vergelijken')),
-      h('p', { className: 'nv-tekst nv-muted' }, 'Totaal met ~ is (deels) een schatting. Per dag is voor het hele gezin, inclusief reisdagen. Past bij ons: welk deel van de activiteiten en ideeën hoort bij de 3 soorten die tieners en ouders het leukst vinden (zie Onze smaak).'),
+      h('p', { className: 'nv-tekst nv-muted' }, 'Totaal met ~ is (deels) een schatting. Per nacht = totaal ÷ nachten in het land, voor het hele gezin; klein onder de nachten staan de dagen inclusief reisdagen. Past bij ons: welk deel van de activiteiten en ideeën hoort bij de 3 soorten die tieners en ouders het leukst vinden (zie Onze smaak).'),
       h('div', { className: 'nv-vergelijk__schuif', tabIndex: 0, role: 'region', 'aria-label': 'Tabel, schuif zijwaarts voor alle kolommen' },
         h('table', { className: 'nv-vergelijk__tabel' },
           h('thead', null, h('tr', null, kop.map(function (k, i) {
@@ -278,12 +278,12 @@
                   h('th', { scope: 'row' }, h('a', { href: reisUrl(x.slug) }, x.titel)),
                   h('td', null, x.status),
                   h('td', null, x.periode || '?'),
-                  h('td', { className: 'nv-getal' }, x.dagen == null ? '?' : x.dagen, x.nachten != null ? h('small', null, x.nachten + ' n') : null),
+                  h('td', { className: 'nv-getal' }, x.nachten == null ? '?' : x.nachten, x.dagen != null ? h('small', null, x.dagen + ' dagen') : null),
                   h('td', { className: 'nv-getal' }, x.plekken),
                   h('td', null, x.erheen ? h(React.Fragment, null, h('span', { className: 'nv-vergelijk__erheen' }, h(G.Icon, { name: x.erheen, size: 16 }), VERVOER[x.erheen] || x.erheen), h('small', null, tijd)) : '?'),
                   h('td', null, x.weer || '?'),
                   h('td', { className: 'nv-getal' }, euro(x)),
-                  h('td', { className: 'nv-getal' }, x.perDag == null ? '?' : (x.schatting ? '~' : '') + O.euro(x.perDag) + (x.onbekend ? ' + ?' : '')),
+                  h('td', { className: 'nv-getal' }, x.perNacht == null ? '?' : (x.schatting ? '~' : '') + O.euro(x.perNacht) + (x.onbekend ? ' + ?' : '')),
                   h('td', { className: 'nv-getal' }, x.tiener || x.volwassene ? O.hartVorm('tiener') + ' ' + x.tiener + '  ' + O.hartVorm('volwassene') + ' ' + x.volwassene : '–'),
                   // Past bij ons: deel van de activiteiten in de top 3 soorten van tieners en van ouders (O.pastBijOns).
                   h('td', { className: 'nv-getal' }, x.past && (x.past.tiener != null || x.past.volwassene != null)

@@ -567,10 +567,11 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
 - **Vergelijkingstabel** (besluit gebruiker 2026-10-04): onderaan het
   startscherm, ingeklapt, alleen voor de beheerder (`leden.rol` bewerker;
   `haalVergelijk` in app.js, `O.vergelijk`). Per reis: status, periode,
-  dagen (vertrek t/m thuis) en nachten, plekken, erheen (vlucht, of bij een
+  nachten (`reizen.nachten`, klein eronder de dagen van vertrek t/m thuis), plekken, erheen (vlucht, of bij een
   roadtrip de rijuren tot de eerste plek met 3+ nachten), weer (het feit
   `sun` in `reizen.feiten`, dus elke reis een temperatuur geven), totaal
-  (~ = deels geschat) en per dag voor het hele gezin, ★/♥. "Rust" (nachten
+  (~ = deels geschat) en per nacht (totaal ÷ nachten in het land, besluit
+  gebruiker 2026-10-06: niet per dag incl. reisdagen) voor het hele gezin, ★/♥, past bij ons. "Rust" (nachten
   per plek) bewust niet.
 - **Zoekprofiel is geen reisinhoud** (besluit gebruiker 2026-09-30): de
   zoekcriteria voor verblijven (kolom `reizen.randvoorwaarden`: max per
