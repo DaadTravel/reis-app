@@ -292,8 +292,8 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-vergelijk .nv-tekst { font-size: 15px; margin: 0 0 var(--space-4); }
 .nv-vergelijk__schuif { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-raised); }
 .nv-vergelijk__schuif:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.nv-vergelijk__tabel { width: 100%; border-collapse: collapse; font-size: 15px; color: var(--ink); white-space: nowrap; }
-.nv-vergelijk__tabel th, .nv-vergelijk__tabel td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+.nv-vergelijk__tabel { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--ink); white-space: nowrap; }
+.nv-vergelijk__tabel th, .nv-vergelijk__tabel td { padding: 8px 9px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
 .nv-vergelijk__tabel thead th { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); }
 .nv-vergelijk__tabel tbody tr:last-child > * { border-bottom: 0; }
 .nv-vergelijk__tabel tbody + tbody .nv-vergelijk__groep th { border-top: 1px solid var(--line-strong); }

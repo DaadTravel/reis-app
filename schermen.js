@@ -255,17 +255,17 @@
       return (x.schatting ? '~' : '') + O.euro(x.totaal) + (x.onbekend ? ' + ?' : '');
     };
     var groepen = [['voorpret', 'Nog te gaan'], ['herinnering', 'Al gemaakt']];
-    var kop = ['Reis', 'Status', 'Periode', 'Nachten', 'Plekken', 'Erheen', 'Weer', 'Totaal', 'Per nacht', O.hartVorm('tiener') + ' ' + O.hartVorm('volwassene'), 'Past bij ons'];
-    var getal = [3, 4, 7, 8, 9, 10];
+    var kop = ['Reis', 'Status', 'Periode', 'Nachten', 'Plekken', 'Erheen', 'Weer', 'Totaal', 'Per nacht', 'Hartjes'];
+    var getal = [3, 4, 7, 8, 9];
     return h('details', { className: 'nv-vergelijk' },
       h('summary', null,
         h('span', { className: 'nv-label' }, 'Alleen voor ouders'),
         h('span', { className: 'nv-vergelijk__titel' }, 'Reizen vergelijken')),
-      h('p', { className: 'nv-tekst nv-muted' }, 'Totaal met ~ is (deels) een schatting. Per nacht = totaal ÷ nachten in het land, voor het hele gezin; klein onder de nachten staan de dagen inclusief reisdagen. Past bij ons: welk deel van de activiteiten en ideeën hoort bij de 3 soorten die tieners en ouders het leukst vinden (zie Onze smaak).'),
+      h('p', { className: 'nv-tekst nv-muted' }, 'Totaal met ~ is (deels) een schatting. Per nacht = totaal ÷ nachten in het land, voor het hele gezin; klein onder de nachten staan de dagen inclusief reisdagen. Hartjes: ★ en ♥ vooraf; ‘past’ = welk deel van de activiteiten en ideeën hoort bij de 3 soorten die tieners en ouders het leukst vinden (zie Onze smaak).'),
       h('div', { className: 'nv-vergelijk__schuif', tabIndex: 0, role: 'region', 'aria-label': 'Tabel, schuif zijwaarts voor alle kolommen' },
         h('table', { className: 'nv-vergelijk__tabel' },
           h('thead', null, h('tr', null, kop.map(function (k, i) {
-            return h('th', { key: i, scope: 'col', className: getal.indexOf(i) > -1 ? 'nv-getal' : undefined, 'aria-label': i === kop.length - 2 ? 'Sterren van tieners en hartjes van ouders' : undefined }, k);
+            return h('th', { key: i, scope: 'col', className: getal.indexOf(i) > -1 ? 'nv-getal' : undefined, 'aria-label': i === kop.length - 1 ? 'Hartjes: sterren van tieners en hartjes van ouders, en hoe goed de reis bij onze smaak past' : undefined }, k);
           }))),
           groepen.map(function (g) {
             var rijen = p.rijen.filter(function (x) { return x.stemming === g[0]; });
@@ -284,10 +284,11 @@
                   h('td', null, x.weer || '?'),
                   h('td', { className: 'nv-getal' }, euro(x)),
                   h('td', { className: 'nv-getal' }, x.perNacht == null ? '?' : (x.schatting ? '~' : '') + O.euro(x.perNacht) + (x.onbekend ? ' + ?' : '')),
-                  h('td', { className: 'nv-getal' }, x.tiener || x.volwassene ? O.hartVorm('tiener') + ' ' + x.tiener + '  ' + O.hartVorm('volwassene') + ' ' + x.volwassene : '–'),
-                  // Past bij ons: deel van de activiteiten in de top 3 soorten van tieners en van ouders (O.pastBijOns).
-                  h('td', { className: 'nv-getal' }, x.past && (x.past.tiener != null || x.past.volwassene != null)
-                    ? O.hartVorm('tiener') + ' ' + (x.past.tiener == null ? '?' : x.past.tiener + '%') + '  ' + O.hartVorm('volwassene') + ' ' + (x.past.volwassene == null ? '?' : x.past.volwassene + '%') : '–'));
+                  // Hartjes: aantal ★ (tieners) en ♥ (ouders) vooraf, met klein eronder hoe goed de reis bij onze smaak past
+                  // (O.pastBijOns: deel van de activiteiten in de top 3 soorten per groep). Eén kolom, zodat de tabel past.
+                  h('td', { className: 'nv-getal' }, x.tiener || x.volwassene ? O.hartVorm('tiener') + ' ' + x.tiener + '  ' + O.hartVorm('volwassene') + ' ' + x.volwassene : '–',
+                    x.past && (x.past.tiener != null || x.past.volwassene != null)
+                      ? h('small', null, 'past ' + O.hartVorm('tiener') + ' ' + (x.past.tiener == null ? '?' : x.past.tiener + '%') + ' ' + O.hartVorm('volwassene') + ' ' + (x.past.volwassene == null ? '?' : x.past.volwassene + '%')) : null));
               }));
           }))));
   }

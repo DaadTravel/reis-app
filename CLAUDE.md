@@ -571,7 +571,9 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   roadtrip de rijuren tot de eerste plek met 3+ nachten), weer (het feit
   `sun` in `reizen.feiten`, dus elke reis een temperatuur geven), totaal
   (~ = deels geschat) en per nacht (totaal ÷ nachten in het land, besluit
-  gebruiker 2026-10-06: niet per dag incl. reisdagen) voor het hele gezin, ★/♥, past bij ons. "Rust" (nachten
+  gebruiker 2026-10-06: niet per dag incl. reisdagen) voor het hele gezin, en
+  Hartjes (★/♥ vooraf, klein eronder "past" = O.pastBijOns; één kolom zodat
+  de tabel op een desktop zonder schuiven past, vanaf ± 1070 px). "Rust" (nachten
   per plek) bewust niet.
 - **Zoekprofiel is geen reisinhoud** (besluit gebruiker 2026-09-30): de
   zoekcriteria voor verblijven (kolom `reizen.randvoorwaarden`: max per
