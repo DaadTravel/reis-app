@@ -313,7 +313,9 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   en kan bij een activiteit aangeven wat hem aanspreekt (`reis.hartjes`, één
   per lid per activiteit). Activiteiten krijgen **geen** doelgroep-label: de
   hartjes laten zien wie wat wil. De app toont per gever het teken van zijn
-  groep (`O.hartVorm`: tiener ★, volwassene ♥), je eigen knop in jouw vorm,
+  groep (`O.hartVorm`: tiener ★, volwassene ♥), je eigen knop in jouw vorm
+  (in de knop een SVG, `VormIcoon`, geen letterteken: dat stond per apparaat
+  net uit het midden),
   en in Doen een filter Alles / ★ Tieners / ♥ Ouders. Doen staat per plek
   (routevolgorde) en is het **verlanglijstje: ideeën alleen met minstens één
   hartje of ster, geboekt e.d. altijd** (`O.opVerlanglijst`, besluit gebruiker

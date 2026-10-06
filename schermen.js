@@ -1066,10 +1066,10 @@
   function ActiviteitRij(p) {
     var x = p.x, hart = p.hart, g = hart.g;
     var ht = O.hartjesVan(hart.hartjes, x.id, g.leden, g.mijnId);
-    var mijnVorm = O.hartVorm(g.groep), leegVorm = mijnVorm === '★' ? '☆' : '♡';
+    var mijnVorm = O.hartVorm(g.groep);
     var knop = g.werkt ? h('button', { type: 'button', className: 'nv-hart' + (mijnVorm === '★' ? ' nv-hart--tiener' : ''), 'aria-pressed': ht.ikOok, disabled: !g.mijnId,
       'aria-label': (ht.ikOok ? 'Hartje weghalen bij ' : 'Hartje geven aan ') + x.naam, onClick: function () { hart.wissel(x); } },
-      h('span', { className: 'nv-hart__icoon', 'aria-hidden': true }, ht.ikOok ? mijnVorm : leegVorm)) : null;
+      h(VormIcoon, { vorm: mijnVorm, vol: ht.ikOok })) : null;
     var gevers = g.werkt && ht.gevers.length ? h('ul', { className: 'nv-gevers', 'aria-label': 'Hartjes van ' + O.hartjesTekst(ht.namen) }, ht.gevers.map(function (v, k) {
       return h('li', { key: k, className: v.groep === 'tiener' ? 'nv-gever nv-gever--tiener' : 'nv-gever' },
         h('span', { 'aria-hidden': true }, O.hartVorm(v.groep)), ' ' + v.naam);
@@ -1107,7 +1107,7 @@
   function Achteraf(p) {
     var x = p.x, hart = p.hart, g = hart.g;
     var ht = O.hartjesVan(hart.achteraf, x.id, g.leden, g.mijnId);
-    var vorm = O.hartVorm(g.groep), leeg = vorm === '★' ? '☆' : '♡';
+    var vorm = O.hartVorm(g.groep);
     var kleur = ht.ikOok ? (p.ikVooraf ? ' nv-hart--beide' : ' nv-hart--was') : p.ikVooraf ? ' nv-hart--leek' : '';
     var label = ht.ikOok ? (p.ikVooraf ? 'Leek leuk en was leuk: ' : 'Was leuk: ') + x.naam + '. Tik om "was leuk" weg te halen'
       : (p.ikVooraf ? 'Leek leuk: ' + x.naam + '. Tik als het ook leuk was' : 'Was leuk geven aan ' + x.naam);
@@ -1120,10 +1120,20 @@
     return h('div', { className: 'nv-gezin nv-achteraf' },
       h('button', { type: 'button', className: 'nv-hart' + (vorm === '★' ? ' nv-hart--tiener' : '') + kleur, 'aria-pressed': ht.ikOok, disabled: !g.mijnId,
         'aria-label': label, onClick: function () { hart.wissel(x, 'achteraf'); } },
-        h('span', { className: 'nv-hart__icoon', 'aria-hidden': true }, ht.ikOok || p.ikVooraf ? vorm : leeg)),
+        h(VormIcoon, { vorm: vorm, vol: ht.ikOok || p.ikVooraf })),
       ht.gevers.length || p.vooraf.length ? h('div', { className: 'nv-achteraf__regels' },
         ht.gevers.length ? regel('Was leuk', ht.gevers) : null,
         p.vooraf.length ? regel('Leek leuk', p.vooraf) : null) : null);
+  }
+  // Hartje (ouder) of ster (tiener) in de knop als getekend icoon, niet als letterteken: een teken uit een lettertype
+  // staat per apparaat net anders (± 2 px uit het midden, gemeten 2026-10-06); een SVG staat overal precies midden.
+  // vol = aan (gevuld), anders alleen de omtrek.
+  function VormIcoon(p) {
+    var ster = p.vorm === '★';
+    return h('svg', { className: 'nv-hart__icoon', width: 18, height: 18, viewBox: '0 0 24 24', 'aria-hidden': 'true',
+      fill: p.vol ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinejoin: 'round' },
+      h('path', { d: ster ? 'M12 2.8l2.8 5.9 6.4.8-4.7 4.5 1.2 6.4L12 17.3l-5.7 3.1 1.2-6.4-4.7-4.5 6.4-.8z'
+        : 'M12 20.3C7.4 17.2 2.8 13.4 2.8 8.9 2.8 6 5 3.8 7.7 3.8c1.8 0 3.3.9 4.3 2.4 1-1.5 2.5-2.4 4.3-2.4 2.7 0 4.9 2.2 4.9 5.1 0 4.5-4.6 8.3-9.2 11.4z' }));
   }
   // (i): cirkel met een i, in de lijnstijl van G.Icon (die heeft geen info-icoon).
   function InfoIcoon() {
