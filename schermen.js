@@ -231,8 +231,8 @@
       h('summary', null,
         h('span', { className: 'nv-label' }, 'Alleen voor ouders'),
         h('span', { className: 'nv-vergelijk__titel' }, 'Onze smaak')),
-      h('p', { className: 'nv-tekst nv-muted' }, 'Per soort uitje: hoe vaak iemand vooraf zin had, en hoe vaak het achteraf echt goed viel (telt dubbel). Op basis van ' +
-        s.vooraf + ' keer vooraf en ' + s.achteraf + ' keer achteraf.'),
+      h('p', { className: 'nv-tekst nv-muted' }, 'Per soort uitje: hoe vaak iets vooraf leuk leek, en hoe vaak het achteraf leuk was (telt dubbel). Op basis van ' +
+        s.vooraf + ' keer "leek leuk" en ' + s.achteraf + ' keer "was leuk".'),
       groepen.map(function (gr) {
         var lijst = s.profiel[gr[0]].slice(0, 4), vorm = O.hartVorm(gr[0]);
         return h('section', { key: gr[0], className: 'nv-smaak__groep', 'aria-label': gr[1] },
@@ -241,7 +241,7 @@
             return h('li', { key: x.soort },
               h('span', { className: 'rg-act__icon' }, h(G.Icon, { name: x.soort, size: 18 })),
               h('span', { className: 'nv-smaak__naam' }, x.naam),
-              h('span', { className: 'nv-smaak__tel' }, [x.achteraf ? x.achteraf + '× achteraf' : null, x.vooraf ? x.vooraf + '× vooraf' : null].filter(Boolean).join(' · ')));
+              h('span', { className: 'nv-smaak__tel' }, [x.achteraf ? x.achteraf + '× was leuk' : null, x.vooraf ? x.vooraf + '× leek leuk' : null].filter(Boolean).join(' · ')));
           })) : h('p', { className: 'nv-muted' }, 'Nog geen ' + vorm + ' gegeven.'));
       }));
   }
@@ -1030,7 +1030,7 @@
 
   // Hartjes van het gezin (reis.hartjes), gedeeld door plek-paneel, tegels en Doen: één stand per reispagina.
   // wissel: meteen tonen, bij een fout alleen déze activiteit terugzetten (functioneel) en melden.
-  // Twee momenten (2026-10-06): vooraf (zin in; ideeën, tegels, Vandaag) en achteraf (viel echt goed; bij wat je
+  // Twee momenten (2026-10-06): vooraf (lijkt me leuk; ideeën, tegels, Vandaag) en achteraf (was leuk; bij wat je
   // deed, na de reis of onderweg vanaf de dag zelf: O.magAchteraf). hartjes = vooraf, zoals altijd.
   function useHartjes(gezin, opties) {
     var g = gezin || { werkt: false, hartjes: [], achteraf: [], leden: [] }, o = opties || {};
@@ -1096,23 +1096,33 @@
         price: x.prijs != null ? Number(x.prijs) : '€ ?',
         note: x.notitie || undefined, status: x.status || undefined, statusLabel: O.statusLabel(x), icon: x.icoon || undefined }),
       h(Contact, { ophaalpunt: x.ophaalpunt, telefoon: x.telefoon, email: x.email, via: x.geboekt_via, boekingscode: x.boekingscode, link: x.link, naam: x.naam }),
-      hart.magAchteraf && hart.magAchteraf(x) ? h(Achteraf, { x: x, hart: hart, vooraf: ht.gevers }) :
+      hart.magAchteraf && hart.magAchteraf(x) ? h(Achteraf, { x: x, hart: hart, vooraf: ht.gevers, ikVooraf: ht.ikOok }) :
       g.werkt ? h('div', { className: 'nv-gezin' }, knop, gevers) : null);
   }
-  // Achteraf (2026-10-06): bij wat je echt deed geef je aan of het goed viel, in de vorm van je groep. Wie er
-  // vooraf zin in had, staat er klein onder, zodat je verwachting en werkelijkheid naast elkaar ziet.
+  // Achteraf (besluit gebruiker 2026-10-06): hetzelfde hartje of dezelfde ster, maar vanaf de dag zelf (O.magAchteraf)
+  // betekent het "was leuk" in plaats van "lijkt me leuk". De kleur van je eigen knop toont hoe jij stemde (tiener en
+  // ouder gelijk): alleen vooraf = rood, alleen achteraf = groen, allebei = goud. Daaronder twee regels met wie
+  // het leuk vond en wie het vooraf leuk leek. De stem van vooraf blijft bewaard: deze knop raakt alleen achteraf.
   function Achteraf(p) {
     var x = p.x, hart = p.hart, g = hart.g;
     var ht = O.hartjesVan(hart.achteraf, x.id, g.leden, g.mijnId);
     var vorm = O.hartVorm(g.groep), leeg = vorm === '★' ? '☆' : '♡';
+    var kleur = ht.ikOok ? (p.ikVooraf ? ' nv-hart--beide' : ' nv-hart--was') : p.ikVooraf ? ' nv-hart--leek' : '';
+    var label = ht.ikOok ? (p.ikVooraf ? 'Leek leuk en was leuk: ' : 'Was leuk: ') + x.naam + '. Tik om "was leuk" weg te halen'
+      : (p.ikVooraf ? 'Leek leuk: ' + x.naam + '. Tik als het ook leuk was' : 'Was leuk geven aan ' + x.naam);
+    function regel(tekst, gevers) {
+      return h('p', { className: 'nv-achteraf__regel' }, h('span', { className: 'nv-achteraf__label' }, tekst + ': '),
+        gevers.map(function (v, k) {
+          return h('span', { key: k, className: v.groep === 'tiener' ? 'nv-gever nv-gever--tiener' : 'nv-gever' }, h('span', { 'aria-hidden': true }, O.hartVorm(v.groep)), ' ' + v.naam + (k < gevers.length - 1 ? ', ' : ''));
+        }));
+    }
     return h('div', { className: 'nv-gezin nv-achteraf' },
-      h('button', { type: 'button', className: 'nv-hart nv-hart--tekst' + (vorm === '★' ? ' nv-hart--tiener' : ''), 'aria-pressed': ht.ikOok, disabled: !g.mijnId,
-        'aria-label': (ht.ikOok ? 'Toch niet: weghalen bij ' : 'Viel goed: ') + x.naam, onClick: function () { hart.wissel(x, 'achteraf'); } },
-        h('span', { className: 'nv-hart__icoon', 'aria-hidden': true }, ht.ikOok ? vorm : leeg), h('span', { className: 'nv-hart__label' }, 'Viel goed')),
-      ht.gevers.length ? h('ul', { className: 'nv-gevers', 'aria-label': 'Viel goed bij ' + O.hartjesTekst(ht.namen) }, ht.gevers.map(function (v, k) {
-        return h('li', { key: k, className: v.groep === 'tiener' ? 'nv-gever nv-gever--tiener' : 'nv-gever' }, h('span', { 'aria-hidden': true }, O.hartVorm(v.groep)), ' ' + v.naam);
-      })) : null,
-      p.vooraf.length ? h('p', { className: 'nv-achteraf__vooraf' }, 'Vooraf zin in: ', p.vooraf.map(function (v) { return O.hartVorm(v.groep) + ' ' + v.naam; }).join(', ')) : null);
+      h('button', { type: 'button', className: 'nv-hart' + (vorm === '★' ? ' nv-hart--tiener' : '') + kleur, 'aria-pressed': ht.ikOok, disabled: !g.mijnId,
+        'aria-label': label, onClick: function () { hart.wissel(x, 'achteraf'); } },
+        h('span', { className: 'nv-hart__icoon', 'aria-hidden': true }, ht.ikOok || p.ikVooraf ? vorm : leeg)),
+      ht.gevers.length || p.vooraf.length ? h('div', { className: 'nv-achteraf__regels' },
+        ht.gevers.length ? regel('Was leuk', ht.gevers) : null,
+        p.vooraf.length ? regel('Leek leuk', p.vooraf) : null) : null);
   }
   // (i): cirkel met een i, in de lijnstijl van G.Icon (die heeft geen info-icoon).
   function InfoIcoon() {
@@ -1182,7 +1192,7 @@
           h('span', { className: 'nv-label' }, p.herinnering ? 'Wat we deden' : 'Wat we willen doen'),
           h('h2', { className: 'nv-kop' }, kop.title || (p.herinnering ? 'Wat we deden' : 'Op het verlanglijstje')),
           kop.intro && h('p', { className: 'nv-tekst nv-muted' }, kop.intro),
-          p.herinnering && g.werkt && lijst.length ? h('p', { className: 'nv-tekst nv-muted' }, 'Wat viel echt goed? Tik op ‘Viel goed’; dat telt mee in ons smaakprofiel op het startscherm.') : null),
+          p.herinnering && g.werkt && lijst.length ? h('p', { className: 'nv-tekst nv-muted' }, 'Wat was leuk? Geef je hartje of ster: vanaf de dag zelf betekent dat ‘was leuk’.') : null),
         g.werkt && lijst.length ? h('div', { className: 'nv-doenfilter', role: 'group', 'aria-label': 'Toon' }, filters.map(function (f) {
           return h('button', { key: f[0], type: 'button', className: 'nv-tab', 'aria-pressed': filter === f[0], onClick: function () { setFilter(f[0]); } }, f[1]);
         })) : null,
@@ -1321,7 +1331,7 @@
       return function () { window.removeEventListener('scroll', bijScroll); };
     }, []);
 
-    // "Viel goed" na de reis: afgerond (herinnering) of na thuiskomst (O.naReis); onderweg vanaf de dag of de plek.
+    // Hartje = "was leuk" na de reis: afgerond (herinnering) of na thuiskomst (O.naReis); onderweg vanaf de dag of de plek.
     var hart = useHartjes(data.gezin, { herinnering: r.stemming === 'herinnering' || O.naReis(r, vandaag), vandaag: onderweg ? vandaag : null,
       aankomst: O.aankomstPlekken(data.verblijven), smaak: data.smaak });
     var p = { reis: r, herinnering: r.stemming === 'herinnering', stops: stops, dagen: data.dagen, route: data.route,

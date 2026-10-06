@@ -351,13 +351,22 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   dag en website alleen als die er zijn (nooit "Wanneer ?"). Namen (`leden.weergavenaam`) vult de gebruiker later in;
   zonder naam toont de app "Iemand".
 - **Hartjes achteraf en smaakprofiel** (migratie `…0025`, besluit gebruiker
-  2026-10-06). `reis.hartjes.moment`: `vooraf` (zin in; standaard, ook alle
-  oude rijen) of `achteraf` (viel echt goed); sleutel lid + activiteit +
+  2026-10-06). `reis.hartjes.moment`: `vooraf` (lijkt me leuk; standaard,
+  ook alle oude rijen) of `achteraf` (was leuk); sleutel lid + activiteit +
   moment, policies ongewijzigd. **Alleen positief**: geen hartje achteraf =
-  viel niet zo goed, er is geen tegenknop. Bij wat je echt deed (geen idee)
-  staat de knop "Viel goed" in de vorm van je groep, met klein eronder wie
-  er vooraf zin in had (`Achteraf`); niet bij een optie (niet geboekt). Wanneer
-  (`O.magAchteraf`): na de reis (herinnering, of een gekozen reis na de
+  was niet zo leuk, er is geen tegenknop. **Eén knop** (besluit gebruiker
+  2026-10-06): het gewone hartje of de ster. Bij wat je echt deed (geen idee,
+  geen optie) betekent het vanaf de dag zelf "was leuk" in plaats van "lijkt
+  me leuk" (`Achteraf`), met eronder twee regels "Was leuk: …" en "Leek
+  leuk: …". **Tiener en ouder dezelfde kleuren** (knop, ★ in namenlijsten
+  en smaakprofiel): aan = rood. Eigen knop na de dag: alleen vooraf = rood,
+  alleen achteraf = groen (`--leuk-was`), allebei = goud (`--leuk-beide`).
+  De knop raakt na de dag alleen achteraf: de stem van vooraf blijft
+  bewaard. Kleur is afgeleid, niet opgeslagen; de ruwe stemmen (wie, wat,
+  moment, `aangemaakt`) blijven per rij staan voor latere analyse.
+  **Activiteiten worden nooit verwijderd** (besluit gebruiker 2026-10-06;
+  omzetten mag): verwijderen wist via de cascade ook de hartjes, en daarmee
+  de geschiedenis. Wanneer (`O.magAchteraf`): na de reis (herinnering, of een gekozen reis na de
   einddatum: `O.naReis`, ook als de stemming nog niet is omgezet)
   altijd; onderweg vanaf de datum van de activiteit, zonder (geldige) datum
   vanaf de aankomst op de plek (`O.aankomstPlekken` = vroegste inchecken).

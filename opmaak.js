@@ -112,7 +112,7 @@
     hartjes.forEach(function (x) { met[x.activiteit_id] = true; });
     return acts.filter(function (a) { return !isIdee(a) || met[a.id]; });
   }
-  // Hartjes vooraf (zin in) en achteraf (viel echt goed), besluit gebruiker 2026-10-06. Zonder moment = vooraf
+  // Hartjes vooraf (lijkt me leuk) en achteraf (was leuk), besluit gebruiker 2026-10-06. Zonder moment = vooraf
   // (rijen van vóór de kolom); een onbekend moment telt nergens mee.
   function splitsMoment(hartjes) {
     var uit = { vooraf: [], achteraf: [] };
@@ -130,7 +130,7 @@
     return !!(plek && plek <= vandaag);
   }
   // Na thuiskomst (code-controleur 2026-10-06): een gekozen reis (geboekt/betaald) geldt na de einddatum als
-  // afgerond voor "Viel goed", ook als de stemming nog niet met de hand op herinnering staat.
+  // afgerond voor "was leuk", ook als de stemming nog niet met de hand op herinnering staat.
   function naReis(r, vandaag) {
     return !!(r && typeof r === 'object' && (r.status === 'geboekt' || r.status === 'betaald') && isDatum(r.eind_datum) && isDatum(vandaag) && r.eind_datum < vandaag);
   }

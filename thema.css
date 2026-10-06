@@ -31,6 +31,11 @@
   --status-optie-soft: #f7e8c8;
   --status-open: #a3441c;
   --status-open-soft: #f5dfd2;
+  /* eigen hartje na de dag (2026-10-06): alleen "was leuk" = groen, "leek leuk" én "was leuk" = goud */
+  --leuk-was: var(--status-betaald);
+  --leuk-was-soft: var(--status-betaald-soft);
+  --leuk-beide: var(--status-optie);
+  --leuk-beide-soft: var(--status-optie-soft);
   /* maten en letters (designsysteem) */
   --space-1: 4px;
   --space-2: 8px;

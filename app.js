@@ -250,7 +250,7 @@ async function haalVergelijk(reizen) {
   // Een fout in het rekenen mag het startscherm nooit blokkeren.
   try {
     const smaak = maakSmaak(delen[3], delen[4], delen[5]);
-    // ★/♥ in de tabel = hartjes vooraf (zin in); achteraf staat in het smaakprofiel.
+    // ★/♥ in de tabel = hartjes vooraf (lijkt me leuk); achteraf staat in het smaakprofiel.
     const rijen = Opmaak.vergelijk(reizen, { budget: delen[0], stops: delen[1], route: delen[2], activiteiten: delen[3], hartjes: Opmaak.splitsMoment(delen[4]).vooraf, leden: delen[5] });
     // Past bij ons: per reis het deel van de activiteiten in de top 3 soorten per groep (Opmaak.pastBijOns).
     rijen.forEach(x => { x.past = Opmaak.pastBijOns(delen[3].filter(a => a.reis_id === x.id), smaak.profiel); });
