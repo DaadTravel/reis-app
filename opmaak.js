@@ -112,6 +112,19 @@
     hartjes.forEach(function (x) { met[x.activiteit_id] = true; });
     return acts.filter(function (a) { return !isIdee(a) || met[a.id]; });
   }
+  // Slapen (besluit gebruiker 2026-10-07): per plek met nachten of er een verblijf geboekt is (betaald telt mee) en
+  // betaald; opties en open tellen niet. Vervangt de vaste titel uit secties.slapen, die niet meeveranderde.
+  function slaapStand(stops, verblijven) {
+    var plekken = rijen(stops).filter(function (s) { return Number(s.nachten) > 0; }), vs = rijen(verblijven);
+    function met(s, st) { return vs.some(function (v) { return v.stop_id === s.id && st.indexOf(v.status) > -1; }); }
+    return { plekken: plekken.length,
+      geboekt: plekken.filter(function (s) { return met(s, ['geboekt', 'betaald']); }).length,
+      betaald: plekken.filter(function (s) { return met(s, ['betaald']); }).length };
+  }
+  function slaapStandTekst(st) {
+    if (!st || !(st.plekken > 0)) return '';
+    return st.geboekt + ' van ' + st.plekken + (st.plekken === 1 ? ' plek' : ' plekken') + ' geboekt · ' + st.betaald + ' van ' + st.plekken + ' betaald';
+  }
   // Hartjes vooraf (lijkt me leuk) en achteraf (was leuk), besluit gebruiker 2026-10-06. Zonder moment = vooraf
   // (rijen van vóór de kolom); een onbekend moment telt nergens mee.
   function splitsMoment(hartjes) {
@@ -612,7 +625,7 @@
   }
 
   window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
-    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, splitsMoment: splitsMoment, magAchteraf: magAchteraf, naReis: naReis, smaakprofiel: smaakprofiel, smaakScore: smaakScore, pastBijOns: pastBijOns, aankomstPlekken: aankomstPlekken, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
+    nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, slaapStand: slaapStand, slaapStandTekst: slaapStandTekst, splitsMoment: splitsMoment, magAchteraf: magAchteraf, naReis: naReis, smaakprofiel: smaakprofiel, smaakScore: smaakScore, pastBijOns: pastBijOns, aankomstPlekken: aankomstPlekken, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
     openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
     licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink, infoVan: infoVan,

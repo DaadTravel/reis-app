@@ -348,6 +348,16 @@
   test('vergelijk: per nacht ook bij onbekende datums', 381, function () {
     return O.vergelijk([Object.assign({}, reizenV[0], { start_datum: null, eind_datum: null })], dV)[0].perNacht;
   });
+  // Slapen (besluit gebruiker 2026-10-07): per plek met nachten of er een verblijf geboekt (of betaald) is, en betaald.
+  var stopsS = [{ id: 's1', nachten: 6 }, { id: 's2', nachten: 3 }, { id: 's3', nachten: 1 }, { id: 's4', nachten: 0 }, { id: 's5', nachten: null }];
+  var verbS = [{ stop_id: 's1', status: 'optie' }, { stop_id: 's1', status: 'open' }, { stop_id: 's2', status: 'geboekt' },
+    { stop_id: 's3', status: 'betaald' }, { stop_id: 's3', status: 'optie' }, { stop_id: 's4', status: 'betaald' }, { stop_id: 'weg', status: 'betaald' }];
+  test('slaapStand: plekken met nachten, geboekt telt betaald mee, opties niet', { plekken: 3, geboekt: 2, betaald: 1 }, function () { return O.slaapStand(stopsS, verbS); });
+  test('slaapStand: niets geboekt', { plekken: 3, geboekt: 0, betaald: 0 }, function () { return O.slaapStand(stopsS, [{ stop_id: 's1', status: 'optie' }]); });
+  test('slaapStand: rare data → nullen, geen fout', { plekken: 0, geboekt: 0, betaald: 0 }, function () { return O.slaapStand(null, 'x'); });
+  test('slaapStandTekst: zoals de gebruiker het wil', '2 van 3 plekken geboekt · 1 van 3 betaald', function () { return O.slaapStandTekst({ plekken: 3, geboekt: 2, betaald: 1 }); });
+  test('slaapStandTekst: één plek', '1 van 1 plek geboekt · 1 van 1 betaald', function () { return O.slaapStandTekst({ plekken: 1, geboekt: 1, betaald: 1 }); });
+  test('slaapStandTekst: geen plekken → leeg', '', function () { return O.slaapStandTekst({ plekken: 0, geboekt: 0, betaald: 0 }); });
   test('isIdee: voorstel', true, function () { return O.isIdee({ status: 'voorstel' }); });
   test('isIdee: geboekt of onbekend is geen idee', [false, false], function () { return [O.isIdee({ status: 'geboekt' }), O.isIdee({ status: null })]; });
   test('hartVorm: tiener', '★', function () { return O.hartVorm('tiener'); });

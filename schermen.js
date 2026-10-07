@@ -1006,12 +1006,14 @@
   function Slapen(p) {
     var rij = React.useRef(null), r = p.reis, kop = (r.secties && r.secties.slapen) || {};
     function schuif(n) { var el = rij.current; if (el) el.scrollBy({ left: n * el.clientWidth * 0.8, behavior: 'smooth' }); }
-    var heeft = p.verblijven.length > 0;
+    var heeft = p.verblijven.length > 0, stand = O.slaapStandTekst(O.slaapStand(p.stops, p.verblijven));
     return h('section', { className: 'nv-blok nv-blok--zand', id: 'slapen' },
       h('div', { className: 'nv-wrap' },
         h('div', { className: 'nv-kopblok' },
-          h('span', { className: 'nv-label' }, 'Accommodatie'),
-          h('h2', { className: 'nv-kop' }, kop.title || 'Waar we slapen'),
+          h('span', { className: 'nv-label' }, 'Slapen'),
+          // Vaste kop met de stand per plek (besluit gebruiker 2026-10-07); de oude titel in secties.slapen veranderde niet mee.
+          h('h2', { className: 'nv-kop' }, 'Accommodatie'),
+          stand ? h('p', { className: 'nv-tekst nv-slaapstand' }, stand) : null,
           kop.intro && h('p', { className: 'nv-tekst nv-muted' }, kop.intro)),
         heeft ? null : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen verblijven gekozen of bekeken.' }),
         heeft ? h('div', { className: 'nv-pijlen' },
@@ -1019,7 +1021,8 @@
           h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Volgende', onClick: function () { schuif(1); } }, '›')) : null,
         heeft ? h('div', { className: 'nv-rij', ref: rij, tabIndex: 0, 'aria-label': 'Verblijven, veeg voor meer' }, p.verblijven.map(function (v) {
           var s = stopOpId(p.stops, v.stop_id);
-          return h(G.StayCard, A(p.foto(v.foto_id), { key: v.id, name: v.naam, place: kortNaam(v.plaats || (s && s.naam) || '?'),
+          // Geen foto van het verblijf: de foto van de plek (besluit gebruiker 2026-10-07), geen leeg gestreept vlak.
+          return h(G.StayCard, A(p.foto(v.foto_id || (s && s.foto_id)), { key: v.id, name: v.naam, place: kortNaam(v.plaats || (s && s.naam) || '?'),
             nights: [nachtenTekst(v.nachten), v.geboekt_via && 'via ' + v.geboekt_via].filter(Boolean).join(' · '),
             price: v.prijs != null ? Number(v.prijs) : '€ ?',
             breakfast: v.ontbijt == null ? undefined : v.ontbijt, pool: v.zwembad == null ? undefined : v.zwembad,

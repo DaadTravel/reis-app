@@ -387,6 +387,14 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   zijn voor elk lid al leesbaar, alleen de score wordt gebruikt). Tieners zien
   het profiel nergens; het startscherm haalt het (samen met de tabel, één
   ophaalronde in `haalVergelijk`) alleen voor ouders op.
+- **Slapen: kop en foto** (besluit gebruiker 2026-10-07). Vaste kop
+  "Accommodatie" met eronder de stand per plek met nachten
+  (`O.slaapStand`/`O.slaapStandTekst`: "x van y plekken geboekt · x van y
+  betaald"; betaald telt mee als geboekt, optie en open niet). De titel in
+  `secties.slapen.title` wordt niet meer gebruikt (veranderde niet mee met
+  boekingen); `secties.slapen.intro` nog wel. Heeft een verblijf geen foto
+  (van kleine hotels is er zelden een vrije foto), dan toont de kaart de
+  foto van de plek, nooit het lege gestreepte vlak.
 - **Vervoersopties** (migratie `…0017`, besluit gebruiker 2026-10-04): zolang
   het vervoer van een rit niet gekozen is (`leg_vervoer` leeg), toont de app
   de opties uit `route_punten.leg_opties` (lijst van `{vervoer, label,
