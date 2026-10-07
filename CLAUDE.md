@@ -395,6 +395,13 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   boekingen); `secties.slapen.intro` nog wel. Heeft een verblijf geen foto
   (van kleine hotels is er zelden een vrije foto), dan toont de kaart de
   foto van de plek, nooit het lege gestreepte vlak.
+- **Periode bij een plek zoals bij een hotel** (besluit gebruiker
+  2026-10-07): in het plek-paneel "wo 14 – di 20 juli · 6 nachten" =
+  aankomst t/m vertrekdag (de dag na `dagen.datum_tot`) en het aantal
+  nachten, per bezoek (`O.plekPeriode`); zo zie je meteen wat je boekt.
+  Bij één bezoek met datum geen aparte nachten-chip (staat al in de
+  periode); bij meer bezoeken "2 bezoeken" en de chip "3 + 1 nachten".
+  `dagen.wanneer_label` is leeggemaakt en wordt niet gebruikt.
 - **Vervoersopties** (migratie `…0017`, besluit gebruiker 2026-10-04): zolang
   het vervoer van een rit niet gekozen is (`leg_vervoer` leeg), toont de app
   de opties uit `route_punten.leg_opties` (lijst van `{vervoer, label,

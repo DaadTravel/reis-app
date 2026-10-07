@@ -84,7 +84,8 @@
     return !!t && !!t.replace(/~?\s*\d+([.,]\d+)?\s*(km|uur|min|u\d*)(?![\w:])|vanaf\s+\S+|daarna|[()·,~]/gi, '').trim();
   }
   function wanneerTekst(d, s) {
-    if (d && d.datum_van) return O.dagLabel(d.datum_van, d.datum_tot);
+    // Bij een plek zoals bij een hotel: aankomst t/m vertrekdag en nachten (O.plekPeriode, besluit gebruiker 2026-10-07).
+    if (d && d.datum_van) return d.stop_id ? O.plekPeriode(d.datum_van, d.datum_tot) : O.dagLabel(d.datum_van, d.datum_tot);
     // wanneer_label niet: dat is nu overal het aantal nachten, en dat staat al als chip.
     return (s && s.nachten_label) || 'Datum ?';
   }
@@ -895,16 +896,17 @@
           h('div', null,
             h('h3', { className: 'nv-plek__naam' }, kortNaam(s.naam)),
             h('span', { className: 'nv-plek__wanneer' }, meer ? bezoeken.length + ' bezoeken' : wanneerTekst(d, s)),
-            h('ul', { className: 'nv-chips' },
+            meer || !(d && d.datum_van) || feiten.length ? h('ul', { className: 'nv-chips' },
               // Meer bezoeken: de nachten van alle bezoeken samen (onbekend bij één ervan = "?").
-              h('li', null, nachtenPlek(p.route, s)),
-              feiten.map(function (x, k) { return h('li', { key: k }, x[0] + ': ' + x[1]); })),
+              // Eén bezoek met datum: de nachten staan al in de periode (O.plekPeriode). Meer bezoeken: alle samen.
+              meer || !(d && d.datum_van) ? h('li', null, nachtenPlek(p.route, s)) : null,
+              feiten.map(function (x, k) { return h('li', { key: k }, x[0] + ': ' + x[1]); })) : null,
             s.lede && h('p', { className: 'nv-tekst' }, s.lede),
             meer ? h('ol', { className: 'nv-bezoeken' }, bezoeken.map(function (v, k) {
               // Wat al in het algemene tipskader staat niet nog eens per bezoek.
               var dv = bezoekDagen[k], eigen = dv ? tipsVan({}, [dv]).filter(function (t) { return tips.indexOf(t) < 0; }) : [];
               return h('li', { key: v.id },
-                h('span', { className: 'nv-bezoeken__kop' }, (k + 1) + 'e bezoek · ' + wanneerTekst(dv) + ' · ' + nachtenTekst(v.nachten)),
+                h('span', { className: 'nv-bezoeken__kop' }, (k + 1) + 'e bezoek · ' + (dv && dv.datum_van ? wanneerTekst(dv) : 'Datum ? · ' + nachtenTekst(v.nachten))),
                 dv && dv.beleving && dv.beleving !== s.lede ? h('p', { className: 'nv-tekst nv-muted' }, dv.beleving) : null,
                 eigen.length ? h(G.TipNote, { title: 'Tips ' + (k + 1) + 'e bezoek', items: eigen }) : null);
             })) :

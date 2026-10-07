@@ -546,6 +546,15 @@
   }
   // Verblijf: "wo 16 – za 19 jan" (incheck- t/m uitcheckdag); onbekend → "".
   function verblijfPeriode(v) { return v.inchecken && v.uitchecken ? dagLabel(v.inchecken, v.uitchecken) : ''; }
+  // Periode bij een plek zoals bij een hotel (besluit gebruiker 2026-10-07): aankomst t/m vertrekdag (de dag na de laatste
+  // dag daar, tot) en het aantal nachten. Zonder tot: één nacht. Tot vóór van: alleen de dag; geen geldige van: leeg.
+  function plekPeriode(van, tot) {
+    if (!isDatum(van)) return '';
+    var laatste = isDatum(tot) ? tot : van;
+    if (laatste < van) return dagLabel(van);
+    var vertrek = plusDagen(laatste, 1), n = dagenTussen(van, vertrek);
+    return dagLabel(van, vertrek) + ' · ' + n + (n === 1 ? ' nacht' : ' nachten');
+  }
   // Telefoonnummer → "tel:"-link zonder spaties en zonder "(0)" na de landcode; geen cijfers → undefined (geen link).
   function telLink(nr) {
     var n = String(nr || '').replace(/\(0\)/g, '').replace(/[^\d+]/g, '');
@@ -624,7 +633,7 @@
       licentie: lic || undefined, licentieHref: licentieUrl(lic) };
   }
 
-  window.Opmaak = { dagLabel: dagLabel, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
+  window.Opmaak = { dagLabel: dagLabel, plekPeriode: plekPeriode, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, slaapStand: slaapStand, slaapStandTekst: slaapStandTekst, splitsMoment: splitsMoment, magAchteraf: magAchteraf, naReis: naReis, smaakprofiel: smaakprofiel, smaakScore: smaakScore, pastBijOns: pastBijOns, aankomstPlekken: aankomstPlekken, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
     openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,

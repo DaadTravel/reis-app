@@ -47,6 +47,12 @@
   test('dagLabel: over de maandgrens', 'do 31 jan – za 2 feb', function () { return O.dagLabel('2030-01-31', '2030-02-02'); });
   test('dagLabel: over de jaargrens', 'di 31 dec – do 2 jan', function () { return O.dagLabel('2030-12-31', '2031-01-02'); });
   test('dagLabel: juni voluit', 'ma 10 juni', function () { return O.dagLabel('2030-06-10'); });
+  // Periode bij een plek zoals bij een hotel (besluit gebruiker 2026-10-07): aankomst t/m vertrekdag (de dag na de
+  // laatste dag daar) en het aantal nachten, per bezoek uit de dag-rij (datum_van/datum_tot).
+  test('plekPeriode: meerdere dagen', 'wo 14 – di 20 juli · 6 nachten', function () { return O.plekPeriode('2027-07-14', '2027-07-19'); });
+  test('plekPeriode: één nacht (geen tot)', 'do 5 – vr 6 aug · 1 nacht', function () { return O.plekPeriode('2027-08-05', null); });
+  test('plekPeriode: over de maandgrens', 'vr 30 juli – do 5 aug · 6 nachten', function () { return O.plekPeriode('2027-07-30', '2027-08-04'); });
+  test('plekPeriode: tot vóór van of onzin → alleen de dag', ['wo 14 juli', ''], function () { return [O.plekPeriode('2027-07-14', '2027-07-10'), O.plekPeriode('onzin', null)]; });
   test('dagLabel: juli voluit', 'ma 1 juli', function () { return O.dagLabel('2030-07-01'); });
   test('dagLabel: maart is mrt', 'vr 1 mrt', function () { return O.dagLabel('2030-03-01'); });
   test('dagLabel: schrikkeldag', 'zo 29 feb', function () { return O.dagLabel('2032-02-29'); });
