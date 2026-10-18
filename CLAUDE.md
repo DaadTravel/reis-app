@@ -71,7 +71,7 @@ supabase-wijziging, data-steward, tdd, monkey, design-check. Migraties
 Weer-mockup akkoord gebruiker (2026-10-18: weer onder de kop van Vandaag,
 gekozen uitvalsbases en regenicoon bij ≥ 50% regendagen zijn prima).
 Reisverzekering staat in `reis.verzekeringen` (gegevens alleen in de
-database, niet hier); polisnummer nog niet ingevuld. Zie
+database, niet hier); polisnummer is niet nodig (besluit gebruiker). Zie
 **Weer per plek**, **Noodnummers** en **Bewerken onderweg** hieronder.
 
 - **Weer per plek:** bij Vandaag (en waar nuttig per plek) voor die datum
@@ -146,24 +146,19 @@ ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
 
 Klein, geen appwerk; wacht op een besluit of signaal van de gebruiker.
 
-- **7 ongebruikte foto's opruimen** (akkoord gebruiker 2026-10-18;
-  act-jp-paling, jp-hakone, jp-miyajima, jp-naoshima, jp-narita, jp-osaka,
-  kr-andong): de gebruiker verwijdert ze zelf, rijen met
-  `bron/seed/fotos-opruimen-2026-10-18.sql` in de SQL Editor, bestanden
-  in Storage. Daarna controleren: 0 fotorijen zonder bestand. (jp-arashiyama,
-  jp-shibuya, kr-namsan en th-eten zijn wél in gebruik als reisfoto.)
 - **Incheon:** plekfoto is niet bij het hotel (geen vrije foto beschikbaar)
   en de gebruiker vraagt nog iets na bij het hotel (details in
   `.claude/overdracht.md`).
-- **Namen per account** (`leden.weergavenaam`): gebruiker vult in; nu
-  "Iemand".
-- **Rooktest-checklist** punten 4–7 (verslag offline, kopie, volledig
-  offline, installeren) nog niet gemeld; open vraag: bij een actieve reis
-  altijd op Vandaag openen?
-- **Teksten nalezen** door de gebruiker: Japan Takayama en Narita.
-- **Spanje:** geen dagblok voor de terugreis Orléans → Purmerend.
-- **Skills `super-reiziger` en `rooktest`** gaan deels nog uit van een
-  "onderweg-planner"; bijwerken naar Reisgids + Onderweg.
+- **Rooktest op de eigen telefoon** (`tests/rooktest.md`, "Op de eigen
+  telefoon"): installeren, offline, verslag offline, uitloggen, nieuwe
+  versie — nog niet gemeld; open vraag: bij een actieve reis altijd op
+  Vandaag openen?
+
+Afgehandeld 2026-10-18: namen per account staan er (4 leden), teksten
+Takayama/Narita akkoord, Spanje heeft het dagblok terugreis al, skills
+`super-reiziger`/`rooktest` en `tests/rooktest.md` bijgewerkt, polisnummer
+niet nodig. Foto's opruimen: de gebruiker doet het zelf, wanneer het uitkomt (script
+`bron/seed/fotos-opruimen-2026-10-18.sql`), niet op de backlog.
 
 ## Structuur
 

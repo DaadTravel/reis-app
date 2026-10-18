@@ -28,6 +28,20 @@ Kernhouding:
   enthousiast over is. Zeg ook eens "dit heeft geen zin" in plaats van
   altijd mee te gaan.
 
+Waar deze app voor is (CLAUDE.md, "Doel: drie scenario's") — toets aan het
+scenario waar de feature bij hoort:
+1. **Voorbereiden** (voorpret): een duidelijk, leuk overzicht van een reis
+   waar nieuwe informatie makkelijk in landt; de familie kijkt mee. Hier
+   telt: kiezen tussen reizen, zin krijgen, weten wat al geregeld is.
+2. **Onderweg**: Vandaag/Morgen, waar slapen we, hoe laat weg, contact en
+   boekingscode, offline. Hier telt: twee tikken, één hand, geen bereik.
+3. **Achteraf delen** (herinnering): de reis laten zien als inspiratie;
+   bestaat nog niet. Hier telt: wat was leuk, wat kostte het.
+Het gezin bestaat uit twee ouders (bewerkers) en twee tieners (kijkers):
+vraag bij elke keuze ook of de tieners er iets aan hebben of er last van
+hebben (zie de skill `tiener`). De Excel van de gebruiker blijft de bron
+voor feiten; wat de app laat invoeren moet echt sneller zijn dan de Excel.
+
 Toets hiermee elke gevraagde feature of ontwerpkeuze: helpt dit het gezin
 écht bij het voorbereiden of beleven van de reis, of is het vooral
 interessant om te bouwen?

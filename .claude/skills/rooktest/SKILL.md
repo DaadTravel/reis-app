@@ -14,12 +14,29 @@ vervangt `tests/rooktest.md` niet, dit ís de uitvoering ervan: lees dat
 bestand voor de actuele kernflows en vink 'm ook daadwerkelijk af, i.p.v.
 'm alleen voor te stellen en er verder niets mee te doen.
 
+## Vooraf zeggen
+Een rooktest loopt de héle app langs, niet alleen de laatste wijziging.
+Zeg dat in één zin vóór je begint, en rapporteer daarna gescheiden:
+"jouw wijziging" en "algemene kernflows".
+
 ## Doelwit
-- De echte app-pagina's (zie de bestandenlijst in CLAUDE.md), met een
-  lokale testserver en verzonnen dummy-data — nooit met echte reis- of
-  gezinsgegevens (zie de privacyregel in CLAUDE.md).
-- Startservertje: zelfde HttpListener-patroon als bij `monkey`, poort
-  8934, in de projectroot. Sluit tabblad(en) en server na afloop weer af.
+- De echte app-code via de lokale teststub `bron/apptest/shot.html`
+  (gitignored): die vangt alle Supabase-aanroepen op en antwoordt uit de
+  lokale datakopie, dus er gaat niets naar de echte database en er is geen
+  wachtwoord nodig. Nooit schrijf-flows testen tegen de live-app.
+- Testserver: HttpListener met `Cache-Control: no-store`, poort **8935**,
+  projectroot (script `server8935.ps1`, zie `.claude/overdracht.md`). Sluit
+  tabblad(en) en server na afloop.
+- Handige parameters (alleen lokaal): `?als=test-ouder` / `test-ouder2`
+  (bewerker) of `test-tiener` / `test-tiener2` (kijker), `&reis=<slug>`,
+  `&vandaag=JJJJ-MM-DD` (tijdreis, bijv. `reis=europa&vandaag=2026-07-18`
+  voor Vandaag), `&nepweer=1` (verzonnen weersverwachting), `&noodfout`,
+  `&geenverzekering`, `&geenhartjes`, `&fotofout`, `&sw=1` (stub in de
+  service worker, test de echte cachelogica). Telefoonformaat:
+  `bron/apptest/telefoon-shot.html` (390×844 en 844×390) in headless Chrome.
+- Wat alleen op een echte telefoon kan (installeren, vliegtuigmodus,
+  nieuwe versie na deploy): niet zelf afvinken, maar als lijstje aan de
+  gebruiker geven.
 
 ## Uitvoering
 Lees eerst `tests/rooktest.md` voor de op dat moment geldende kernflows en
@@ -31,9 +48,12 @@ Loop daarna elke regel af:
    bevestigt dat een mens er ook doorheen komt, dus klik/typ zoals een
    gezinslid dat zou doen). Herlaad daarna de pagina en controleer dat het
    resultaat er nog staat.
-2. **Delen binnen het gezin**: controleer met twee testaccounts dat een
-   gedeelde reis bij het tweede account zichtbaar is, en dat een níet
-   gedeelde reis dat juist niet is.
+2. **Rollen binnen het gezin**: er is geen delen per reis — elk lid ziet
+   alle reizen. Controleer als ouder (bewerker) én als tiener (kijker): de
+   tiener ziet geen Wijzig-knoppen, geen reisverslag-schrijfvak, geen
+   vergelijkingstabel of smaakprofiel en in een info-venster alleen foto
+   en tekst; hartjes geven kan iedereen. Beveiliging tegen niet-leden
+   test je in de database (DO-blok, zie `supabase-wijziging`), niet hier.
 3. **Console-errors**: na elke flow `read_console_messages` met
    `onlyErrors:true` — pas nadat de pagina al een keer vers geladen is in
    deze sessie, anders mist de eerste laadfout.

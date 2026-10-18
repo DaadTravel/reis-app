@@ -74,13 +74,48 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
 - [ ] **Uitnodiging** — (alleen bij een nieuw account) de link uit de
       mail opent "Wachtwoord instellen"; daarna ingelogd.
 
+- [ ] **Hartjes** — bij een idee je eigen ♥ (ouder) of ★ (tiener) aan en
+      uit; de namen van de gevers eronder; Doen filtert Alles / ★ / ♥. Na de
+      dag (of bij een afgeronde reis) betekent hetzelfde hartje "was leuk"
+      (groen; beide = goud). (i)-knop opent het info-venster; × en Esc sluiten.
+- [ ] **Vergelijken en smaak** (alleen ouder) — onderaan het startscherm
+      "Onze smaak" en de vergelijkingstabel, ingeklapt; een tiener ziet ze niet.
+- [ ] **Wijzigen vóór de reis** (ouder, reis die nog komt) — "Wijzig" bij
+      een rit of geboekt verblijf toont alleen adres, telefoon, e-mail,
+      boekingscode en notitie, met de uitleg dat tijden via de Excel gaan.
+      Fout e-mailadres geeft een melding; na opslaan staat het er direct.
+- [ ] **Noodnummers** — onderaan een reis die nog komt: per land de
+      nummers (tik = bellen), de ambassade, altijd Buitenlandse Zaken 24/7
+      en de reisverzekering. Bij meer landen de plekken erbij. Niet bij een
+      afgeronde reis.
+- [ ] **Weer** — in het plek-paneel van een komende reis "Weer half juli:
+      meestal ± …" met bron; binnen 15 dagen per dag de verwachting (lokaal:
+      `&vandaag=…&nepweer=1`).
+
+## Onderweg (actieve reis)
+
+Lokaal met de tijdreis `?reis=europa&vandaag=2026-07-18` (als ouder en als tiener).
+
+- [ ] **Nu onderweg** — op het startscherm de kaart "Nu onderweg" bovenaan;
+      tik = naar Vandaag. "Vandaag" staat vooraan in de balk.
+- [ ] **Vandaag** — waar we zijn (dag x van y), het weer, route vandaag met
+      tijden en betaalstatus, slapen vannacht met adres/contact, gepland of
+      vrije dag (top 3 ideeën), Morgen (met weer), reisverslag.
+- [ ] **Nog open van gisteren** (ouder, vanaf dag 2) — onbetaalde dingen van
+      gisteren met Wijzig; verdwijnt als alles af is.
+- [ ] **Wijzigen onderweg** (ouder) — alle velden (tijden, betaalstatus
+      erbij); vertrektijd wijzigen schuift de aankomst mee; zonder bereik
+      "staat op deze telefoon", met bereik verstuurd. "+ Activiteit toevoegen".
+- [ ] **Reisverslag** — typen, pagina herladen: tekst staat er nog;
+      Kopieer met naam; onderdeel Verslag → Download verslag (.txt).
+
 ## Beveiliging
 
 - [ ] Niet ingelogd: `?reis=<slug>` toont het inlogscherm, geen data.
 - [ ] Ingelogd als lid: alle reizen zichtbaar.
 - [ ] Ingelogd, maar geen lid (`reis.leden`): geen enkele reis zichtbaar.
 
-## Onderweg (PWA)
+## Op de eigen telefoon (PWA, alleen de gebruiker)
 
 - [ ] **Installeren** — "Toevoegen aan beginscherm" geeft het icoon en
       de naam "Reizen"; de app opent zonder adresbalk.
@@ -88,6 +123,8 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       aan en de app opnieuw openen: dezelfde reis is leesbaar, met foto's,
       en je blijft ingelogd. Een reis die nog nooit geopend was geeft een
       duidelijke melding "Geen verbinding".
+- [ ] **Verslag offline** — tijdens een actieve reis in vliegtuigmodus het
+      verslag typen: "Bewaard op deze telefoon"; met bereik gaat het mee.
 - [ ] **Uitloggen wist offline data** — na uitloggen (offline) is geen
       reis meer te openen.
 - [ ] **Nieuwe versie** — na een deploy (CACHE opgehoogd) laadt de app
