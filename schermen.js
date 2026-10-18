@@ -299,7 +299,7 @@
   function NuOnderweg(p) {
     var a = p.actief, r = a.reis;
     var dag = a.dagNr === 0 ? 'Morgen vertrekken we' : a.dagNr === a.dagen ? 'Laatste dag' : 'Dag ' + a.dagNr + ' van ' + a.dagen;
-    return h('a', { className: 'nv-nu', href: reisUrl(r.slug) + location.search.replace(/^\?/, '&').replace(/&reis=[^&]*/, '') + '#vandaag' },
+    return h('a', { className: 'nv-nu', href: O.vandaagAdres(r.slug, location.search) },
       h('span', { className: 'nv-label' }, a.dagNr === 0 ? 'Bijna op reis' : 'Nu onderweg'),
       h('span', { className: 'nv-nu__titel' }, r.titel),
       h('span', { className: 'nv-nu__dag' }, dag, h('span', { className: 'nv-nu__pijl', 'aria-hidden': true }, ' →')));
@@ -1472,8 +1472,11 @@
       }
       window.addEventListener('scroll', bijScroll, { passive: true });
       bijScroll();
-      // Vanaf de kaart "Nu onderweg": meteen naar Vandaag.
+      // Vanaf de kaart "Nu onderweg" (of het openen onderweg): meteen naar Vandaag.
       if (onderweg && location.hash === '#vandaag') setTimeout(function () { naar('vandaag'); }, 0);
+      // Offline: de hele reis met foto's alvast op de telefoon (ook hier, want onderweg sla je het startscherm over,
+      // en het doorsturen breekt het voorladen daar af). Hooguit één keer per dag (voorlaadReis).
+      if (onderweg) voorlaadReis(r.slug);
       return function () { window.removeEventListener('scroll', bijScroll); };
     }, []);
 
@@ -1509,6 +1512,12 @@
   var FRAGMENT = verwerkAuthFragment();
   var LINK_KAPOT = 'De link werkt niet (meer). Vraag een nieuwe uitnodiging aan.';
 
+  // Vlag "deze keer al geopend": gezet bij elk geslaagd laden (ook als je via een link meteen op een reis opent).
+  // Lukt bewaren niet (privévenster, geblokkeerd), dan niet doorsturen: anders kom je nooit meer op het startscherm.
+  var NAAR_VANDAAG = 'reis-naar-vandaag';
+  function leesSessie(k) { try { return sessionStorage.getItem(k) === '1'; } catch (e) { return true; } }
+  function zetSessie(k) { try { sessionStorage.setItem(k, '1'); return sessionStorage.getItem(k) === '1'; } catch (e) { return false; } }
+
   function App() {
     var s = React.useState(function () {
       if (FRAGMENT === 'invite' || FRAGMENT === 'recovery') return { scherm: 'wachtwoord' };
@@ -1529,6 +1538,10 @@
         if (slug && res === null) return zet({ scherm: 'fout', tekst: 'Deze reis bestaat niet of is niet zichtbaar voor dit account.' });
         if (res._error && res.status === 401) { clearAuthSession(); return zet({ scherm: 'inloggen', melding: 'Je sessie is verlopen. Log opnieuw in.' }); }
         if (isFout(res)) return zet({ scherm: 'fout', tekst: res.status === 0 ? 'Geen verbinding. Controleer je internet en probeer het opnieuw.' : 'Laden mislukt: ' + res.message });
+        // Onderweg meteen op Vandaag (besluit gebruiker 2026-10-18): één keer per keer openen (sessionStorage, per
+        // tabblad of keer starten van de app), zodat ← naar alle reizen daarna gewoon op het startscherm blijft.
+        var alGeopend = leesSessie(NAAR_VANDAAG), bewaard = zetSessie(NAAR_VANDAAG);
+        if (!slug && bewaard && O.openOpVandaag(res.actief, alGeopend)) return location.replace(O.vandaagAdres(res.actief.reis.slug, location.search));
         zet({ scherm: slug ? 'reis' : 'start', data: res });
         verstuurAlles(); // wat zonder bereik geschreven of gewijzigd is, alsnog versturen
       });

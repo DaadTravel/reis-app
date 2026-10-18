@@ -279,6 +279,16 @@
     var r = kandidaten[0];
     return r ? { reis: r, dagNr: dagenTussen(r.start_datum, vandaag) + 1, dagen: dagenTussen(r.start_datum, r.eind_datum) + 1 } : null;
   }
+  // Onderweg meteen op Vandaag (besluit gebruiker 2026-10-18): bij het openen van de app tijdens een actieve reis,
+  // één keer per keer openen (alGedaan), zodat ← naar alle reizen gewoon op het startscherm blijft.
+  function openOpVandaag(actief, alGedaan) {
+    return !!(actief && actief.reis && actief.reis.slug) && !alGedaan;
+  }
+  // Adres van Vandaag van een reis; andere parameters (bijv. de tijdreis ?vandaag=) blijven, een oude reis= niet.
+  function vandaagAdres(slug, zoek) {
+    var rest = String(zoek || '').replace(/^\?/, '').split('&').filter(function (x) { return x && !/^reis(=|$)/.test(x); });
+    return '?' + ['reis=' + encodeURIComponent(slug)].concat(rest).join('&') + '#vandaag';
+  }
   // Wat er op een dag gebeurt. routes: ritten die die dag vertrekken, plus een nachtvlucht van gisteren die vandaag
   // aankomt (aankomst: true). Vertrek zonder tijd: een autorit na de eerste rit vertrekt "~09:00" (gewoonte van het
   // gezin, besluit gebruiker 2026-10-04); anders geen tijd. slapen: het geboekte (of onbekende) verblijf van die nacht.
@@ -776,7 +786,7 @@
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, slaapStand: slaapStand, slaapStandTekst: slaapStandTekst, splitsMoment: splitsMoment, magAchteraf: magAchteraf, naReis: naReis, smaakprofiel: smaakprofiel, smaakScore: smaakScore, pastBijOns: pastBijOns, aankomstPlekken: aankomstPlekken, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
     openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, bewerkFase: bewerkFase, wijzigVelden: wijzigVelden, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
-    noodnummers: noodnummers, weerOpslagLees: weerOpslagLees, weerIcoonSoort: weerIcoonSoort, klimaatPeriode: klimaatPeriode, datumsVan: datumsVan, weerSoort: weerSoort, leesVerwachting: leesVerwachting, verwachtingMogelijk: verwachtingMogelijk, weerVoorDag: weerVoorDag, weerTekst: weerTekst, licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink, infoVan: infoVan,
+    openOpVandaag: openOpVandaag, vandaagAdres: vandaagAdres, noodnummers: noodnummers, weerOpslagLees: weerOpslagLees, weerIcoonSoort: weerIcoonSoort, klimaatPeriode: klimaatPeriode, datumsVan: datumsVan, weerSoort: weerSoort, leesVerwachting: leesVerwachting, verwachtingMogelijk: verwachtingMogelijk, weerVoorDag: weerVoorDag, weerTekst: weerTekst, licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink, infoVan: infoVan,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,
     periodeKort: periodeKort, routeKm: routeKm, reisFeiten: reisFeiten };

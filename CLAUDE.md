@@ -151,8 +151,11 @@ Klein, geen appwerk; wacht op een besluit of signaal van de gebruiker.
   `.claude/overdracht.md`).
 - **Rooktest op de eigen telefoon** (`tests/rooktest.md`, "Op de eigen
   telefoon"): installeren, offline, verslag offline, uitloggen, nieuwe
-  versie — nog niet gemeld; open vraag: bij een actieve reis altijd op
-  Vandaag openen?
+  versie — nog niet gemeld.
+- **Tegel → programma scrolt soms niet** (rooktest 2026-10-18): een tik op
+  een plektegel in het overzicht kiest de plek, maar scrolt af en toe niet
+  naar het programma (wisselend, ook in v40 al; niet opgelost, gebruiker
+  beslist).
 
 Afgehandeld 2026-10-18: namen per account staan er (4 leden), teksten
 Takayama/Narita akkoord, Spanje heeft het dagblok terugreis al, skills
@@ -301,7 +304,16 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   betaald) is **actief** van de dag vóór vertrek t/m de dag van thuiskomst
   (`O.actieveReis`). Dan staat er bovenaan het startscherm een kaart "Nu
   onderweg" (`NuOnderweg`, class `nv-nu`) en op de reispagina "Vandaag"
-  vooraan in de balk; de app opent níet vanzelf op Vandaag. **Vandaag** =
+  vooraan in de balk. **De app opent dan meteen op Vandaag** (besluit
+  gebruiker 2026-10-18, `O.openOpVandaag`/`O.vandaagAdres`, andere
+  parameters zoals `?vandaag=` gaan mee): alleen de eerste keer laden per
+  tabblad of keer starten (vlag `reis-naar-vandaag` in sessionStorage,
+  gezet bij elk geslaagd laden, ook via een link naar een reis), zodat ←
+  naar alle reizen daarna gewoon op het startscherm blijft. Kan de vlag
+  niet bewaard worden: niet doorsturen. Uitloggen zet de vlag niet terug
+  (opnieuw inloggen in hetzelfde tabblad = startscherm). Het voorladen
+  voor offline (`voorlaadReis`) start daarom ook vanaf de reispagina
+  zolang die reis actief is. **Vandaag** =
   de datum op de klok van de telefoon in de tijdzone waar je bent
   (`O.datumIn`; na een vlucht naar Japan springt de dag mee). Testen met
   `?vandaag=JJJJ-MM-DD`: alleen lokaal of voor de beheerder (`vandaagIso`),

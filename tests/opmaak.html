@@ -531,6 +531,17 @@
     return [O.valideerWijziging('verblijven', { telefoon: '+39 (0471) 836-311' }).ok, O.valideerWijziging('verblijven', { telefoon: 'bel mij' }).ok];
   });
   test('valideerWijziging: naam van een activiteit is verplicht', false, function () { return O.valideerWijziging('activiteiten', { naam: '  ' }).ok; });
+  // Onderweg meteen op Vandaag (besluit gebruiker 2026-10-18): alleen bij een actieve reis en één keer per keer openen.
+  test('openOpVandaag: actieve reis, nog niet doorgestuurd', [true, false, false, false], function () {
+    var a = { reis: { slug: 'japan' }, dagNr: 3 };
+    return [O.openOpVandaag(a, false), O.openOpVandaag(a, true), O.openOpVandaag(null, false), O.openOpVandaag({ reis: {} }, false)];
+  });
+  test('vandaagAdres: reis erbij, andere parameters blijven, oude reis eruit', ['?reis=japan#vandaag', '?reis=japan&vandaag=2027-07-20#vandaag', '?reis=ko%20rea&x=1#vandaag'], function () {
+    return [O.vandaagAdres('japan', ''), O.vandaagAdres('japan', '?vandaag=2027-07-20'), O.vandaagAdres('ko rea', '?reis=oud&x=1')];
+  });
+  test('vandaagAdres: kale "reis" eruit, "reisx" blijft, & en # in de naam veilig', ['?reis=a&reisx=1#vandaag', '?reis=a%26b%23c#vandaag'], function () {
+    return [O.vandaagAdres('a', '?reis&reisx=1'), O.vandaagAdres('a&b#c', '')];
+  });
   // Contact en boekingscodes vóór de reis (besluit gebruiker 2026-10-18): een ouder wijzigt vóór de reis alleen
   // contact (adres, telefoon, e-mail, boekingscode, notitie); tijden, datum, naam en betaalstatus blijven van de Excel.
   test('bewerkFase: actieve reis = onderweg', 'onderweg', function () {
