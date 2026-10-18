@@ -531,6 +531,97 @@
     return [O.valideerWijziging('verblijven', { telefoon: '+39 (0471) 836-311' }).ok, O.valideerWijziging('verblijven', { telefoon: 'bel mij' }).ok];
   });
   test('valideerWijziging: naam van een activiteit is verplicht', false, function () { return O.valideerWijziging('activiteiten', { naam: '  ' }).ok; });
+  // Contact en boekingscodes vóór de reis (besluit gebruiker 2026-10-18): een ouder wijzigt vóór de reis alleen
+  // contact (adres, telefoon, e-mail, boekingscode, notitie); tijden, datum, naam en betaalstatus blijven van de Excel.
+  test('bewerkFase: actieve reis = onderweg', 'onderweg', function () {
+    return O.bewerkFase({ status: 'geboekt', start_datum: '2030-07-10', eind_datum: '2030-07-30' }, '2030-07-09');
+  });
+  test('bewerkFase: gekozen of nog een idee, vóór vertrek = vooraf', ['vooraf', 'vooraf', 'vooraf'], function () {
+    return [O.bewerkFase({ status: 'geboekt', start_datum: '2030-07-10', eind_datum: '2030-07-30' }, '2030-07-08'),
+      O.bewerkFase({ status: 'voorstel', start_datum: '2030-07-10', eind_datum: '2030-07-30' }, '2030-07-12'),
+      O.bewerkFase({ status: 'voorstel', start_datum: null, eind_datum: null }, '2030-07-12')];
+  });
+  test('bewerkFase: herinnering, na thuiskomst of een idee waarvan de data voorbij zijn = niets', [null, null, null, null], function () {
+    return [O.bewerkFase({ status: 'betaald', stemming: 'herinnering', start_datum: '2030-07-10', eind_datum: '2030-07-30' }, '2030-07-01'),
+      O.bewerkFase({ status: 'betaald', start_datum: '2030-07-10', eind_datum: '2030-07-30' }, '2030-07-31'),
+      O.bewerkFase({ status: 'voorstel', start_datum: '2030-07-10', eind_datum: '2030-07-30' }, '2030-08-01'),
+      O.bewerkFase(null, '2030-07-01')];
+  });
+  test('wijzigVelden: vooraf alleen contact, onderweg alles (met e-mail)', [['adres', 'telefoon', 'email', 'boekingscode', 'notitie'], true, true, []], function () {
+    return [O.wijzigVelden('verblijven', 'vooraf'), O.wijzigVelden('route_punten', 'onderweg').indexOf('leg_email') > -1,
+      O.wijzigVelden('activiteiten', 'onderweg').indexOf('begin_tijd') > -1, O.wijzigVelden('verblijven', null)];
+  });
+  test('valideerWijziging: vooraf geen tijden of betaalstatus', [false, true], function () {
+    return [O.valideerWijziging('verblijven', { inchecktijd: '15:00' }, 'vooraf').ok, O.valideerWijziging('verblijven', { boekingscode: 'AB12' }, 'vooraf').ok];
+  });
+  // Weer per plek (besluit gebruiker 2026-10-06): verwachting (Open-Meteo) tot ± 2 weken vooruit, anders klimaat.
+  test('weerSoort: WMO-codes naar soort en tekst', [['zon', 'Zonnig'], ['halfbewolkt', 'Half bewolkt'], ['regen', 'Buien'], ['onweer', 'Onweer'], null], function () {
+    return [0, 2, 81, 95, 1234].map(function (c) { var s = O.weerSoort(c); return s ? [s.soort, s.tekst] : null; });
+  });
+  test('leesVerwachting: Open-Meteo daily → per datum, rare waarden weg', { '2030-07-01': { tmax: 28, tmin: 21, kans: 30, code: 2 }, '2030-07-02': { tmax: null, tmin: null, kans: null, code: null } }, function () {
+    return O.leesVerwachting({ daily: { time: ['2030-07-01', '2030-07-02', 'onzin'], temperature_2m_max: [27.6, 'x'], temperature_2m_min: [20.8, null],
+      precipitation_probability_max: [30, null], weather_code: [2, null] } });
+  });
+  test('leesVerwachting: kapotte invoer → leeg', [{}, {}, {}], function () { return [O.leesVerwachting(null), O.leesVerwachting({}), O.leesVerwachting({ daily: { time: 'x' } })]; });
+  test('verwachtingMogelijk: vandaag t/m 15 dagen vooruit', [true, true, false, false, false], function () {
+    return [O.verwachtingMogelijk('2030-07-01', '2030-07-01'), O.verwachtingMogelijk('2030-07-16', '2030-07-01'), O.verwachtingMogelijk('2030-07-17', '2030-07-01'),
+      O.verwachtingMogelijk('2030-06-30', '2030-07-01'), O.verwachtingMogelijk('onzin', '2030-07-01')];
+  });
+  test('weerVoorDag: verwachting als die er is, anders klimaat, anders null', ['verwachting', 'klimaat', null], function () {
+    var s = { klimaat: { tmax: 29, tmin: 22, regen: 20 } }, v = { '2030-07-01': { tmax: 28, tmin: 21, kans: 30, code: 2 } };
+    return [O.weerVoorDag(s, '2030-07-01', v).bron, O.weerVoorDag(s, '2030-07-02', v).bron, O.weerVoorDag({}, '2030-07-02', v)];
+  });
+  test('weerTekst: verwachting en klimaat', ['28° / 21° · 30% kans op regen', 'meestal ± 29° / 22° · regen op 1 op de 5 dagen'], function () {
+    return [O.weerTekst({ bron: 'verwachting', tmax: 28, tmin: 21, kans: 30, code: 2 }), O.weerTekst({ bron: 'klimaat', tmax: 29, tmin: 22, regen: 20 })];
+  });
+  test('weerTekst: onbekend deel weg, alles onbekend → leeg', ['28°', '', 'meestal ± 29° / 22° · zelden regen'], function () {
+    return [O.weerTekst({ bron: 'verwachting', tmax: 28, tmin: null, kans: null }), O.weerTekst({ bron: 'verwachting' }), O.weerTekst({ bron: 'klimaat', tmax: 29, tmin: 22, regen: 4 })];
+  });
+  test('weerOpslagLees: kapotte items weg, rare waarden null, toekomstig tijdstip telt niet', ['a'], function () {
+    var nu = Date.parse('2030-07-01T12:00:00Z');
+    var w = O.weerOpslagLees(JSON.stringify({ a: { op: '2030-07-01T10:00:00Z', dagen: { '2030-07-02': { tmax: 'heet', tmin: 20, kans: {}, code: 2 }, onzin: {} } },
+      b: null, c: { op: 3, dagen: {} }, d: { op: '2031-01-01T00:00:00Z', dagen: {} }, e: { op: '2030-07-01T10:00:00Z', dagen: 'x' } }), nu);
+    return Object.keys(w);
+  });
+  test('weerOpslagLees: waarden per dag schoon', { '2030-07-02': { tmax: null, tmin: 20, kans: null, code: 2 } }, function () {
+    return O.weerOpslagLees(JSON.stringify({ a: { op: '2030-07-01T10:00:00Z', dagen: { '2030-07-02': { tmax: 'heet', tmin: 20, kans: {}, code: 2 }, onzin: {} } } }), Date.parse('2030-07-01T12:00:00Z')).a.dagen;
+  });
+  test('weerOpslagLees: kapotte tekst → leeg', [{}, {}, {}], function () { return [O.weerOpslagLees('{kapot', 0), O.weerOpslagLees('[1]', 0), O.weerOpslagLees('null', 0)]; });
+  test('klimaatPeriode: half/eind maand, onzin → leeg', ['half juli – eind juli', 'begin aug', ''], function () {
+    return [O.klimaatPeriode({ van: '07-14', tot: '07-24' }), O.klimaatPeriode({ van: '08-03', tot: '08-05' }), O.klimaatPeriode({ van: '13-01', tot: '13-02' })];
+  });
+  test('weerIcoonSoort: verwachting op code, klimaat op regendagen', ['regen', 'bewolkt', 'zon', 'halfbewolkt', 'regen'], function () {
+    return [O.weerIcoonSoort({ bron: 'verwachting', code: 61 }), O.weerIcoonSoort({ bron: 'verwachting', code: 999 }), O.weerIcoonSoort({ bron: 'klimaat', regen: 10 }),
+      O.weerIcoonSoort({ bron: 'klimaat', regen: 30 }), O.weerIcoonSoort({ bron: 'klimaat', regen: 60 })];
+  });
+  test('datumsVan: alle dagen van de rijen, uniek en gesorteerd, rare rijen weg', ['2030-07-01', '2030-07-02', '2030-07-03', '2030-07-05'], function () {
+    return O.datumsVan([{ datum_van: '2030-07-05' }, { datum_van: '2030-07-01', datum_tot: '2030-07-03' }, { datum_van: '2030-07-02' }, { datum_van: 'onzin' }, null]);
+  });
+  test('noodnummers: nummer als getal telt ook; zonder cijfers geen tel-link', [['110', 'tel:110'], ['onbekend', undefined]], function () {
+    return O.noodnummers([{ naam: 'X', land: 'JP' }], [{ code: 'JP', naam: 'Japan', nummers: [{ label: 'Politie', nummer: 110 }, { label: 'Raar', nummer: 'onbekend' }] }]).landen[0].nummers.map(function (n) { return [n.nummer, n.tel]; });
+  });
+  test('valideerWijziging: e-mail max. 200 tekens (zoals de database)', [true, false], function () {
+    var a = 'a@b.nl', lang = 'x'.repeat(195) + '@b.nl';
+    return [O.valideerWijziging('verblijven', { email: a }).ok, O.valideerWijziging('verblijven', { email: 'y' + lang }).ok];
+  });
+  // Noodnummers (besluit gebruiker 2026-10-06): per land in routevolgorde, met de plekken in dat land.
+  test('noodnummers: per land in routevolgorde, met plekken', [['FR', ['Tours', 'Orléans']], ['ES', ['Llanes']]], function () {
+    var stops = [{ naam: 'Tours', land: 'FR' }, { naam: 'Llanes', land: 'ES' }, { naam: 'Orléans', land: 'FR' }];
+    var landen = [{ code: 'ES', naam: 'Spanje', nummers: [] }, { code: 'FR', naam: 'Frankrijk', nummers: [] }];
+    return O.noodnummers(stops, landen).landen.map(function (l) { return [l.code, l.plekken]; });
+  });
+  test('noodnummers: plek zonder (bekend) land apart, rare data geen fout', [['JP'], ['Ergens', 'Nergens']], function () {
+    var stops = [{ naam: 'Tokyo', land: 'JP' }, { naam: 'Ergens', land: 'XX' }, { naam: 'Nergens' }, null, 'onzin'];
+    var uit = O.noodnummers(stops, [{ code: 'JP', naam: 'Japan', nummers: 'kapot' }, null]);
+    return [uit.landen.map(function (l) { return l.code; }), uit.zonder];
+  });
+  test('noodnummers: alleen nummers met een nummer, met tel-link', [{ label: 'Politie', nummer: '110', uitleg: null, tel: 'tel:110' }], function () {
+    var uit = O.noodnummers([{ naam: 'Tokyo', land: 'JP' }], [{ code: 'JP', naam: 'Japan', nummers: [{ label: 'Politie', nummer: '110' }, { label: 'Leeg' }, 7] }]);
+    return uit.landen[0].nummers;
+  });
+  test('valideerWijziging: e-mail moet op een adres lijken', [true, false], function () {
+    return [O.valideerWijziging('activiteiten', { email: ' info@voorbeeld.nl ' }).ok, O.valideerWijziging('activiteiten', { email: 'geen mail' }).ok];
+  });
   // Wachtrij van wijzigingen: { "tabel|id|veld": {tabel, id, veld, waarde, gewijzigd} } en nieuwe rijen { "nieuw|id": {tabel, rij, gewijzigd} }.
   var wz = { 'verblijven|v1|notitie': { tabel: 'verblijven', id: 'v1', veld: 'notitie', waarde: 'Wifi: zon', gewijzigd: '2026-07-18T10:00:00Z' },
     'nieuw|n1': { tabel: 'activiteiten', id: 'n1', nieuw: true, rij: { id: 'n1', naam: 'Boottocht', datum: '2026-07-18' }, gewijzigd: '2026-07-18T11:00:00Z' } };

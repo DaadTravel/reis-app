@@ -381,3 +381,35 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-smaak__lijst li { display: flex; align-items: center; gap: var(--space-3); }
 .nv-smaak__naam { flex: 1; min-width: 0; color: var(--ink); }
 .nv-smaak__tel { font-size: 13px; color: var(--ink-muted); white-space: nowrap; }
+
+/* Noodnummers (2026-10-18): ingeklapt onderaan een reis; elk nummer een grote tikbare regel (bellen met één tik). */
+.nv-nood { margin-top: var(--space-6); }
+.nv-nood__land { margin: 0 0 var(--space-5); }
+.nv-nood__kop { margin: 0 0 var(--space-2); font-size: 17px; color: var(--ink); }
+.nv-nood__plekken { font-weight: 400; font-size: 14px; color: var(--ink-muted); }
+.nv-nood__lijst { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.nv-nood__lijst li { display: flex; flex-direction: column; gap: 2px; }
+.nv-nood__nummer { display: flex; align-items: baseline; align-content: center; flex-wrap: wrap; gap: var(--space-1) var(--space-3); min-height: 44px; padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper-raised); color: var(--ink); text-decoration: none; }
+a.nv-nood__nummer:hover { border-color: var(--lagoon); }
+a.nv-nood__nummer:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.nv-nood__nummer strong { font-size: 19px; color: var(--lagoon); font-variant-numeric: tabular-nums; }
+.nv-nood__uitleg { font-size: 14px; color: var(--ink-muted); padding-left: var(--space-3); }
+a.nv-nood__uitleg { color: var(--lagoon); font-weight: 600; }
+.nv-nood__ambassade { margin-top: var(--space-3); }
+.nv-nood__naam { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+.nv-nood__ambassade .nv-contact { margin-top: var(--space-1); }
+
+/* Weer per plek (2026-10-18): één regel met eigen icoon; klimaat = gemiddelde, met bron. */
+.nv-weer { display: flex; align-items: flex-start; gap: var(--space-2); margin: var(--space-2) 0 0; font-size: 15px; line-height: 1.45; color: var(--ink); }
+.nv-weer__icoon { flex: none; margin-top: 1px; color: var(--lagoon); }
+.nv-weer--klein { font-size: 14px; margin: 0 0 var(--space-2); }
+.nv-weer__voor { font-weight: 600; }
+.nv-weer__bron { font-size: 13px; color: var(--ink-muted); }
+p.nv-weer__bron { margin: var(--space-1) 0 0; }
+.nv-weer__bron a { color: var(--ink-muted); }
+.nv-plekweer { margin: var(--space-4) 0; }
+.nv-plekweer__dagen { list-style: none; margin: var(--space-2) 0 0; padding: 0; }
+.nv-plekweer__dagen .nv-weer { margin: 0 0 var(--space-1); }
+.nv-kopblok .nv-weer { justify-content: center; text-align: center; }
+.nv-plekweer p.nv-weer__bron + .nv-label { display: block; margin-top: var(--space-3); }

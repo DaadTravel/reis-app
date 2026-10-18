@@ -305,6 +305,77 @@
       h('span', { className: 'nv-nu__dag' }, dag, h('span', { className: 'nv-nu__pijl', 'aria-hidden': true }, ' →')));
   }
 
+  // ── Weer per plek (besluit gebruiker 2026-10-06): verwachting van Open-Meteo, anders het klimaat van de plek. ──
+  // Eigen iconen (het designsysteem heeft geen wolk of regen), lijn in de tekstkleur, zoals G.Icon.
+  var WEER_PADEN = {
+    zon: ['M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4'],
+    halfbewolkt: ['M9 4v1.5M4.2 6.2l1 1M3 11h1.5M13.8 6.2l-1 1', 'M6.5 12.5a3.5 3.5 0 1 1 6.2-2.6', 'M8 20h9a4 4 0 0 0 .4-8 5 5 0 0 0-9.6 1.2A3.4 3.4 0 0 0 8 20z'],
+    bewolkt: ['M7 19h10a4.5 4.5 0 0 0 .5-9A6 6 0 0 0 6 11.5 3.8 3.8 0 0 0 7 19z'],
+    regen: ['M7 15h10a4.5 4.5 0 0 0 .5-9A6 6 0 0 0 6 7.5 3.8 3.8 0 0 0 7 15z', 'M8 18l-1 3M12 18l-1 3M16 18l-1 3'],
+    onweer: ['M7 14h10a4.5 4.5 0 0 0 .5-9A6 6 0 0 0 6 6.5 3.8 3.8 0 0 0 7 14z', 'M12.5 14l-2 4h3l-2 4']
+  };
+  function WeerIcoon(p) {
+    var paden = WEER_PADEN[p.soort] || WEER_PADEN.bewolkt;
+    return h('svg', { className: 'nv-weer__icoon', width: p.size || 20, height: p.size || 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+      strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
+      paden.map(function (d, i) { return h('path', { key: i, d: d }); }));
+  }
+  // Verwachting voor een plek ophalen (alleen als nodig: een dag op die plek ligt binnen ± 2 weken). Opnieuw als
+  // de plek of zijn coördinaten veranderen.
+  function useVerwachting(stop, nodig) {
+    var s = React.useState(null), w = s[0], setW = s[1];
+    var sleutel = nodig && stop && stop.lat != null ? stop.id + '|' + stop.lat + '|' + stop.lon : null;
+    React.useEffect(function () {
+      setW(null);
+      if (!sleutel) return;
+      var weg = false;
+      haalVerwachting(stop).then(function (x) { if (!weg) setW(x); });
+      return function () { weg = true; };
+    }, [sleutel]);
+    return sleutel ? w : null;
+  }
+  // "bijgewerkt 14:05" (vandaag) of "van di 13 juli 22:10" als de verwachting oud is (geen bereik).
+  function weerOp(op) {
+    var t = Date.parse(op);
+    if (isNaN(t)) return '';
+    var d = new Date(t), uur = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    return Date.now() - t < 6 * 3600 * 1000 ? 'bijgewerkt ' + uur : 'verwachting van ' + O.dagLabel(O.datumIn(d)) + ' ' + uur;
+  }
+  function WeerRegel(p) {
+    var w = p.weer, t = O.weerTekst(w);
+    if (!t) return null;
+    var soort = w.bron === 'verwachting' && O.weerSoort(w.code);
+    return h('p', { className: 'nv-weer' + (p.klein ? ' nv-weer--klein' : '') }, h(WeerIcoon, { soort: O.weerIcoonSoort(w) }),
+      h('span', null, p.voor ? h('span', { className: 'nv-weer__voor' }, p.voor) : null,
+        soort ? soort.tekst + ' · ' : '', t,
+        w.bron === 'klimaat' && !p.zonderBron ? h('span', { className: 'nv-weer__bron' }, ' (gemiddelde, geen verwachting)') : null,
+        w.bron === 'verwachting' && p.op ? h('span', { className: 'nv-weer__bron' }, ' · ' + weerOp(p.op)) : null));
+  }
+  // Weer in het plek-paneel: per dag de verwachting als die er al is (alle dagen binnen bereik), en het klimaat
+  // zolang nog niet elke dag van het bezoek een verwachting heeft. Eén klimaat per plek (ook bij twee bezoeken).
+  function PlekWeer(p) {
+    var s = p.stop, datums = O.datumsVan(p.dagen);
+    var binnen = p.vandaag ? datums.filter(function (d) { return O.verwachtingMogelijk(d, p.vandaag); }) : [];
+    var v = useVerwachting(s, binnen.length > 0);
+    var perDag = v ? binnen.filter(function (d) { return v.dagen[d]; }) : [];
+    var k = O.weerVoorDag(s, null, null);
+    var klimaatOok = k && perDag.length < datums.length;
+    if (!perDag.length && !k) return null;
+    var maand = s.klimaat ? O.klimaatPeriode(s.klimaat) : '';
+    var bron = h('a', { href: 'https://open-meteo.com/', target: '_blank', rel: 'noopener noreferrer' }, 'Weerdata Open-Meteo');
+    return h('div', { className: 'nv-plekweer' },
+      perDag.length ? h(React.Fragment, null,
+        h('span', { className: 'nv-label' }, 'Weersverwachting'),
+        h('ul', { className: 'nv-plekweer__dagen' }, perDag.map(function (d) {
+          return h('li', { key: d }, h(WeerRegel, { weer: O.weerVoorDag(s, d, v.dagen), voor: O.dagLabel(d) + ' · ', klein: true }));
+        })),
+        h('p', { className: 'nv-weer__bron' }, weerOp(v.op), klimaatOok ? null : ' · ', klimaatOok ? null : bron)) : null,
+      klimaatOok ? h(React.Fragment, null,
+        h('span', { className: 'nv-label' }, perDag.length ? 'Overige dagen' : 'Weer' + (maand ? ' ' + maand : '')),
+        h(WeerRegel, { weer: k, zonderBron: true }),
+        h('p', { className: 'nv-weer__bron' }, 'Gemiddelde over ' + ((s.klimaat && s.klimaat.jaren) || 'eerdere jaren') + ' · ', bron)) : null);
+  }
+
   // Eén blok op het scherm Vandaag.
   function VandaagBlok(p) {
     return h('section', { className: 'nv-vandaag__blok', 'aria-label': p.titel },
@@ -323,23 +394,25 @@
         // Betaalstatus bij een kaartje (vlucht, ferry, bus, trein); niet bij een eigen autorit.
         x.aankomst || l.leg_vervoer === 'car' ? null : h(BetaalStatus, { status: l.leg_status }),
         h(Notitie, { tekst: l.leg_notitie }),
-        x.aankomst ? null : h(Contact, { vertrekpunt: l.leg_adres, telefoon: l.leg_telefoon, via: l.leg_geboekt_via, boekingscode: l.leg_boekingscode })));
+        x.aankomst ? null : h(Contact, { vertrekpunt: l.leg_adres, telefoon: l.leg_telefoon, email: l.leg_email, via: l.leg_geboekt_via, boekingscode: l.leg_boekingscode })));
   }
   // ── Bewerken onderweg (besluit gebruiker 2026-10-05): alleen ouders; velden per soort uit O.WIJZIGBAAR. ──
   var VELDEN = {
     route_punten: [['leg_vertrek', 'Vertrek'], ['leg_aankomst', 'Aankomst'], ['leg_adres', 'Vertrekadres of ophaalpunt'], ['leg_boekingscode', 'Boekingscode'],
-      ['leg_telefoon', 'Telefoon'], ['leg_status', 'Betaalstatus'], ['leg_notitie', 'Notitie (bijv. gate of perron)']],
-    verblijven: [['inchecktijd', 'Inchecken vanaf'], ['uitchecktijd', 'Uitchecken uiterlijk'], ['adres', 'Adres'], ['telefoon', 'Telefoon'], ['boekingscode', 'Boekingscode'],
+      ['leg_telefoon', 'Telefoon'], ['leg_email', 'E-mail'], ['leg_status', 'Betaalstatus'], ['leg_notitie', 'Notitie (bijv. gate of perron)']],
+    verblijven: [['inchecktijd', 'Inchecken vanaf'], ['uitchecktijd', 'Uitchecken uiterlijk'], ['adres', 'Adres'], ['telefoon', 'Telefoon'], ['email', 'E-mail'], ['boekingscode', 'Boekingscode'],
       ['status', 'Betaalstatus'], ['notitie', 'Notitie (bijv. wifi, deurcode)']],
-    activiteiten: [['naam', 'Wat'], ['datum', 'Datum'], ['begin_tijd', 'Begin'], ['eind_tijd', 'Eind'], ['ophaalpunt', 'Ophaalpunt'], ['telefoon', 'Telefoon'],
+    activiteiten: [['naam', 'Wat'], ['datum', 'Datum'], ['begin_tijd', 'Begin'], ['eind_tijd', 'Eind'], ['ophaalpunt', 'Ophaalpunt'], ['telefoon', 'Telefoon'], ['email', 'E-mail'],
       ['boekingscode', 'Boekingscode'], ['status', 'Betaalstatus'], ['notitie', 'Notitie']]
   };
   // Welke tijd volgt welke: [begin, eind, dagen-veld of null].
   var VOLGT = { route_punten: ['leg_vertrek', 'leg_aankomst', 'leg_aankomst_dagen'], activiteiten: ['begin_tijd', 'eind_tijd', null] };
   function veldWaarde(soort, v) { return v == null ? '' : soort === 'tijd' ? String(v).slice(0, 5) : String(v); }
   // Formulier in het blok zelf; alleen gewijzigde velden gaan mee (bij een nieuwe activiteit alles).
+  // Vóór de reis (p.fase 'vooraf', besluit gebruiker 2026-10-18) alleen de contactvelden (O.wijzigVelden).
   function WijzigForm(p) {
-    var soorten = O.WIJZIGBAAR[p.tabel], velden = VELDEN[p.tabel];
+    var fase = p.fase || 'onderweg', mag = O.wijzigVelden(p.tabel, fase);
+    var soorten = O.WIJZIGBAAR[p.tabel], velden = VELDEN[p.tabel].filter(function (f) { return mag.indexOf(f[0]) > -1; });
     // Beginstand bij het openen vastleggen: alleen wat je zelf wijzigt gaat mee, ook als de rij intussen opnieuw is
     // opgehaald (anders zou een open formulier de wijziging van de andere ouder met oude waarden overschrijven).
     // Aankomst- of eindtijd volgt de vertrek- of begintijd (O.volgTijd), tot je hem zelf aanpast. Bij een rit ook
@@ -374,7 +447,7 @@
       var gewijzigd = {};
       velden.forEach(function (x) { if (p.nieuw || w[x[0]] !== begin.current[x[0]]) gewijzigd[x[0]] = w[x[0]]; });
       if (volgt && volgt[2] && w[volgt[2]] !== begin.current[volgt[2]]) gewijzigd[volgt[2]] = w[volgt[2]];
-      var c = O.valideerWijziging(p.tabel, gewijzigd);
+      var c = O.valideerWijziging(p.tabel, gewijzigd, fase);
       if (!c.ok) return setFouten(c.fouten);
       bezig.current = true;
       // Lukt bewaren niet (uitgelogd, opslag vol), dan blijft het formulier open met je invoer.
@@ -387,6 +460,7 @@
     return h('form', { className: 'nv-wijzig', onSubmit: opslaan, noValidate: true },
       melding ? h('p', { className: 'nv-melding', role: 'alert' }, melding) : null,
       p.titel ? h('p', { className: 'nv-label' }, p.titel) : null,
+      fase === 'vooraf' ? h('p', { className: 'nv-muted' }, 'Vóór de reis wijzig je hier alleen contact en boekingscode; tijden en betaalstatus gaan via de Excel.') : null,
       velden.map(function (x) {
         var k = x[0], soort = soorten[k], id = 'w-' + p.tabel + '-' + p.rij.id + '-' + k, fout = fouten[k];
         var veld = soort === 'status'
@@ -398,8 +472,8 @@
             soort === 'notitie'
               ? h('textarea', { id: id, rows: 3, maxLength: 2000, value: w[k], onChange: function (e) { zet(k, e.target.value); }, 'aria-invalid': !!fout })
               : h('input', { id: id, value: w[k], 'aria-invalid': !!fout, onChange: function (e) { typ(k, e.target.value); },
-                type: soort === 'tijd' ? 'time' : soort === 'datum' ? 'date' : soort === 'tel' ? 'tel' : 'text',
-                inputMode: soort === 'tel' ? 'tel' : undefined, autoComplete: 'off', maxLength: soort === 'kort' ? 80 : 300 }));
+                type: soort === 'tijd' ? 'time' : soort === 'datum' ? 'date' : soort === 'tel' ? 'tel' : soort === 'email' ? 'email' : 'text',
+                inputMode: soort === 'tel' ? 'tel' : soort === 'email' ? 'email' : undefined, autoComplete: 'off', maxLength: soort === 'kort' ? 80 : soort === 'email' ? 200 : 300 }));
         var dagen = volgt && volgt[2] && k === volgt[1] && Number(w[volgt[2]]) > 0 ? ' (+' + w[volgt[2]] + ')' : '';
         return h('div', { key: k, className: 'nv-wijzig__veld' }, veld,
           dagen ? h('p', { className: 'nv-muted' }, 'Aankomst ' + w[volgt[2]] + (Number(w[volgt[2]]) === 1 ? ' dag' : ' dagen') + ' na vertrek') : null,
@@ -413,7 +487,7 @@
   // Een blok dat een ouder kan wijzigen: inhoud plus knop "Wijzig", of het formulier.
   function Wijzigbaar(p) {
     var o = React.useState(false), open = o[0], setOpen = o[1];
-    if (open) return h(WijzigForm, { tabel: p.tabel, rij: p.rij, onAnnuleer: function () { setOpen(false); },
+    if (open) return h(WijzigForm, { tabel: p.tabel, rij: p.rij, fase: p.wz.fase, onAnnuleer: function () { setOpen(false); },
       onOpslaan: function (velden) {
         var uitslag = Object.keys(velden).length ? p.wz.wijzig(p.tabel, p.rij.id, velden) : 'ok';
         if (uitslag === 'ok') setOpen(false);
@@ -585,6 +659,11 @@
       : x.plek ? (x.slapen ? 'In ' : 'Onderweg naar ') + kortNaam(x.plek) : 'Onderweg';
     var sub = [O.dagLabel(x.datum), x.slapen && x.nachtenHier > 1 ? 'nacht ' + x.nachtNr + ' van ' + x.nachtenHier : null].filter(Boolean).join(' · ');
     var v = x.slapen;
+    // Weer van vandaag (en morgen) op de plek waar we zijn; zonder verwachting het klimaat (O.weerVoorDag).
+    var hier = stopOpId(p.stops || [], x.plekId), daar = stopOpId(p.stops || [], p.plekMorgen) || hier;
+    var wv = useVerwachting(hier, true), wm = useVerwachting(daar, true);
+    var weerVandaag = hier && O.weerVoorDag(hier, x.datum, wv && wv.dagen);
+    var weerMorgen = daar && O.weerVoorDag(daar, O.plusDagen(x.datum, 1), wm && wm.dagen);
     var morgen = [];
     if (m.uitchecken) morgen.push('Uitchecken bij ' + m.uitchecken.naam + (m.uitchecken.uitchecktijd ? ', uiterlijk ' + O.tijd(m.uitchecken.uitchecktijd) : ''));
     m.routes.forEach(function (r, i) { morgen.push((r.naar ? 'Route naar ' + kortNaam(r.naar) : 'Route') + (r.vertrek ? ', vertrek ' + r.vertrek : '')); });
@@ -594,7 +673,8 @@
         h('div', { className: 'nv-kopblok' },
           h('span', { className: 'nv-label' }, x.dagNr === 0 ? 'Vandaag · de dag vóór vertrek' : 'Vandaag · dag ' + x.dagNr + ' van ' + x.dagen),
           h('h2', { className: 'nv-kop' }, titel),
-          h('p', { className: 'nv-tekst nv-muted' }, sub)),
+          h('p', { className: 'nv-tekst nv-muted' }, sub),
+          weerVandaag ? h(WeerRegel, { weer: weerVandaag, op: wv && wv.op }) : null),
         p.beheerder ? h(WijzigStand, { wz: p.wz }) : null,
         p.beheerder && x.dagNr > 1 && p.open ? h(VanGisteren, { open: p.open, vs: p.vs, gezin: p.gezin, wz: p.wz, reisId: p.reisId, plekGisteren: p.plekGisteren }) : null,
         x.routes.length ? h(VandaagBlok, { titel: 'Route vandaag', icoon: 'arrow' }, x.routes.map(function (r) { return h(RouteRegel, { key: r.punt.id + (r.aankomst ? '-a' : ''), x: r, wz: p.wz, bewerk: p.beheerder }); })) : null,
@@ -615,6 +695,7 @@
         p.beheerder ? h(NieuweActiviteit, { wz: p.wz, reisId: p.reisId, datum: x.datum, plekId: x.plekId }) : null,
         h(HartMelding, { hart: p.hart, stil: true }),
         x.laatsteDag ? null : h(VandaagBlok, { titel: 'Morgen', icoon: 'clock' },
+          weerMorgen ? h(WeerRegel, { weer: weerMorgen, voor: daar !== hier ? kortNaam(daar.naam) + ': ' : null, op: wm && wm.op, klein: true }) : null,
           morgen.length ? h('ul', { className: 'nv-vandaag__morgen' }, morgen.map(function (t, i) { return h('li', { key: i }, t); }))
             : h('p', { className: 'nv-muted' }, 'Nog niets gepland.')),
         x.dagNr > 0 && (p.beheerder || O.verslagVan(p.vs.rijen, x.datum, mijnId(), (p.gezin && p.gezin.leden) || []).anderen.length)
@@ -911,6 +992,7 @@
                 eigen.length ? h(G.TipNote, { title: 'Tips ' + (k + 1) + 'e bezoek', items: eigen }) : null);
             })) :
             d && d.beleving && d.beleving !== s.lede && h('p', { className: 'nv-tekst nv-muted' }, d.beleving),
+            p.herinnering ? null : h(PlekWeer, { key: 'weer-' + s.id, stop: s, dagen: dagen, vandaag: p.vandaag }),
             !etappes.length && notities.length ? h('div', { className: 'nv-logistiek' }, h(G.Icon, { name: 'clock', size: 18 }), h('span', null, notities.join(' · '))) : null,
             tips.length ? h(G.TipNote, { title: 'Tips voor ' + kortNaam(s.naam), items: tips }) : null,
             // Bewerken onderweg: dezelfde melding als op Vandaag (nog niet verstuurd, geweigerd).
@@ -1234,6 +1316,53 @@
         p.budget.length ? h(G.BudgetSummary, { categories: p.budget.map(O.budgetRegel), note: r.budget_notitie || undefined }) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen kosten bekend.' })));
   }
 
+  // Noodnummers (besluit gebruiker 2026-10-06): ingeklapt onderaan een reis die nog komt of loopt, per land (meer
+  // landen: met de plekken erbij), de ambassade en de reisverzekering. Voor het hele gezin; geen gezondheidsinformatie.
+  // 24/7-contactcenter van Buitenlandse Zaken (netherlandsworldwide.nl/contact, gecontroleerd 2026-10-18).
+  var BUZA = { nummer: '+31 247 247 247', label: 'Ministerie van Buitenlandse Zaken, 24/7', uitleg: 'Voor Nederlanders in nood in het buitenland', tel: 'tel:+31247247247' };
+  function Noodnummers(p) {
+    var n = p.nood || {}, o = O.noodnummers(p.stops, n.landen), meer = o.landen.length > 1;
+    function nummer(x, k) {
+      var inhoud = [h('strong', { key: 'n' }, x.nummer), h('span', { key: 'l' }, x.label)];
+      return h('li', { key: k },
+        // Zonder cijfers geen belknop (een link zonder adres lijkt aan te tikken maar doet niets).
+        x.tel ? h('a', { className: 'nv-nood__nummer', href: x.tel }, inhoud) : h('span', { className: 'nv-nood__nummer' }, inhoud),
+        x.uitleg ? h('span', { className: 'nv-nood__uitleg' }, x.uitleg) : null);
+    }
+    return h('section', { className: 'nv-wrap', id: 'nood', style: { maxWidth: '760px' } },
+      h('details', { className: 'nv-vergelijk nv-nood' },
+        h('summary', null,
+          h('span', { className: 'nv-label' }, 'Voor als het misgaat'),
+          h('span', { className: 'nv-vergelijk__titel' }, 'Noodnummers')),
+        n.fout ? h('p', { className: 'nv-melding' }, 'De noodnummers konden niet allemaal geladen worden. Bel bij nood het alarmnummer van het land, of Buitenlandse Zaken hieronder.') : null,
+        o.landen.map(function (l) {
+          var a = l.ambassade;
+          return h('section', { key: l.code, className: 'nv-nood__land', 'aria-label': 'Noodnummers ' + l.naam },
+            h('h3', { className: 'nv-nood__kop' }, l.naam, meer ? h('span', { className: 'nv-nood__plekken' }, ' · ' + l.plekken.join(', ')) : null),
+            l.nummers.length ? h('ul', { className: 'nv-nood__lijst' }, l.nummers.map(nummer)) : null,
+            a ? h('div', { className: 'nv-nood__ambassade' },
+              h('p', { className: 'nv-nood__naam' }, a.naam || 'Nederlandse ambassade'),
+              h(Contact, { adres: a.adres, telefoon: a.telefoon, link: a.link, naam: a.naam })) : null);
+        }),
+        o.zonder.length && o.landen.length ? h('p', { className: 'nv-muted' }, 'Nog geen noodnummers voor ' + o.zonder.join(', ') + '.') : null,
+        !o.landen.length && !n.fout ? h('p', { className: 'nv-muted' }, 'Nog geen noodnummers voor deze reis. Bel bij nood het alarmnummer van het land, of Buitenlandse Zaken hieronder.') : null,
+        // Altijd, ook als de landen niet geladen konden worden: Buitenlandse Zaken, 24/7 voor Nederlanders in nood.
+        h('section', { className: 'nv-nood__land', 'aria-label': 'Buitenlandse Zaken' },
+          h('h3', { className: 'nv-nood__kop' }, 'Overal'),
+          h('ul', { className: 'nv-nood__lijst' }, nummer(BUZA, 'buza'))),
+        (n.verzekeringen || []).length ? h('section', { className: 'nv-nood__land', 'aria-label': 'Reisverzekering' },
+          h('h3', { className: 'nv-nood__kop' }, 'Reisverzekering'),
+          h('ul', { className: 'nv-nood__lijst' }, n.verzekeringen.map(function (v, k) {
+            var tel = O.telLink(v.alarmnummer);
+            return h('li', { key: k },
+              tel ? h('a', { className: 'nv-nood__nummer', href: tel }, h('strong', null, v.alarmnummer), h('span', null, 'Alarmcentrale ' + v.naam))
+                : h('span', { className: 'nv-nood__nummer' }, h('span', null, v.naam)),
+              v.polisnummer ? h('span', { className: 'nv-nood__uitleg' }, 'Polisnummer ', h('strong', null, v.polisnummer)) : null,
+              O.veiligeLink(v.link) ? h('a', { className: 'nv-nood__uitleg', href: v.link, target: '_blank', rel: 'noopener noreferrer' }, 'Website') : null);
+          })))
+          : p.beheerder && !n.fout ? h('p', { className: 'nv-muted' }, 'Reisverzekering nog niet ingevuld: geef Claude de naam, het nummer van de alarmcentrale en het polisnummer.') : null));
+  }
+
   // Elke reis dezelfde onderdelen, ook als er (nog) niets in staat.
   var SECTIES = [['overzicht', 'Overzicht'], ['programma', 'Programma'], ['slapen', 'Slapen'], ['doen', 'Doen'], ['kosten', 'Kosten']];
 
@@ -1303,13 +1432,14 @@
 
   function Reispagina(props) {
     var data0 = props.data, r = data0.reis, stops = data0.stops;
-    var wz = useWijzigingen(data0);
-    var data = A(data0, { route: wz.route, verblijven: wz.verblijven, activiteiten: wz.activiteiten });
     // Onderweg: is deze reis actief (vanaf de dag vóór vertrek), dan staat Vandaag vooraan en opent Plek voor plek
     // op de plek van vandaag (besluit gebruiker 2026-10-04).
-    var gezin = data.gezin || {};
+    var gezin = data0.gezin || {};
     var vandaag = vandaagIso(!!gezin.beheerder);
     var onderweg = O.actieveReis([r], vandaag);
+    // Wijzigen in de app: alleen ouders; onderweg alles uit O.WIJZIGBAAR, vóór de reis alleen contact (O.bewerkFase).
+    var wz = A(useWijzigingen(data0), { fase: gezin.beheerder ? O.bewerkFase(r, vandaag) : null });
+    var data = A(data0, { route: wz.route, verblijven: wz.verblijven, activiteiten: wz.activiteiten });
     var pk = React.useState(function () {
       var hier = onderweg && O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, vandaag).plekId;
       return hier || (stops[0] && stops[0].id);
@@ -1352,8 +1482,8 @@
       aankomst: O.aankomstPlekken(data.verblijven), smaak: data.smaak });
     var p = { reis: r, herinnering: r.stemming === 'herinnering', stops: stops, dagen: data.dagen, route: data.route,
       verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, hart: hart, foto: maakFoto(data.fotos), kiesPlek: kiesPlek,
-      // Bewerken onderweg: alleen ouders en alleen tijdens een actieve reis (ervóór is de Excel leidend).
-      wz: wz, bewerk: !!gezin.beheerder && !!onderweg };
+      // Bewerken: alleen ouders; onderweg alles, vóór de reis alleen contact (besluit gebruiker 2026-10-18).
+      wz: wz, bewerk: !!wz.fase, vandaag: vandaag };
     return h(FotoCtx.Provider, { value: p.foto },
       h(Opening, p),
       h(Balk, { secties: secties, actief: actief }),
@@ -1361,11 +1491,15 @@
         data.fotoFout && h('div', { className: 'nv-wrap' }, h(FotoMelding, { fout: data.fotoFout })),
         onderweg ? h(Vandaag, { dag: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten,
           hartjes: hart.g.hartjes || [], smaak: data.smaak }, vandaag), hart: hart, beheerder: !!gezin.beheerder, reisId: r.id, vs: vs, gezin: gezin, wz: wz,
+          // Weer: de plek van vandaag en die van morgen (na een reisdag een andere plek).
+          stops: stops, plekMorgen: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, O.plusDagen(vandaag, 1)).plekId,
           open: O.openVanGisteren({ reis: r, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten }, vandaag),
           plekGisteren: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, O.plusDagen(vandaag, -1)).plek }) : null,
         h(Intro, p), h(Citaat, p), h(Overzicht, p), h(Programma, A(p, { plekId: plekId })), h(Slapen, p), h(Doen, p),
         toonVerslag ? h(Reisverslag, { reis: r, vs: vs, gezin: gezin, dagen: verslagDagen, plekken: plekken, beheerder: !!gezin.beheerder, vandaag: onderweg ? vandaag : null }) : null,
-        h(Kosten, p)),
+        h(Kosten, p),
+        // Noodnummers alleen bij een reis die nog komt of loopt (niet bij een herinnering of na thuiskomst).
+        O.bewerkFase(r, vandaag) ? h(Noodnummers, { stops: stops, nood: data.nood, beheerder: !!gezin.beheerder }) : null),
       h(Voet, { tekst: r.titel, onUitloggen: props.onUitloggen }));
   }
 

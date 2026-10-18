@@ -55,11 +55,24 @@ voor beschrijving en beleving.
 (gitignored) — daarin staan de actuele stand, de open vragen en de
 afspraken uit eerdere sessies.
 
-## Backlog (besluit gebruiker, bijgewerkt 2026-10-06)
+## Backlog (besluit gebruiker, bijgewerkt 2026-10-18)
 
-### Mag gebouwd worden (2026-10-06)
+Dit is de enige backlog: alles wat openstaat (app, data, besluiten)
+staat hier, niet verspreid in `.claude/overdracht.md`.
 
-Nog niet begonnen; per punt eerst vragen welke skills.
+### Gebouwd en live (2026-10-18, v41)
+
+Gebruiker: "bouw maar alle 3". Skills per punt gekozen (steeds de
+volledige set): weer = mockup-eerst, design-check, tdd, data-steward,
+super-reiziger; noodnummers = supabase-wijziging, data-steward,
+design-check, tdd, super-reiziger; contact vóór de reis =
+supabase-wijziging, data-steward, tdd, monkey, design-check. Migraties
+`…0026` t/m `…0028` toegepast; app gecommit en gepusht als v41.
+Weer-mockup akkoord gebruiker (2026-10-18: weer onder de kop van Vandaag,
+gekozen uitvalsbases en regenicoon bij ≥ 50% regendagen zijn prima).
+Reisverzekering staat in `reis.verzekeringen` (gegevens alleen in de
+database, niet hier); polisnummer nog niet ingevuld. Zie
+**Weer per plek**, **Noodnummers** en **Bewerken onderweg** hieronder.
 
 - **Weer per plek:** bij Vandaag (en waar nuttig per plek) voor die datum
   op die locatie de actuele weersverwachting; is die er nog niet (te ver
@@ -125,6 +138,33 @@ ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
   Noord-Spanje. Korea: **Nami Island** en **Danyang** staan als idee bij
   Seoraksan (2026-10-05): Nami als tussenstop op de reisdag vanuit Seoul,
   Danyang als eigen plek (1 nacht minder Seoraksan) als het hartjes krijgt.
+  Korea: een boeking moet mogelijk deels geannuleerd worden als de vlucht
+  definitief is (details in `.claude/overdracht.md`); reis Korea staat nog
+  op Idee.
+
+### Losse eindjes (data en besluiten, gecontroleerd 2026-10-18)
+
+Klein, geen appwerk; wacht op een besluit of signaal van de gebruiker.
+
+- **Thailand:** `reizen.nachten` 22, som van de plekken 21. Welke klopt?
+- **Haneda:** één vooraf-hartje van een ouder stond op het oude idee
+  "Paling op de Omotesando" en staat nu op "Edo-straatje en vliegtuigen
+  kijken". Laten staan of weghalen?
+- **11 ongebruikte foto's** in bucket + `reis.fotos` (o.a. jp-hakone,
+  jp-miyajima, jp-naoshima, jp-osaka, kr-andong, act-jp-paling). Weg of
+  bewaren? (Verwijderen via Storage API/dashboard.)
+- **Incheon:** plekfoto is niet bij het hotel (geen vrije foto beschikbaar)
+  en de gebruiker vraagt nog iets na bij het hotel (details in
+  `.claude/overdracht.md`).
+- **Namen per account** (`leden.weergavenaam`): gebruiker vult in; nu
+  "Iemand".
+- **Rooktest-checklist** punten 4–7 (verslag offline, kopie, volledig
+  offline, installeren) nog niet gemeld; open vraag: bij een actieve reis
+  altijd op Vandaag openen?
+- **Teksten nalezen** door de gebruiker: Japan Takayama en Narita.
+- **Spanje:** geen dagblok voor de terugreis Orléans → Purmerend.
+- **Skills `super-reiziger` en `rooktest`** gaan deels nog uit van een
+  "onderweg-planner"; bijwerken naar Reisgids + Onderweg.
 
 ## Structuur
 
@@ -226,7 +266,43 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `verblijven.notitie` en logboek `reis.wijzigingen`, zie Bewerken onderweg;
   `…0022`: volgorde van een nieuwe activiteit door de database; `…0023`:
   logboek ook `leg_aankomst_dagen`; `…0024`: info bij een activiteit, zie
-  Hartjes; `…0025`: `hartjes.moment` (vooraf/achteraf), zie Hartjes).
+  Hartjes; `…0025`: `hartjes.moment` (vooraf/achteraf), zie Hartjes;
+  `…0026`: e-mail in het logboek, zie Bewerken onderweg (de lengtegrens
+  ≤ 300 daarin is dubbel: `…0013` eist al 3–200 tekens met @, en de app
+  houdt 200 aan);
+  `…0027`: `reis.landen`, `reis.verzekeringen`, `stops.land`, zie
+  Noodnummers; `…0028`: `stops.lat`/`lon`/`klimaat`, zie Weer per plek).
+- **Noodnummers** (migratie `…0027`, gebouwd 2026-10-18). Ingeklapt
+  onderaan een reis die nog komt of loopt (niet bij een herinnering of na
+  thuiskomst), voor het hele gezin: per land (`stops.land`, ISO-code;
+  meer landen = met de plekken erbij, `O.noodnummers`) de alarmnummers en
+  de Nederlandse ambassade uit `reis.landen` (`nummers` = lijst van
+  `{label, nummer, uitleg}`, `ambassade` = `{naam, adres, telefoon,
+  link}`), elk nummer één tik om te bellen. Altijd, ook bij een laadfout,
+  het 24/7-nummer van BuZa (+31 247 247 247; vast in de app, `BUZA` in
+  schermen.js, dus niet in `reis.landen`). Zichtbaar zolang
+  `O.bewerkFase` niet null is. Daaronder de reisverzekering(en) uit
+  `reis.verzekeringen` (naam, alarmnummer, polisnummer, link; vult de
+  gebruiker via Claude); ontbreekt die, dan ziet alleen een ouder een
+  hint. Geen gezondheidsinformatie. Claude vult `reis.landen` bij een
+  nieuw land, uit netherlandsworldwide.nl en een officiële toeristische
+  bron, met `bron` en `gecontroleerd`; elke nieuwe plek krijgt `land`.
+  Lezen: elk lid (ook kinderen), schrijven: bewerkers.
+- **Weer per plek** (migratie `…0028`, gebouwd 2026-10-18 als mockup).
+  Per plek `stops.lat`/`lon` (de plaats of uitvalsbasis, niet het hotel)
+  en `stops.klimaat` (`{tmax, tmin, regen, van, tot, jaren, punt, bron}`:
+  gemiddelde over 2016–2025 voor precies de dagen van het bezoek, regen =
+  % dagen met ≥ 1 mm; Claude berekent het uit het Open-Meteo-archief,
+  `bron/seed/weer-klimaat-*.sql`). De app haalt zelf de verwachting bij
+  Open-Meteo (`haalVerwachting`, alleen coördinaten; per plek hooguit eens
+  per 3 uur, laatste verwachting in localStorage `reis-weer` voor zonder
+  bereik, gewist bij uitloggen) zodra een dag op die plek binnen 15 dagen
+  ligt (`O.verwachtingMogelijk`); anders het klimaat (`O.weerVoorDag`).
+  Vandaag: weer onder de kop, en bij Morgen het weer op de plek van morgen.
+  Plek-paneel: per dag de verwachting, of "Weer half juli: meestal ± …"
+  met bron. Niet bij een herinnering. Iconen eigen SVG (`WeerIcoon`);
+  credit "Weerdata Open-Meteo" (CC BY 4.0). Bij een nieuwe of gewijzigde
+  plek of periode: coördinaten en klimaat opnieuw bepalen.
 - **Onderweg** (besluit gebruiker 2026-10-04). Een gekozen reis (geboekt of
   betaald) is **actief** van de dag vóór vertrek t/m de dag van thuiskomst
   (`O.actieveReis`). Dan staat er bovenaan het startscherm een kaart "Nu
@@ -268,10 +344,14 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   schrijver** (besluit gebruiker 2026-10-04). Geen foto's in het verslag.
   Rollen: beide ouders bewerker, kinderen kijker.
 - **Bewerken onderweg** (besluit gebruiker 2026-10-05). Alleen ouders
-  (bewerker) en alleen tijdens een actieve reis (ervóór is de Excel
-  leidend): knop "Wijzig" op Vandaag en in Plek voor plek (verblijf, routes
-  in Onderweg, geplande activiteiten; geen ideeën). Velden per tabel in
-  `O.WIJZIGBAAR` (tijden, adres/ophaalpunt, telefoon, boekingscode,
+  (bewerker), tijdens een actieve reis: knop "Wijzig" op Vandaag en in Plek
+  voor plek (verblijf, routes in Onderweg, geplande activiteiten; geen
+  ideeën). **Vóór de reis alleen contact** (besluit gebruiker 2026-10-18,
+  `O.bewerkFase` 'vooraf', ook bij een reis die nog een idee is):
+  adres/ophaalpunt, telefoon, e-mail, boekingscode en notitie
+  (`O.wijzigVelden`); tijden, datum, naam en betaalstatus blijven dan van
+  de Excel. Herinnering of na thuiskomst: niets. Velden per tabel in
+  `O.WIJZIGBAAR` (tijden, adres/ophaalpunt, telefoon, e-mail, boekingscode,
   betaalstatus, notitie; bij een activiteit ook naam en datum), gecontroleerd
   met `O.valideerWijziging`; leeg = wissen. **Aankomst volgt vertrek**
   (besluit gebruiker 2026-10-05, `O.volgTijd`): wijzig je de vertrektijd
@@ -718,7 +798,9 @@ commit/push: de agent `code-controleur` laten meekijken.
 - **Weer** (besluit gebruiker 2026-10-01): graag actueel (verwachting)
   voor de data waarop we op een plek zijn, als dat haalbaar is. Vraagt
   coördinaten per plek; een externe weerdienst krijgt alleen
-  coördinaten en datums, nooit gegevens van het gezin.
+  coördinaten en datums, nooit gegevens van het gezin. Gebouwd met
+  Open-Meteo (2026-10-18): de app stuurt alleen lat/lon, zonder cookies
+  en zonder referrer.
 
 ## Sessiebeheer
 

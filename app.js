@@ -43,6 +43,7 @@ const DATA_CACHES = ['reis-app-data', 'reis-app-fotos'];
 function clearAuthSession() {
   AUTH_ACCESS_TOKEN = ''; AUTH_REFRESH_TOKEN = ''; AUTH_EXPIRES_AT = 0;
   zetOpslag('reis_access_token', ''); zetOpslag('reis_refresh_token', ''); zetOpslag('reis_expires_at', '');
+  zetOpslag('reis-weer', ''); weerGewistOp = Date.now(); // weersverwachting per plek (zie haalVerwachting)
   const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
   if (sw) sw.postMessage({ type: 'wis-data' });
   if (!window.caches) return Promise.resolve();
@@ -303,6 +304,41 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && !/[?&]vandaag=/.test(location.search) && Opmaak.datumIn(new Date()) !== DAG_BIJ_START) location.reload();
 });
 
+// ─── WEER (besluit gebruiker 2026-10-06) ───
+// Weersverwachting voor een plek bij Open-Meteo (gratis, zonder sleutel). Er gaan alleen de coördinaten van de
+// plek mee, nooit gegevens van het gezin (CLAUDE.md Privacy). Per plek hooguit eens per 3 uur; de laatste
+// verwachting blijft op de telefoon (localStorage) voor als er geen bereik is. Uitslag { dagen, op } of null.
+const WEER_OPSLAG = 'reis-weer', WEER_GELDIG_MS = 3 * 3600 * 1000;
+let weerGewistOp = 0; // uitloggen: een verzoek dat daarvoor startte schrijft niets meer terug
+const weerBezig = {}; // lopend verzoek per plek: Vandaag en het plek-paneel delen het
+function leesWeerOpslag() { return Opmaak.weerOpslagLees(leesOpslag(WEER_OPSLAG), Date.now()); }
+function haalVerwachting(stop) {
+  if (!stop || stop.lat == null || stop.lon == null || !isFinite(Number(stop.lat)) || !isFinite(Number(stop.lon))) return Promise.resolve(null);
+  const oud = leesWeerOpslag()[stop.id];
+  if (oud && Date.now() - Date.parse(oud.op) < WEER_GELDIG_MS) return Promise.resolve(oud);
+  if (!weerBezig[stop.id]) weerBezig[stop.id] = vraagVerwachting(stop, oud).finally(() => { delete weerBezig[stop.id]; });
+  return weerBezig[stop.id];
+}
+async function vraagVerwachting(stop, oud) {
+  const gestart = Date.now();
+  try {
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + Number(stop.lat) + '&longitude=' + Number(stop.lon) +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=16', { credentials: 'omit', referrerPolicy: 'no-referrer' });
+    if (!r.ok) throw new Error('weer ' + r.status);
+    const uit = { dagen: Opmaak.leesVerwachting(await r.json()), op: new Date().toISOString() };
+    if (gestart > weerGewistOp) {
+      // Vlak voor het schrijven opnieuw lezen (een andere plek kan intussen zijn bijgewerkt); hooguit 30 plekken.
+      const opslag = leesWeerOpslag();
+      opslag[stop.id] = uit;
+      Object.keys(opslag).sort((a, b) => opslag[b].op.localeCompare(opslag[a].op)).slice(30).forEach(k => { delete opslag[k]; });
+      zetOpslag(WEER_OPSLAG, JSON.stringify(opslag));
+    }
+    return uit;
+  } catch (e) {
+    return oud || null; // geen bereik: de laatste verwachting (met tijdstip)
+  }
+}
+
 // Alleen route, verblijven en activiteiten van een reis, vers van het netwerk (na het versturen van wijzigingen).
 // Dezelfde adressen als haalReis, zodat de service worker ook de offline kopie bijwerkt. Geen netwerk → fout.
 async function haalReisVers(reisId) {
@@ -341,13 +377,19 @@ async function haalReis(slug) {
   const fotoIds = [reis.hero_foto_id, reis.quote_foto_id, reis.kaart_foto_id]
     .concat(d.stops.map(s => s.foto_id), d.verblijven.map(v => v.foto_id), d.activiteiten.map(a => a.foto_id));
   // Smaak (alle reizen) alleen voor de volgorde van ideeën; lukt het niet, dan gewoon zonder.
-  const [f, gezin, verslagen, smaak] = await Promise.all([haalFotos(fotoIds), haalGezin(d.activiteiten.map(a => a.id)),
-    sbFetch('verslagen?select=datum,user_id,tekst,gewijzigd&reis_id=eq.' + reis.id + '&order=datum'), haalSmaak()]);
+  // Noodnummers: de landen van de plekken en de reisverzekering(en) van het gezin (migratie …0027).
+  const codes = d.stops.map(s => s.land).filter((c, i, a) => /^[A-Z]{2}$/.test(c || '') && a.indexOf(c) === i);
+  const [f, gezin, verslagen, smaak, landen, verzekeringen] = await Promise.all([haalFotos(fotoIds), haalGezin(d.activiteiten.map(a => a.id)),
+    sbFetch('verslagen?select=datum,user_id,tekst,gewijzigd&reis_id=eq.' + reis.id + '&order=datum'), haalSmaak(),
+    codes.length ? sbFetch('landen?select=code,naam,nummers,ambassade&code=in.(' + codes.join(',') + ')') : [],
+    sbFetch('verzekeringen?select=naam,alarmnummer,polisnummer,link&order=volgorde')]);
   return {
     reis: reis, stops: d.stops, dagen: d.dagen, route: d.route_punten, verblijven: d.verblijven,
     activiteiten: d.activiteiten, budget: d.budget_posten, fotos: f.fotos, fotoFout: f.fout, gezin: gezin, smaak: smaak ? Opmaak.smaakScore(smaak.profiel) : {},
     // Het verslag is een extra: lukt ophalen niet, dan werkt de reispagina gewoon (en meldt het verslag dat).
     verslagen: isFout(verslagen) ? [] : verslagen, verslagFout: isFout(verslagen),
+    // Ook een extra: lukt het niet, dan meldt het blok Noodnummers dat (nooit een lege lijst zonder uitleg).
+    nood: { landen: isFout(landen) ? [] : landen, verzekeringen: isFout(verzekeringen) ? [] : verzekeringen, fout: isFout(landen) || isFout(verzekeringen) },
   };
 }
 

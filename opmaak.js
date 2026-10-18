@@ -359,17 +359,37 @@
   // Alleen wat onderweg verandert: tijden, adres/ophaalpunt, contact, boekingscode, betaalstatus, notitie (bijv. wifi,
   // deurcode, gate). Herplannen (nachten, route, prijzen) niet. Per tabel de velden en hun soort.
   var WIJZIGBAAR = {
-    route_punten: { leg_vertrek: 'tijd', leg_aankomst: 'tijd', leg_aankomst_dagen: 'dagen', leg_adres: 'tekst', leg_boekingscode: 'kort', leg_telefoon: 'tel', leg_status: 'status', leg_notitie: 'notitie' },
-    verblijven: { inchecktijd: 'tijd', uitchecktijd: 'tijd', adres: 'tekst', telefoon: 'tel', boekingscode: 'kort', status: 'status', notitie: 'notitie' },
-    activiteiten: { naam: 'naam', datum: 'datum', begin_tijd: 'tijd', eind_tijd: 'tijd', ophaalpunt: 'tekst', telefoon: 'tel', boekingscode: 'kort', status: 'status', notitie: 'notitie' }
+    route_punten: { leg_vertrek: 'tijd', leg_aankomst: 'tijd', leg_aankomst_dagen: 'dagen', leg_adres: 'tekst', leg_boekingscode: 'kort', leg_telefoon: 'tel', leg_email: 'email', leg_status: 'status', leg_notitie: 'notitie' },
+    verblijven: { inchecktijd: 'tijd', uitchecktijd: 'tijd', adres: 'tekst', telefoon: 'tel', email: 'email', boekingscode: 'kort', status: 'status', notitie: 'notitie' },
+    activiteiten: { naam: 'naam', datum: 'datum', begin_tijd: 'tijd', eind_tijd: 'tijd', ophaalpunt: 'tekst', telefoon: 'tel', email: 'email', boekingscode: 'kort', status: 'status', notitie: 'notitie' }
   };
+  // Vóór de reis (besluit gebruiker 2026-10-18) alleen contact; tijden, datum, naam en betaalstatus blijven van de Excel.
+  var CONTACT = {
+    route_punten: ['leg_adres', 'leg_telefoon', 'leg_email', 'leg_boekingscode', 'leg_notitie'],
+    verblijven: ['adres', 'telefoon', 'email', 'boekingscode', 'notitie'],
+    activiteiten: ['ophaalpunt', 'telefoon', 'email', 'boekingscode', 'notitie']
+  };
+  // Wat een ouder in de app mag wijzigen: 'onderweg' (actieve reis), 'vooraf' (reis nog niet begonnen, ook een idee)
+  // of null (herinnering, na thuiskomst, of een idee waarvan de data voorbij zijn).
+  function bewerkFase(r, vandaag) {
+    if (!r || typeof r !== 'object' || r.stemming === 'herinnering' || !isDatum(vandaag)) return null;
+    if (actieveReis([r], vandaag)) return 'onderweg';
+    return isDatum(r.eind_datum) && r.eind_datum < vandaag ? null : 'vooraf';
+  }
+  function wijzigVelden(tabel, fase) {
+    if (!WIJZIGBAAR[tabel] || !fase) return [];
+    return fase === 'vooraf' ? CONTACT[tabel].slice() : Object.keys(WIJZIGBAAR[tabel]);
+  }
   // Controle vóór opslaan. Leeg = wissen (null), behalve een naam (verplicht). Uitslag { ok, schoon, fouten }.
-  function valideerWijziging(tabel, velden) {
+  // fase 'vooraf': alleen de contactvelden (wijzigVelden).
+  function valideerWijziging(tabel, velden, fase) {
     var soort = WIJZIGBAAR[tabel], schoon = {}, fouten = {};
     if (!soort || !velden || typeof velden !== 'object') return { ok: false, schoon: {}, fouten: { tabel: 'Kan hier niet gewijzigd worden.' } };
+    var mag = fase === 'vooraf' ? CONTACT[tabel] : null;
     Object.keys(velden).forEach(function (k) {
       var s = soort[k], v = velden[k];
       if (!s) { fouten[k] = 'Dit veld kan onderweg niet gewijzigd worden.'; return; }
+      if (mag && mag.indexOf(k) < 0) { fouten[k] = 'Dit veld kan vóór de reis alleen in de Excel.'; return; }
       var t = v == null ? '' : String(v).trim();
       if (!t) { if (s === 'naam') fouten[k] = 'Geef een naam.'; else schoon[k] = s === 'dagen' ? 0 : null; return; }
       var m;
@@ -386,6 +406,9 @@
         if (t === 'betaald' || t === 'geboekt') schoon[k] = t; else fouten[k] = 'Kies betaald of nog betalen.';
       } else if (s === 'tel') {
         if (/^\+?[\d\s()\-./]{3,30}$/.test(t)) schoon[k] = t; else fouten[k] = 'Alleen cijfers, +, spaties, streepjes en haakjes.';
+      } else if (s === 'email') {
+        // Max. 200 tekens, zoals de check in de database (migratie …0013).
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) && t.length <= 200) schoon[k] = t; else fouten[k] = 'Geen geldig e-mailadres (max. 200 tekens).';
       } else {
         var max = s === 'notitie' ? 2000 : s === 'kort' ? 80 : 300; // zoals de checks in de database
         if (t.length > max) fouten[k] = 'Te lang (max. ' + max + ' tekens).'; else schoon[k] = t;
@@ -561,6 +584,122 @@
     return /\d/.test(n) ? 'tel:' + n : undefined;
   }
 
+  // ── Weer per plek (besluit gebruiker 2026-10-06) ──
+  // WMO-weercode (Open-Meteo) → soort (voor het icoon) en tekst; onbekend → null.
+  function weerSoort(code) {
+    var c = Number(code);
+    if (code == null || !isFinite(c)) return null;
+    if (c === 0) return { soort: 'zon', tekst: 'Zonnig' };
+    if (c === 1) return { soort: 'zon', tekst: 'Overwegend zonnig' };
+    if (c === 2) return { soort: 'halfbewolkt', tekst: 'Half bewolkt' };
+    if (c === 3) return { soort: 'bewolkt', tekst: 'Bewolkt' };
+    if (c === 45 || c === 48) return { soort: 'bewolkt', tekst: 'Mist' };
+    if (c >= 51 && c <= 57) return { soort: 'regen', tekst: 'Motregen' };
+    if (c >= 61 && c <= 67) return { soort: 'regen', tekst: 'Regen' };
+    if (c >= 80 && c <= 82) return { soort: 'regen', tekst: 'Buien' };
+    if ((c >= 71 && c <= 77) || c === 85 || c === 86) return { soort: 'bewolkt', tekst: 'Sneeuw' };
+    if (c >= 95 && c <= 99) return { soort: 'onweer', tekst: 'Onweer' };
+    return null;
+  }
+  // Antwoord van de Open-Meteo-verwachting (daily) → { datum: { tmax, tmin, kans, code } }; rare waarden → null.
+  function leesVerwachting(j) {
+    var d = j && j.daily, uit = {};
+    if (!d || !Array.isArray(d.time)) return uit;
+    function getal(lijst, i, rond) { var x = Array.isArray(lijst) ? lijst[i] : null; return typeof x === 'number' && isFinite(x) ? (rond ? Math.round(x) : x) : null; }
+    d.time.forEach(function (t, i) {
+      if (!isDatum(t)) return;
+      uit[t] = { tmax: getal(d.temperature_2m_max, i, true), tmin: getal(d.temperature_2m_min, i, true),
+        kans: getal(d.precipitation_probability_max, i, true), code: getal(d.weather_code, i, false) };
+    });
+    return uit;
+  }
+  // De verwachting reikt van vandaag tot 15 dagen vooruit (Open-Meteo: 16 dagen).
+  function verwachtingMogelijk(datum, vandaag) {
+    var n = dagenTussen(vandaag, datum);
+    return n != null && n >= 0 && n <= 15;
+  }
+  // Weer voor één dag op een plek: de verwachting als die er is, anders het klimaat van de plek, anders null.
+  function weerVoorDag(stop, datum, verwachting) {
+    var v = verwachting && verwachting[datum];
+    if (v && (v.tmax != null || v.code != null)) return { bron: 'verwachting', tmax: v.tmax, tmin: v.tmin, kans: v.kans, code: v.code };
+    var k = stop && stop.klimaat;
+    if (k && typeof k === 'object' && typeof k.tmax === 'number') return { bron: 'klimaat', tmax: k.tmax, tmin: typeof k.tmin === 'number' ? k.tmin : null, regen: typeof k.regen === 'number' ? k.regen : null };
+    return null;
+  }
+  // Bewaarde verwachtingen (localStorage 'reis-weer') → { stopId: { op, dagen } }; kapotte items vallen weg, rare
+  // waarden worden null, en een tijdstip in de toekomst telt niet (anders blijft die verwachting eeuwig "vers").
+  function weerOpslagLees(tekst, nu) {
+    var j, uit = {};
+    try { j = JSON.parse(tekst || '{}'); } catch (e) { return uit; }
+    if (!j || typeof j !== 'object' || Array.isArray(j)) return uit;
+    function getal(x) { return typeof x === 'number' && isFinite(x) ? x : null; }
+    Object.keys(j).forEach(function (id) {
+      var x = j[id], t = x && typeof x.op === 'string' ? Date.parse(x.op) : NaN;
+      if (isNaN(t) || t > nu || !x.dagen || typeof x.dagen !== 'object' || Array.isArray(x.dagen)) return;
+      var dagen = {};
+      Object.keys(x.dagen).forEach(function (d) {
+        var v = x.dagen[d];
+        if (isDatum(d) && v && typeof v === 'object') dagen[d] = { tmax: getal(v.tmax), tmin: getal(v.tmin), kans: getal(v.kans), code: getal(v.code) };
+      });
+      uit[id] = { op: x.op, dagen: dagen };
+    });
+    return uit;
+  }
+  // Icoon bij het weer: een verwachting op weercode, het klimaat op het deel van de dagen met regen.
+  function weerIcoonSoort(w) {
+    if (w.bron === 'verwachting') { var s = weerSoort(w.code); return s ? s.soort : 'bewolkt'; }
+    return w.regen == null ? 'halfbewolkt' : w.regen >= 50 ? 'regen' : w.regen >= 25 ? 'halfbewolkt' : 'zon';
+  }
+  // "half juli – eind juli" uit klimaat.van/tot (MM-DD); onzin → leeg.
+  function klimaatPeriode(k) {
+    function deel(md) {
+      var m = /^(\d\d)-(\d\d)$/.exec(md || '');
+      if (!m || !MAANDEN[+m[1] - 1]) return '';
+      return (+m[2] <= 10 ? 'begin ' : +m[2] <= 20 ? 'half ' : 'eind ') + kortMaand(+m[1] - 1);
+    }
+    var a = deel(k && k.van), b = deel(k && k.tot);
+    return a && b && a !== b ? a + ' – ' + b : a;
+  }
+  // Alle datums van dag-rijen (datum_van t/m datum_tot), uniek en gesorteerd; rijen zonder geldige datum vallen weg.
+  function datumsVan(dagen) {
+    var uit = [];
+    rijen(dagen).forEach(function (d) {
+      if (!isDatum(d.datum_van)) return;
+      var tot = isDatum(d.datum_tot) ? d.datum_tot : d.datum_van;
+      for (var x = d.datum_van, n = 0; x <= tot && n < 60; x = plusDagen(x, 1), n++) if (uit.indexOf(x) < 0) uit.push(x);
+    });
+    return uit.sort();
+  }
+  function weerTekst(w) {
+    if (!w) return '';
+    var temp = w.tmax != null ? w.tmax + '°' + (w.tmin != null ? ' / ' + w.tmin + '°' : '') : '';
+    if (w.bron === 'klimaat') {
+      var regen = w.regen == null ? '' : w.regen < 10 ? 'zelden regen' : Math.round(100 / w.regen) <= 1 ? 'bijna elke dag regen' : 'regen op 1 op de ' + Math.round(100 / w.regen) + ' dagen';
+      return [temp && 'meestal ± ' + temp, regen].filter(Boolean).join(' · ');
+    }
+    return [temp, w.kans != null ? w.kans + '% kans op regen' : ''].filter(Boolean).join(' · ');
+  }
+
+  // Noodnummers (besluit gebruiker 2026-10-06): per land (reis.landen) in routevolgorde, met de plekken daar;
+  // alleen nummers die echt een nummer hebben, met tel-link. zonder = plekken zonder (bekend) land.
+  function noodnummers(stops, landen) {
+    var opCode = {}, uit = [], perCode = {}, zonder = [];
+    rijen(landen).forEach(function (l) { if (typeof l.code === 'string') opCode[l.code] = l; });
+    rijen(stops).forEach(function (s) {
+      var l = opCode[s.land], naam = kortNaam(s.naam || '?');
+      if (!l) { zonder.push(naam); return; }
+      if (!perCode[l.code]) {
+        perCode[l.code] = { code: l.code, naam: l.naam, plekken: [], ambassade: l.ambassade && typeof l.ambassade === 'object' ? l.ambassade : null,
+          nummers: rijen(l.nummers).filter(function (n) { return (typeof n.nummer === 'number' && isFinite(n.nummer)) || tekstOf(n.nummer).trim(); }).map(function (n) {
+            return { label: tekstOf(n.label) || 'Nummer', nummer: String(n.nummer), uitleg: tekstOf(n.uitleg) || null, tel: telLink(n.nummer) };
+          }) };
+        uit.push(perCode[l.code]);
+      }
+      if (perCode[l.code].plekken.indexOf(naam) < 0) perCode[l.code].plekken.push(naam);
+    });
+    return { landen: uit, zonder: zonder };
+  }
+
   // Label voor een StatusBadge. Lege status = onbekend (lege cel in de Excel, besluit gebruiker
   // 2026-10-01): "Status ?", niet het standaardlabel "Nog te bepalen". Anders het eigen label of
   // undefined (dan kiest de badge zelf).
@@ -635,9 +774,9 @@
 
   window.Opmaak = { dagLabel: dagLabel, plekPeriode: plekPeriode, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, slaapStand: slaapStand, slaapStandTekst: slaapStandTekst, splitsMoment: splitsMoment, magAchteraf: magAchteraf, naReis: naReis, smaakprofiel: smaakprofiel, smaakScore: smaakScore, pastBijOns: pastBijOns, aankomstPlekken: aankomstPlekken, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
-    openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
+    openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, bewerkFase: bewerkFase, wijzigVelden: wijzigVelden, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,
-    licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink, infoVan: infoVan,
+    noodnummers: noodnummers, weerOpslagLees: weerOpslagLees, weerIcoonSoort: weerIcoonSoort, klimaatPeriode: klimaatPeriode, datumsVan: datumsVan, weerSoort: weerSoort, leesVerwachting: leesVerwachting, verwachtingMogelijk: verwachtingMogelijk, weerVoorDag: weerVoorDag, weerTekst: weerTekst, licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink, infoVan: infoVan,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,
     periodeKort: periodeKort, routeKm: routeKm, reisFeiten: reisFeiten };
