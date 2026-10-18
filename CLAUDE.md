@@ -146,13 +146,12 @@ ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
 
 Klein, geen appwerk; wacht op een besluit of signaal van de gebruiker.
 
-- **Thailand:** `reizen.nachten` 22, som van de plekken 21. Welke klopt?
-- **Haneda:** één vooraf-hartje van een ouder stond op het oude idee
-  "Paling op de Omotesando" en staat nu op "Edo-straatje en vliegtuigen
-  kijken". Laten staan of weghalen?
-- **11 ongebruikte foto's** in bucket + `reis.fotos` (o.a. jp-hakone,
-  jp-miyajima, jp-naoshima, jp-osaka, kr-andong, act-jp-paling). Weg of
-  bewaren? (Verwijderen via Storage API/dashboard.)
+- **7 ongebruikte foto's opruimen** (akkoord gebruiker 2026-10-18;
+  act-jp-paling, jp-hakone, jp-miyajima, jp-naoshima, jp-narita, jp-osaka,
+  kr-andong): de gebruiker verwijdert ze zelf, rijen met
+  `bron/seed/fotos-opruimen-2026-10-18.sql` in de SQL Editor, bestanden
+  in Storage. Daarna controleren: 0 fotorijen zonder bestand. (jp-arashiyama,
+  jp-shibuya, kr-namsan en th-eten zijn wél in gebruik als reisfoto.)
 - **Incheon:** plekfoto is niet bij het hotel (geen vrije foto beschikbaar)
   en de gebruiker vraagt nog iets na bij het hotel (details in
   `.claude/overdracht.md`).
@@ -575,7 +574,14 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   een conflictkopie). Nooit in git. De mappen `bron/`,
   `.claude/` en `Screenshots/` kopieert een lokale git-hook na elke commit
   naar de submap "reis-app reserve" daar (alleen toevoegen, nooit wissen;
-  log in `.git/reserve.log`).
+  log in `.git/reserve.log`). **Nooit mappen aanmaken in OneDrive**
+  (incident 2026-10-18: de OneDrive-map stond niet meer gesynchroniseerd,
+  de kopie maakte lokaal een nieuwe lege map met dezelfde naam aan en dat
+  gaf een conflict): het script kopieert alleen als de map Reizen én de
+  reservemap al op de laptop staan, anders alleen "OVERGESLAGEN" in het
+  log. Staat de map Reizen niet op de laptop, dan ook de Excels niet: eerst
+  de gebruiker laten controleren of die map in OneDrive gesynchroniseerd
+  wordt.
 - **Excel is de bron voor feiten, Claude voor tekst** (besluit gebruiker
   2026-10-01, geldt bij het samenstellen van een reis; wat onderweg in
   de app moet kunnen komt later). Sjabloon van de gebruiker:
