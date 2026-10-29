@@ -413,3 +413,38 @@ p.nv-weer__bron { margin: var(--space-1) 0 0; }
 .nv-plekweer__dagen .nv-weer { margin: 0 0 var(--space-1); }
 .nv-kopblok .nv-weer { justify-content: center; text-align: center; }
 .nv-plekweer p.nv-weer__bron + .nv-label { display: block; margin-top: var(--space-3); }
+/* Waar leent de reis zich voor (2026-10-28): balkjes 1–5 per onderdeel, tempo als stippen. Op de reiskaart compact
+   over de foto (op een eigen scrim), in het reisoverzicht en plek-paneel als lijst. */
+.nv-score { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.nv-score__rij { display: grid; grid-template-columns: 9em 1fr 2.4em; align-items: center; gap: var(--space-3); font-size: 14px; color: var(--ink); }
+.nv-score__naam { color: var(--ink-muted); }
+.nv-score__balk { position: relative; height: 8px; border-radius: var(--radius-pill); background: var(--lagoon-soft); overflow: hidden; }
+.nv-score__vul { position: absolute; inset: 0 auto 0 0; border-radius: var(--radius-pill); background: var(--lagoon); }
+.nv-score__getal { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.nv-score__rij--tempo { grid-template-columns: 9em auto 1fr; padding-top: var(--space-2); border-top: 1px solid var(--line); }
+.nv-score__stippen { display: flex; gap: 6px; }
+.nv-score__stip { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--terracotta); }
+.nv-score__stip.is-aan { background: var(--terracotta); }
+.nv-score__woord { font-weight: 600; color: var(--terracotta); }
+.nv-score__uitleg { grid-column: 2 / -1; font-size: 13px; color: var(--ink-muted); }
+.nv-reisscore { max-width: 560px; margin: 0 auto var(--space-6); padding: var(--space-4); background: var(--paper-raised); border: 1px solid var(--line); border-radius: var(--radius-md); }
+.nv-reisscore__noot { margin: var(--space-3) 0 0; font-size: 13px; line-height: 1.5; color: var(--ink-muted); }
+.nv-plekscore { margin: var(--space-4) 0; max-width: 480px; }
+.nv-plekscore__tekst { margin: 0 0 var(--space-3); font-size: 16px; line-height: 1.5; color: var(--ink); }
+.nv-score--plek .nv-score__rij { font-size: 13px; grid-template-columns: 9em 1fr 1.6em; }
+/* Op de reiskaart: twee kolommen, getal naast de naam, balk eronder; tempo over de volle breedte. */
+.nv-score--kaart { margin-top: var(--space-3); padding: var(--space-3); grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md); background: color-mix(in srgb, var(--scrim) 55%, transparent); }
+.nv-score--kaart .nv-score__rij { grid-template-columns: 1fr auto; gap: 2px var(--space-2); font-size: 12px; color: var(--on-photo); }
+.nv-score--kaart .nv-score__naam { color: var(--on-photo); opacity: .9; }
+.nv-score--kaart .nv-score__balk { grid-column: 1 / -1; grid-row: 2; height: 5px; background: color-mix(in srgb, var(--on-photo) 28%, transparent); }
+.nv-score--kaart .nv-score__vul { background: var(--on-photo); }
+.nv-score--kaart .nv-score__rij--tempo { grid-column: 1 / -1; grid-template-columns: auto auto 1fr; padding-top: var(--space-2); border-top-color: color-mix(in srgb, var(--on-photo) 30%, transparent); }
+.nv-score--kaart .nv-score__stip { width: 9px; height: 9px; border-color: var(--on-photo); }
+.nv-score--kaart .nv-score__stip.is-aan { background: var(--on-photo); }
+.nv-score--kaart .nv-score__woord { color: var(--on-photo); }
+/* De scores maken een reiskaart hoger dan zijn vaste verhouding (vooral liggend, 16/10). Met overflow zichtbaar
+   groeit de kaart mee in plaats van de tekst af te knippen; de hoeken komen dan van de foto en het verloop. */
+.nv-reizen .rg-tripcard { overflow: visible; }
+.nv-reizen .rg-tripcard img, .nv-reizen .rg-tripcard__scrim { border-radius: inherit; }
+.nv-reizen .rg-tripcard:hover img { transform: none; }

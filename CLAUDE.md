@@ -187,7 +187,8 @@ Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
   de schermen (prefix `nv-`), alleen variabelen, geen losse kleuren
 - `ds/bundle.js`, `ds/bundle.css` — het designsysteem "Reisgids"
   (componenten als `window.Reisgids`, prefix `rg-`), gemaakt met Claude
-  Design voor de gebruiker, dus eigen werk. Lokaal gepatcht (patches 1–8,
+  Design voor de gebruiker, dus eigen werk. Lokaal gepatcht (patches 1–9;
+  patch 9: TripCard prop `extra` (scores op de kaart);
   zie `.claude/overdracht.md`); nooit overschrijven met een ongepatchte
   versie
 - `manifest.json`, `iconen/` — installeren op het beginscherm
@@ -268,7 +269,8 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   ≤ 300 daarin is dubbel: `…0013` eist al 3–200 tekens met @, en de app
   houdt 200 aan);
   `…0027`: `reis.landen`, `reis.verzekeringen`, `stops.land`, zie
-  Noodnummers; `…0028`: `stops.lat`/`lon`/`klimaat`, zie Weer per plek).
+  Noodnummers; `…0028`: `stops.lat`/`lon`/`klimaat`, zie Weer per plek; `…0029`:
+  `stops.profiel` en `stops.leent_zich_voor`, zie Waar leent de reis zich voor).
 - **Noodnummers** (migratie `…0027`, gebouwd 2026-10-18). Ingeklapt
   onderaan een reis die nog komt of loopt (niet bij een herinnering of na
   thuiskomst), voor het hele gezin: per land (`stops.land`, ISO-code;
@@ -300,6 +302,28 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   met bron. Niet bij een herinnering. Iconen eigen SVG (`WeerIcoon`);
   credit "Weerdata Open-Meteo" (CC BY 4.0). Bij een nieuwe of gewijzigde
   plek of periode: coördinaten en klimaat opnieuw bepalen.
+- **Waar leent de reis zich voor** (migratie `…0029`, besluit gebruiker
+  2026-10-28). Per plek `stops.profiel` = vijf scores 1–5 `{cultuur, stad,
+  natuur, actief, relax}` (de database weigert iets anders) en
+  `stops.leent_zich_voor` (korte zin, ≤ 120 tekens). **Maatstaf:** de plek
+  inclusief de uitstapjes vanaf daar. Cultuur 1 niets bijzonders – 5 dagen te
+  vullen; Stad 1 dorp, 's avonds stil – 3 gezellig stadje met winkels en
+  restaurants – 5 grote stad; Natuur = landschap (bergen, bos, kloof, vulkaan,
+  dieren), **strand telt niet** (dat is relax), kust alleen als die zelf het
+  landschap is; Actief = in beweging, **streng**: een dag door de stad lopen
+  = 3, 4–5 alleen bij zware dagen (wandeltocht, duiken, canyoning); Relax 1
+  elke dag programma – 3 een middag rust (zwembad, strand, massage) – 5
+  gemaakt om niks te doen. **Geen profiel = doorreisplek** (overnachting
+  onderweg), telt niet mee. **Reisscore** (`O.reisProfiel`, `O.reisScore`):
+  gemiddelde van de plekken gewogen naar nachten, opgerekt `1 + (gem − 1) ×
+  1,35`, maximaal 5 (een reis scoort nooit overal 5; × 1,35 zodat niet alles
+  op 5 vastloopt). **Tempo** (`O.tempo`, alleen per reis): transfers =
+  routepunten met nachten, per week → 1 Standplaats, 2 Rustig, 3 Gemiddeld,
+  4 Frequent, 5 Steeds onderweg. Te zien op de reiskaart (compact over de
+  foto, voor iedereen; `haalProfielen` in app.js, zonder gegevens geen
+  scores), bovenaan het reisoverzicht en in het plek-paneel ("Leent zich
+  voor"). Claude scoort een nieuwe plek meteen; de gebruiker stelt bij.
+  Referentie voor het gevoel: Thailand (cultuur 4,1, actief 3,7).
 - **Onderweg** (besluit gebruiker 2026-10-04). Een gekozen reis (geboekt of
   betaald) is **actief** van de dag vóór vertrek t/m de dag van thuiskomst
   (`O.actieveReis`). Dan staat er bovenaan het startscherm een kaart "Nu

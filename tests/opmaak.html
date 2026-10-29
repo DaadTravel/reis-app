@@ -841,6 +841,43 @@
     return [O.pastBijOns([{ icoon: 'wave' }], { tiener: [], volwassene: [] }), O.pastBijOns([], { tiener: [{ soort: 'wave' }], volwassene: [{ soort: 'wave' }] })];
   });
 
+  // --- Waar leent de reis zich voor (2026-10-28): plekprofiel, reisprofiel (gewogen naar nachten), tempo ---
+  var pf = function (c, s, n, a, r) { return { cultuur: c, stad: s, natuur: n, actief: a, relax: r }; };
+  test('plekProfiel: vijf scores 1–5', pf(4, 5, 1, 3, 1), function () { return O.plekProfiel({ profiel: pf(4, 5, 1, 3, 1) }); });
+  test('plekProfiel: geen profiel = doorreisplek → null', null, function () { return O.plekProfiel({ profiel: null }); });
+  test('plekProfiel: rare waarden (6, tekst, ontbrekend, halve punt) → null', [null, null, null, null, null], function () {
+    return [O.plekProfiel({ profiel: pf(6, 1, 1, 1, 1) }), O.plekProfiel({ profiel: { cultuur: '3', stad: 1, natuur: 1, actief: 1, relax: 1 } }),
+      O.plekProfiel({ profiel: { cultuur: 3, stad: 1, natuur: 1, actief: 1 } }), O.plekProfiel({ profiel: pf(2.5, 1, 1, 1, 1) }), O.plekProfiel(null)];
+  });
+  test('reisProfiel: gemiddelde gewogen naar nachten, doorreisplek telt niet mee', pf(2.2, 2.6, 2.2, 3, 3.4), function () {
+    return O.reisProfiel([{ nachten: 4, profiel: pf(4, 5, 1, 3, 1) }, { nachten: 6, profiel: pf(1, 1, 3, 3, 5) }, { nachten: 1, profiel: null }]);
+  });
+  test('reisProfiel: plek zonder nachten telt niet mee', pf(4, 5, 1, 3, 1), function () {
+    return O.reisProfiel([{ nachten: 4, profiel: pf(4, 5, 1, 3, 1) }, { nachten: null, profiel: pf(1, 1, 1, 1, 1) }]);
+  });
+  test('reisProfiel: nachten uit de route (twee bezoeken samen) gaan vóór de nachten van de plek', pf(2.5, 3, 2, 3, 3), function () {
+    return O.reisProfiel([{ id: 'a', nachten: 1, profiel: pf(4, 5, 1, 3, 1) }, { id: 'b', nachten: 4, profiel: pf(1, 1, 3, 3, 5) }],
+      [{ stop_id: 'a', nachten: 3 }, { stop_id: 'a', nachten: 1 }, { stop_id: 'b', nachten: 4 }, { stop_id: null, nachten: null }]);
+  });
+  test('reisProfiel: geen plek met score of rare invoer → null', [null, null, null], function () {
+    return [O.reisProfiel([{ nachten: 2, profiel: null }]), O.reisProfiel([]), O.reisProfiel('x')];
+  });
+  var routeT = function (n) { var r = [{ nachten: null }]; for (var i = 0; i < n; i++) r.push({ nachten: 2 }); r.push({ nachten: null }); return r; };
+  test('tempo: 8 transfers in 23 nachten → 4 Frequent', { waarde: 4, woord: 'Frequent', transfers: 8, nachtenPerPlek: 2.875 }, function () { return O.tempo(routeT(8), 23); });
+  test('tempo: grens 2 per week (6 in 21) → 3 Gemiddeld', 3, function () { return O.tempo(routeT(6), 21).waarde; });
+  test('tempo: één plek in 14 nachten → 1 Standplaats; 9 in 22 → 5 Steeds onderweg', ['Standplaats', 'Steeds onderweg'], function () {
+    return [O.tempo(routeT(1), 14).woord, O.tempo(routeT(9), 22).woord];
+  });
+  test('tempo: geen route, geen nachten of rare invoer → null', [null, null, null], function () {
+    return [O.tempo([], 20), O.tempo(routeT(3), null), O.tempo('x', 'y')];
+  });
+  test('reisScore: 1 blijft 1, opgerekt ×1,35 boven 1, maximaal 5', [1, 3.7, 5], function () { return [O.reisScore(1), Math.round(O.reisScore(3) * 100) / 100, O.reisScore(4.2)]; });
+  test('reisScore: geen getal → null', [null, null], function () { return [O.reisScore(null), O.reisScore('3')]; });
+  test('scoreGetal: één decimaal met komma, heel getal zonder', ['3,1', '5', '2,3'], function () { return [O.scoreGetal(3.05), O.scoreGetal(5), O.scoreGetal(2.25)]; });
+  test('TripCard: extra (scores) staat in de kaart (patch 9)', true, function () {
+    return tekst('TripCard', { title: 'Testreis', extra: React.createElement('span', null, 'EXTRA-INHOUD') }).indexOf('EXTRA-INHOUD') > -1;
+  });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');

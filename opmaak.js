@@ -112,6 +112,55 @@
     hartjes.forEach(function (x) { met[x.activiteit_id] = true; });
     return acts.filter(function (a) { return !isIdee(a) || met[a.id]; });
   }
+  // Waar leent een plek of reis zich voor (besluit gebruiker 2026-10-28). Per plek vijf scores 1–5 (stops.profiel),
+  // de plek inclusief uitstapjes vanaf daar; strand telt bij relax, niet bij natuur. Geen profiel = doorreisplek.
+  // De reis: gemiddelde van de plekken, gewogen naar nachten; doorreisplekken tellen niet mee.
+  var SCORE_ONDERDELEN = [['cultuur', 'Cultuur'], ['stad', 'Stad'], ['natuur', 'Natuur'], ['actief', 'Actief'], ['relax', 'Relax']];
+  function plekProfiel(s) {
+    var p = s && s.profiel;
+    if (!p || typeof p !== 'object') return null;
+    var uit = {};
+    for (var i = 0; i < SCORE_ONDERDELEN.length; i++) {
+      var k = SCORE_ONDERDELEN[i][0], v = p[k];
+      if (typeof v !== 'number' || v < 1 || v > 5 || v !== Math.round(v)) return null;
+      uit[k] = v;
+    }
+    return uit;
+  }
+  // Nachten per plek uit de route (alle bezoeken samen, zoals nachtenPlek op de reispagina); zonder routepunten
+  // met nachten voor die plek de nachten van de plek zelf.
+  function reisProfiel(stops, route) {
+    var tel = {}, nachten = 0, perPlek = {};
+    SCORE_ONDERDELEN.forEach(function (o) { tel[o[0]] = 0; });
+    rijen(route).forEach(function (x) {
+      var n = Number(x.nachten);
+      if (x.stop_id && n > 0) perPlek[x.stop_id] = (perPlek[x.stop_id] || 0) + n;
+    });
+    rijen(stops).forEach(function (s) {
+      var p = plekProfiel(s), n = s.id && perPlek[s.id] ? perPlek[s.id] : Number(s.nachten);
+      if (!p || !(n > 0)) return;
+      nachten += n;
+      SCORE_ONDERDELEN.forEach(function (o) { tel[o[0]] += p[o[0]] * n; });
+    });
+    if (!nachten) return null;
+    SCORE_ONDERDELEN.forEach(function (o) { tel[o[0]] = tel[o[0]] / nachten; });
+    return tel;
+  }
+  // Tempo: hoe vaak we naar een nieuwe plek gaan. Transfers = routepunten met nachten (elke aankomst, ook een
+  // doorreisplek), per week omgezet naar 1–5, elk met een eigen woord.
+  var TEMPO_WOORD = ['', 'Standplaats', 'Rustig', 'Gemiddeld', 'Frequent', 'Steeds onderweg'];
+  function tempo(route, nachten) {
+    var n = Number(nachten), transfers = rijen(route).filter(function (x) { return Number(x && x.nachten) > 0; }).length;
+    if (!(n > 0) || !transfers) return null;
+    var w = transfers / n * 7, t = w <= 1 ? 1 : w <= 1.5 ? 2 : w <= 2 ? 3 : w <= 2.5 ? 4 : 5;
+    return { waarde: t, woord: TEMPO_WOORD[t], transfers: transfers, nachtenPerPlek: n / transfers };
+  }
+  // Reisscore om te tonen (besluit gebruiker 2026-10-28): een reis scoort nooit op elke plek 5, dus het gewogen
+  // gemiddelde blijft in het midden hangen. Opgerekt: 1 blijft 1, elk punt erboven telt 1,35 keer, maximaal 5
+  // (× 1,35 i.p.v. 1,5 zodat minder reizen op 5 vastlopen; besluit gebruiker 2026-10-28).
+  function reisScore(gem) { return typeof gem === 'number' && isFinite(gem) ? Math.min(5, 1 + (gem - 1) * 1.35) : null; }
+  // 3,05 → "3,1"; 5 → "5".
+  function scoreGetal(x) { return (Math.round(x * 10) / 10).toLocaleString('nl-NL', { maximumFractionDigits: 1 }); }
   // Slapen (besluit gebruiker 2026-10-07): per plek met nachten of er een verblijf geboekt is (betaald telt mee) en
   // betaald; opties en open tellen niet. Vervangt de vaste titel uit secties.slapen, die niet meeveranderde.
   function slaapStand(stops, verblijven) {
@@ -789,5 +838,6 @@
     openOpVandaag: openOpVandaag, vandaagAdres: vandaagAdres, noodnummers: noodnummers, weerOpslagLees: weerOpslagLees, weerIcoonSoort: weerIcoonSoort, klimaatPeriode: klimaatPeriode, datumsVan: datumsVan, weerSoort: weerSoort, leesVerwachting: leesVerwachting, verwachtingMogelijk: verwachtingMogelijk, weerVoorDag: weerVoorDag, weerTekst: weerTekst, licentieUrl: licentieUrl, fotoCredit: fotoCredit, veiligeLink: veiligeLink, infoVan: infoVan,
     budgetRegel: budgetRegel, tijd: tijd, ritTijden: ritTijden, tijdvak: tijdvak, activiteitWanneer: activiteitWanneer,
     verblijfPeriode: verblijfPeriode, telLink: telLink, statusLabel: statusLabel, inSlapen: inSlapen,
-    periodeKort: periodeKort, routeKm: routeKm, reisFeiten: reisFeiten };
+    periodeKort: periodeKort, routeKm: routeKm, reisFeiten: reisFeiten,
+    SCORE_ONDERDELEN: SCORE_ONDERDELEN, plekProfiel: plekProfiel, reisProfiel: reisProfiel, reisScore: reisScore, tempo: tempo, scoreGetal: scoreGetal };
 })();

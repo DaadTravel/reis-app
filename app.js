@@ -223,7 +223,16 @@ async function haalFotos(ids) {
 async function haalReizen() {
   const reizen = await sbFetch('reizen?select=id,slug,titel,jaar_label,ondertitel,stemming,status,status_label,kaart_status_label,nachten,start_datum,eind_datum,feiten,kaart_foto_id,hero_foto_id,volgorde&order=volgorde');
   if (isFout(reizen)) return reizen;
-  const [f, rol] = await Promise.all([haalFotos(reizen.map(r => r.kaart_foto_id || r.hero_foto_id)), haalRol()]);
+  const [f, rol, profielen] = await Promise.all([haalFotos(reizen.map(r => r.kaart_foto_id || r.hero_foto_id)), haalRol(), haalProfielen()]);
+  // Waar leent de reis zich voor (2026-10-28): per reis de scores en het tempo; zonder gegevens geen scores.
+  // Een fout in het rekenen mag het startscherm nooit blokkeren.
+  if (profielen) try {
+    reizen.forEach(r => {
+      const route = profielen.route.filter(x => x.reis_id === r.id);
+      r.profiel = Opmaak.reisProfiel(profielen.stops.filter(s => s.reis_id === r.id), route);
+      r.tempo = Opmaak.tempo(route, r.nachten);
+    });
+  } catch (e) { reizen.forEach(r => { r.profiel = null; r.tempo = null; }); }
   const beheerder = rol === 'bewerker';
   // Smaakprofiel en vergelijkingstabel alleen voor ouders (beheerder; besluit gebruiker 2026-10-06), in één ophaalronde.
   const v = beheerder ? await haalVergelijk(reizen) : null;
@@ -232,6 +241,12 @@ async function haalReizen() {
   const actief = Opmaak.actieveReis(reizen, vandaagIso(beheerder));
   if (actief) voorlaadReis(actief.reis.slug);
   return { reizen: reizen, fotos: f.fotos, fotoFout: f.fout, vergelijk: vergelijk, smaak: smaak, actief: actief, beheerder: beheerder };
+}
+// Plekscores en route voor de reiskaarten van het startscherm (voor iedereen). Gaat iets mis, dan null:
+// het startscherm werkt dan gewoon zonder scores.
+async function haalProfielen() {
+  const [stops, route] = await Promise.all(['stops?select=id,reis_id,nachten,profiel', 'route_punten?select=reis_id,stop_id,nachten'].map(p => sbFetch(p)));
+  return Array.isArray(stops) && Array.isArray(route) ? { stops: stops, route: route } : null;
 }
 // Eigen rol (bewerker = beheerder, kijker); onbekend of fout → null.
 async function haalRol() {

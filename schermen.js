@@ -191,6 +191,37 @@
         melding && h('p', { className: 'nv-melding', role: 'alert' }, melding)));
   }
 
+  // Waar leent een reis of plek zich voor (besluit gebruiker 2026-10-28): vijf balkjes (1–5) en voor een reis het tempo.
+  // soort 'kaart' = compact op de foto van de reiskaart, 'vol' = reisoverzicht, 'plek' = plek-paneel (zonder tempo).
+  // Op de kaart staat alles in de link: daar één korte zin voor schermlezers, de balkjes zelf verborgen.
+  function reisScores(profiel) {
+    if (!profiel) return null;
+    var uit = {};
+    O.SCORE_ONDERDELEN.forEach(function (o) { uit[o[0]] = O.reisScore(profiel[o[0]]); });
+    return uit;
+  }
+  function ScoreBlok(p) {
+    if (!p.scores) return null;
+    var t = p.tempo, kaart = p.soort === 'kaart';
+    var zin = O.SCORE_ONDERDELEN.map(function (o) { return o[1] + ' ' + O.scoreGetal(p.scores[o[0]]); }).join(', ') + (t ? ', tempo ' + t.woord : '');
+    var lijst = h('ul', { className: 'nv-score nv-score--' + p.soort, 'aria-hidden': kaart || undefined },
+      O.SCORE_ONDERDELEN.map(function (o) {
+        var v = p.scores[o[0]], tekst = O.scoreGetal(v);
+        return h('li', { key: o[0], className: 'nv-score__rij' },
+          h('span', { className: 'nv-score__naam', 'aria-hidden': true }, o[1]),
+          h('span', { className: 'nv-score__balk', role: 'img', 'aria-label': o[1] + ' ' + tekst + ' van 5' },
+            h('span', { className: 'nv-score__vul', style: { width: (v / 5 * 100) + '%' } })),
+          h('span', { className: 'nv-score__getal', 'aria-hidden': true }, tekst));
+      }),
+      t ? h('li', { className: 'nv-score__rij nv-score__rij--tempo' },
+        h('span', { className: 'nv-score__naam', 'aria-hidden': true }, 'Tempo'),
+        h('span', { className: 'nv-score__stippen', role: 'img', 'aria-label': 'Tempo ' + t.waarde + ' van 5: ' + t.woord },
+          [1, 2, 3, 4, 5].map(function (i) { return h('span', { key: i, className: 'nv-score__stip' + (i <= t.waarde ? ' is-aan' : '') }); })),
+        h('span', { className: 'nv-score__woord', 'aria-hidden': true }, t.woord),
+        p.soort === 'vol' ? h('span', { className: 'nv-score__uitleg' }, t.transfers + (t.transfers === 1 ? ' transfer' : ' transfers') + ', gemiddeld ' + O.scoreGetal(t.nachtenPerPlek) + ' nachten per plek') : null) : null);
+    return kaart ? h(React.Fragment, null, h('span', { className: 'nv-onzichtbaar' }, ' ' + zin), lijst) : lijst;
+  }
+
   // ═════════════ startscherm ═════════════
   function Startscherm(p) {
     var foto = maakFoto(p.data.fotos);
@@ -215,7 +246,7 @@
               return h(G.TripCard, A(foto(r.kaart_foto_id || r.hero_foto_id), {
                 key: r.id, title: r.titel, year: r.jaar_label || undefined, mood: r.stemming, subtitle: r.ondertitel || undefined,
                 nights: r.nachten == null ? '?' : r.nachten, status: r.status || undefined, statusLabel: r.kaart_status_label || r.status_label || undefined,
-                href: reisUrl(r.slug) }));
+                href: reisUrl(r.slug), extra: r.profiel ? h(ScoreBlok, { soort: 'kaart', scores: reisScores(r.profiel), tempo: r.tempo }) : undefined }));
             })));
         }),
         p.data.smaak ? h(Smaak, { smaak: p.data.smaak }) : null,
@@ -824,6 +855,7 @@
   function Overzicht(p) {
     var r = p.reis;
     var randen = useRanden();
+    var profiel = O.reisProfiel(p.stops, p.route);
     function schuif(n) { var el = randen.el; if (el) el.scrollBy({ left: n * el.clientWidth * 0.8, behavior: 'smooth' }); }
     // Tijdlijn volgt de route (met heen- en terugreis); zonder route de plekken.
     var punten = p.route.length ? p.route.map(function (x) {
@@ -853,6 +885,10 @@
         h('div', { className: 'nv-kopblok' },
           h('span', { className: 'nv-label' }, 'Reisoverzicht'),
           h('h2', { className: 'nv-kop' }, h('em', null, nachtenTekst(r.nachten)), ', ' + p.stops.length + (p.stops.length === 1 ? ' plek' : ' plekken'))),
+        profiel ? h('div', { className: 'nv-reisscore' },
+          h('span', { className: 'nv-label' }, 'Waar de reis zich voor leent'),
+          h(ScoreBlok, { soort: 'vol', scores: reisScores(profiel), tempo: O.tempo(p.route, r.nachten) }),
+          h('p', { className: 'nv-reisscore__noot' }, 'Op basis van de plekken, naar het aantal nachten. Doorreisplekken tellen niet mee.')) : null,
         punten.length && (randen.l || randen.r) ? h('div', { className: 'nv-pijlen nv-pijlen--altijd' },
           h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Eerder in de route', disabled: !randen.l, onClick: function () { schuif(-1); } }, '‹'),
           h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Verder in de route', disabled: !randen.r, onClick: function () { schuif(1); } }, '›')) : null,
@@ -962,6 +998,7 @@
       // Op incheckdatum; zonder datum achteraan.
       .sort(function (a, b) { return String(a.inchecken || '9999').localeCompare(String(b.inchecken || '9999')) || a.volgorde - b.volgorde; });
     var prijzen = opties.map(function (x) { return x.prijs; }).filter(function (x) { return x != null; }).map(Number);
+    var plekScore = O.plekProfiel(s);
 
     return h('section', { className: 'nv-blok', id: 'programma' },
       h('div', { className: 'nv-wrap' },
@@ -982,6 +1019,11 @@
               // Eén bezoek met datum: de nachten staan al in de periode (O.plekPeriode). Meer bezoeken: alle samen.
               meer || !(d && d.datum_van) ? h('li', null, nachtenPlek(p.route, s)) : null,
               feiten.map(function (x, k) { return h('li', { key: k }, x[0] + ': ' + x[1]); })) : null,
+            // Waar de plek zich voor leent (2026-10-28); een doorreisplek heeft geen scores, alleen de tekst.
+            plekScore || s.leent_zich_voor ? h('div', { className: 'nv-plekscore' },
+              h('span', { className: 'nv-label' }, plekScore ? 'Leent zich voor' : 'Doorreisplek'),
+              s.leent_zich_voor ? h('p', { className: 'nv-plekscore__tekst' }, s.leent_zich_voor) : null,
+              h(ScoreBlok, { soort: 'plek', scores: plekScore })) : null,
             s.lede && h('p', { className: 'nv-tekst' }, s.lede),
             meer ? h('ol', { className: 'nv-bezoeken' }, bezoeken.map(function (v, k) {
               // Wat al in het algemene tipskader staat niet nog eens per bezoek.
