@@ -954,7 +954,10 @@
       var rij = tabsRef.current, knop = rij && rij.querySelector('[aria-selected="true"]');
       if (!knop) return;
       var l = knop.getBoundingClientRect().left - rij.getBoundingClientRect().left + rij.scrollLeft, r = l + knop.offsetWidth;
-      if (l < rij.scrollLeft || r > rij.scrollLeft + rij.clientWidth) rij.scrollTo({ left: l - 16, behavior: 'smooth' });
+      // Buiten beeld (bijv. na een tik op een tegel) direct, niet vloeiend: twee vloeiende scrolls tegelijk breken de
+      // paginascroll naar het programma soms af.
+      var b = rij.getBoundingClientRect(), zichtbaar = b.bottom > 0 && b.top < window.innerHeight;
+      if (l < rij.scrollLeft || r > rij.scrollLeft + rij.clientWidth) rij.scrollTo({ left: l - 16, behavior: zichtbaar ? 'smooth' : 'auto' });
     }, [sid]);
     var kopblok = h('div', { className: 'nv-kopblok' },
       h('span', { className: 'nv-label' }, 'Reisprogramma'),
@@ -1487,10 +1490,13 @@
       return hier || (stops[0] && stops[0].id);
     }), plekId = pk[0], setPlekId = pk[1];
     React.useEffect(function () { document.title = r.titel + ' · Onze reizen'; }, [r.titel]);
-    // Vanuit een tegel: naar het programma. Binnen het programma: alleen terug naar het paneel als je al voorbij het begin bent.
+    // Vanuit een tegel: naar het programma, pas nadat de nieuwe plek getekend is (en de tabrij al goed staat).
+    // Binnen het programma: alleen terug naar het paneel als je al voorbij het begin bent.
+    var np = React.useState(0), naarProgramma = np[0], setNaarProgramma = np[1];
+    React.useEffect(function () { if (naarProgramma) naar('programma'); }, [naarProgramma]);
     function kiesPlek(id, blijf) {
       setPlekId(id);
-      if (!blijf) return naar('programma');
+      if (!blijf) return setNaarProgramma(function (n) { return n + 1; });
       var el = document.getElementById('plek-paneel');
       if (el && el.getBoundingClientRect().top < 0) naar('plek-paneel');
     }

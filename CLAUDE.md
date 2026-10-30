@@ -146,16 +146,14 @@ ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
 
 Klein, geen appwerk; wacht op een besluit of signaal van de gebruiker.
 
-- **Incheon:** plekfoto is niet bij het hotel (geen vrije foto beschikbaar)
-  en de gebruiker vraagt nog iets na bij het hotel (details in
-  `.claude/overdracht.md`).
-- **Rooktest op de eigen telefoon** (`tests/rooktest.md`, "Op de eigen
-  telefoon"): installeren, offline, verslag offline, uitloggen, nieuwe
-  versie — nog niet gemeld.
-- **Tegel → programma scrolt soms niet** (rooktest 2026-10-18): een tik op
-  een plektegel in het overzicht kiest de plek, maar scrolt af en toe niet
-  naar het programma (wisselend, ook in v40 al; niet opgelost, gebruiker
-  beslist).
+Geen open punten.
+
+Afgehandeld 2026-10-30: rooktest op de eigen telefoon gedaan ("lijkt te
+werken", gebruiker); Incheon-plekfoto/navraag hotel laten vallen (besluit
+gebruiker); tegel → programma scrolde soms niet: de tabrij schoof tegelijk
+vloeiend mee, wat de paginascroll kon afbreken. Nu schuift de tabrij buiten
+beeld direct en start de paginascroll pas na het tekenen van de nieuwe plek
+(v44).
 
 Afgehandeld 2026-10-18: namen per account staan er (4 leden), teksten
 Takayama/Narita akkoord, Spanje heeft het dagblok terugreis al, skills
