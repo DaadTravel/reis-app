@@ -135,9 +135,12 @@ ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
 - **Reisplanning 2027** (geen appwerk, gebruiker zoekt zelf): vlucht Japan
   voor 21 dagen zoeken (de prijs is nu voor 25–26 dagen), vervoer Korea
   kiezen (huurauto Sokcho–Busan of bus), en de keuze tussen Japan, Korea en
-  Noord-Spanje. Korea: **Nami Island** en **Danyang** staan als idee bij
-  Seoraksan (2026-10-05): Nami als tussenstop op de reisdag vanuit Seoul,
-  Danyang als eigen plek (1 nacht minder Seoraksan) als het hartjes krijgt.
+  Noord-Spanje. Korea: **Nami Island** staat als idee bij Seoraksan
+  (2026-10-05), als tussenstop op de reisdag vanuit Seoul. **Danyang** is
+  sinds 2026-11-14 een eigen plek (1 nacht, tussen Seoraksan en Gyeongju;
+  Gyeongju 2 nachten, de Andong-dagtrip vervalt; besluit gebruiker na
+  advies skill `tiener`). De tieners hebben bij Korea nog geen ★ gezet: laten
+  doorlopen vóór verdere routekeuzes.
   Korea: een boeking moet mogelijk deels geannuleerd worden als de vlucht
   definitief is (details in `.claude/overdracht.md`); reis Korea staat nog
   op Idee.
