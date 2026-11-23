@@ -132,10 +132,13 @@ ontwerpkeuzes zodat het later niet onnodig moeilijk wordt.
 - **Rooktest onderweg op de telefoon** (2026-10-05): volgens de gebruiker
   werkt het op basis van een paar eigen tests (2026-10-06); niet verder
   uitgewerkt.
-- **Reisplanning 2027** (geen appwerk, gebruiker zoekt zelf): vlucht Japan
-  voor 21 dagen zoeken (de prijs is nu voor 25–26 dagen), vervoer Korea
-  kiezen (huurauto Sokcho–Busan of bus), en de keuze tussen Japan, Korea en
-  Noord-Spanje. Korea: **Nami Island** staat als idee bij Seoraksan
+- **Reisplanning 2027: Noord-Spanje gekozen** (besluit gebruiker
+  2026-11-23; status geboekt = "Gekozen", Excel N3 Gekozen). Japan en
+  Zuid-Korea staan als "Idee voor later" (stemming `later`, Excel N3 Idee);
+  wat Korea betreft moeten de gemaakte boekingen geannuleerd worden (Seoul
+  Orakai via Booking.com vóór 4 jul 2027, Incheon Park Marine 2× via Expedia
+  vóór 3 aug 2027); daarna die verblijven in de app op status open zetten.
+  Hieronder de oude notities over Japan/Korea, bewaard voor later. Korea: **Nami Island** staat als idee bij Seoraksan
   (2026-10-05), als tussenstop op de reisdag vanuit Seoul. **Danyang** is
   sinds 2026-11-14 een eigen plek (1 nacht, tussen Seoraksan en Gyeongju;
   Gyeongju 2 nachten, de Andong-dagtrip vervalt; besluit gebruiker na
@@ -181,7 +184,11 @@ Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
   (kostenpost → categorie), `reisFeiten` (periode, route-km, gereden km);
   onbekend wordt "?"
 - `schermen.js` — de schermen (ontwerp Nevel): inloggen, wachtwoord
-  instellen, startscherm, reispagina
+  instellen, startscherm, reispagina. Startscherm en vergelijkingstabel
+  groeperen op `reizen.stemming` (`REIS_GROEPEN`): voorpret "Nog te gaan",
+  **later "Ideeën voor later"** (sinds 2026-11-23, migratie …0030; een
+  bewaard idee, gedraagt zich verder als voorpret), herinnering "Al gemaakt".
+  De kaart toont bij later gewoon "Voorpret" (design-bundel kent 2 stemmingen)
 - `thema.css` — alle kleur- en maatvariabelen (palet Nevel; voorlopig
   alleen licht — donker is geparkeerd, besluit gebruiker 2026-09-30;
   design-check toetst tot die tijd alleen licht). `app.css` — stijl van

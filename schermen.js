@@ -223,10 +223,13 @@
   }
 
   // ═════════════ startscherm ═════════════
+  // Groepen op het startscherm en in de vergelijkingstabel, op reizen.stemming. 'later' = idee voor een
+  // volgende keer (besluit gebruiker 2026-11-23: Japan en Korea bewaard, Noord-Spanje gekozen).
+  var REIS_GROEPEN = [['voorpret', 'Nog te gaan'], ['later', 'Ideeën voor later'], ['herinnering', 'Al gemaakt']];
   function Startscherm(p) {
     var foto = maakFoto(p.data.fotos);
     var reizen = p.data.reizen;
-    var groepen = [['voorpret', 'Nog te gaan'], ['herinnering', 'Al gemaakt']];
+    var groepen = REIS_GROEPEN;
     React.useEffect(function () { document.title = 'Onze reizen'; }, []);
     return h(React.Fragment, null,
       h('main', { className: 'nv-wrap' },
@@ -244,7 +247,7 @@
             h('h2', { className: 'nv-label nv-start__groep' }, g[1]),
             h('div', { className: 'nv-reizen' }, lijst.map(function (r) {
               return h(G.TripCard, A(foto(r.kaart_foto_id || r.hero_foto_id), {
-                key: r.id, title: r.titel, year: r.jaar_label || undefined, mood: r.stemming, subtitle: r.ondertitel || undefined,
+                key: r.id, title: r.titel, year: r.jaar_label || undefined, mood: r.stemming === 'herinnering' ? 'herinnering' : 'voorpret', subtitle: r.ondertitel || undefined,
                 nights: r.nachten == null ? '?' : r.nachten, status: r.status || undefined, statusLabel: r.kaart_status_label || r.status_label || undefined,
                 href: reisUrl(r.slug), extra: r.profiel ? h(ScoreBlok, { soort: 'kaart', scores: reisScores(r.profiel), tempo: r.tempo }) : undefined }));
             })));
@@ -286,7 +289,7 @@
       if (x.totaal == null) return '?';
       return (x.schatting ? '~' : '') + O.euro(x.totaal) + (x.onbekend ? ' + ?' : '');
     };
-    var groepen = [['voorpret', 'Nog te gaan'], ['herinnering', 'Al gemaakt']];
+    var groepen = REIS_GROEPEN;
     var kop = ['Reis', 'Status', 'Periode', 'Nachten', 'Plekken', 'Erheen', 'Weer', 'Totaal', 'Per nacht', 'Hartjes'];
     var getal = [3, 4, 7, 8, 9];
     return h('details', { className: 'nv-vergelijk' },
