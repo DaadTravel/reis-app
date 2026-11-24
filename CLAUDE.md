@@ -221,7 +221,7 @@ Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
   `?sw=1` draait die stub in de service worker (`sw-test.js`,
   gitignored) zodat de echte cachelogica van `sw.js` getest wordt
 - `bron/` (gitignored, alleen lokaal): mockup, apptest, fotokeuze, oude
-  seed-data; géén Excels (die staan in de OneDrive-map Reizen, zie
+  seed-data, dagverhaal (instructie en proefversie); géén Excels (die staan in de OneDrive-map Reizen, zie
   Supabase → Excel per reis). Reservekopie via een lokale git-hook
 
 Werk deze lijst bij zodra er echte bestanden bijkomen.
@@ -277,7 +277,25 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   houdt 200 aan);
   `…0027`: `reis.landen`, `reis.verzekeringen`, `stops.land`, zie
   Noodnummers; `…0028`: `stops.lat`/`lon`/`klimaat`, zie Weer per plek; `…0029`:
-  `stops.profiel` en `stops.leent_zich_voor`, zie Waar leent de reis zich voor).
+  `stops.profiel` en `stops.leent_zich_voor`, zie Waar leent de reis zich voor; `…0030`: stemming `later`, zie Structuur; `…0031`:
+  `reis.dagverhalen`, `activiteiten.dagverhaal_id`, `reizen.highlights`, `stops.kort`, zie Dagverhaal).
+- **Dagverhaal** (migratie `…0031`, besluit gebruiker 2026-11-24; in aanbouw, de app leest het nog
+  niet). Instructie en proefversie staan lokaal in `bron/dagverhaal/` (gitignored); fase 0 (proef) en
+  fase 1 (datamodel) zijn klaar. `reis.dagverhalen`: één rij per "dag N van een plek" (`dag_in_plek`,
+  1 = aankomstdag; uniek per plek), met `titel`, `logistiek` (alleen een dag zonder rit: een rijdag krijgt
+  zijn regel uit `route_punten`), `verhaal`, `tips` (max. 2), `foto_id`, `uitgelicht` en `status`
+  (`concept`/`akkoord`). **Niet opgeslagen, want afleidbaar:** datum (aankomst bij de plek + N − 1, dus het
+  verhaal schuift mee met de route), dagnummer in de reis, km en rijtijd. `activiteiten.dagverhaal_id` =
+  activiteit bij een dag; een vaste datum uit de Excel gaat voor. `reizen.highlights` (max. 3; niet het
+  vervallen `stops.highlights`; de lengte per regel bewaakt de database niet, Claude houdt ze kort) en
+  `stops.kort` (één korte zin per hoofdstuk in het Overzicht, ≤ 120 tekens; zonder `kort` de eerste zin van
+  `stops.lede`, die zelf ongewijzigd blijft voor Route). De plekintro boven de dagen is `dagen.beleving`.
+  **De database dwingt af dat een koppeling binnen één reis blijft** (samengestelde sleutel met `reis_id`,
+  bij verwijderen alleen de koppeling leeg): plek weg = verhaal zonder plek (de app toont het niet),
+  dagverhaal weg = activiteit en hartjes blijven. RLS zoals `dagen`. **Dagverhalen staan niet in de Excel:
+  de app is de bron**; Claude schrijft ze via een SQL-bestand in `bron/seed/` (insert of update, tellingen
+  vóór en na), status `concept` tot de gebruiker ze heeft goedgekeurd. Feiten in een verhaal alleen uit de
+  app, de Excel of wat de gebruiker bevestigt.
 - **Noodnummers** (migratie `…0027`, gebouwd 2026-10-18). Ingeklapt
   onderaan een reis die nog komt of loopt (niet bij een herinnering of na
   thuiskomst), voor het hele gezin: per land (`stops.land`, ISO-code;
@@ -555,7 +573,9 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   per nacht bij invoer eerst omrekenen met `nachten`.
 - **Tips staan alleen in `stops.tips`** (besluit gebruiker 2026-10-01):
   één opgeschoonde lijst per plek, in de app altijd zichtbaar in het
-  tipskader. `stops.highlights` is leeggemaakt en wordt niet meer
+  tipskader (daarnaast "Mijn tips" per dag in `dagverhalen.tips`, zie
+  Dagverhaal; niet herhalen wat al in `stops.tips` staat). `stops.highlights`
+  (niet te verwarren met het nieuwe `reizen.highlights`) is leeggemaakt en wordt niet meer
   gevuld; de app voegt hem voor de zekerheid nog wel samen (zonder
   dubbelen). **Iets om te doen is een activiteit, geen tip** (besluit
   gebruiker 2026-10-04): staat het als idee in `activiteiten` (met hartjes),
@@ -574,7 +594,8 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   Leeg is bewust: Vertrek/Thuis en vlucht- of reisdagen ("A → B") —
   behalve als plek B geen eigen dag heeft, dan hoort die reisdag bij B.
   De database dwingt nog niet af dat de plek bij dezelfde reis hoort; de
-  app moet dat zelf bewaken.
+  app moet dat zelf bewaken. Uitzondering: bij `dagverhalen.stop_id` en
+  `activiteiten.dagverhaal_id` dwingt de database het wél af (`…0031`).
 - **Dag hoort bij een bezoek** (besluit gebruiker 2026-10-01, migratie
   `…0012`): `dagen.route_punt_id` wijst naar het routepunt van dat
   bezoek, zodat een plek die twee keer in de route staat per bezoek een
