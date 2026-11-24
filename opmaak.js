@@ -831,7 +831,89 @@
       licentie: lic || undefined, licentieHref: licentieUrl(lic) };
   }
 
-  window.Opmaak = { dagLabel: dagLabel, plekPeriode: plekPeriode, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
+  // ── Dagverhaal (migratie 0031, besluit gebruiker 2026-11-24) ──
+  // Een dagverhaal hangt aan "dag N van een plek"; de datum wordt afgeleid (aankomst + N − 1), zodat het verhaal
+  // meeschuift als de route verschuift. Ongeldige aankomst of dag (geen heel getal ≥ 1) → null.
+  // Dag van een plek (niet: dag van de reis, dat is dagNr in dagOverzicht): een heel getal ≥ 1, anders null.
+  function plekDagNr(dagInPlek) { var n = getal(dagInPlek); return n != null && n >= 1 && n % 1 === 0 ? n : null; }
+  function verhaalDatum(aankomst, dagInPlek) {
+    var n = plekDagNr(dagInPlek);
+    return isDatum(aankomst) && n ? plusDagen(aankomst, n - 1) : null;
+  }
+  // Bovenregel van een dag: "Dag 5 · za 17 juli" (dagnummer vanaf het vertrek). Zonder geldig vertrek, of een datum
+  // vóór het vertrek: alleen de datum. Ongeldige datum → leeg.
+  function verhaalKop(vertrek, datum) {
+    if (!isDatum(datum)) return '';
+    var n = dagenTussen(vertrek, datum);
+    return (n != null && n >= 0 ? 'Dag ' + (n + 1) + ' · ' : '') + dagLabel(datum);
+  }
+
+  // Ritregel van een rijdag: de rit die op deze datum bij deze plek aankomt (vertrekdag + leg_aankomst_dagen, dus een
+  // nachtvlucht hoort bij de dag erna): { vervoer, tekst: "Van → Naar · 506 km · 5u20" }. Alleen wat bekend is (een
+  // vlucht zonder km: alleen de reistijd); niet nagemeten of niets bekend → "rit nog meten". Geen rit → null.
+  function ritRegel(route, stopId, datum) {
+    if (!isDatum(datum)) return null;
+    var r = rijen(route).slice().sort(function (a, b) { return (a.volgorde || 0) - (b.volgorde || 0); });
+    for (var i = 1; i < r.length; i++) {
+      var p = r[i];
+      if (p.stop_id !== stopId || plusDagen(p.leg_datum, p.leg_aankomst_dagen || 0) !== datum) continue;
+      var km = getal(p.leg_km), min = getal(p.leg_minuten);
+      var delen = p.leg_geverifieerd ? [km != null ? km + ' km' : '', min != null ? reistijd(min, p.leg_benadering) : ''].filter(Boolean) : [];
+      return { vervoer: p.leg_vervoer || null,
+        tekst: (tekstOf(r[i - 1].naam) || '?') + ' → ' + (tekstOf(p.naam) || '?') + ' · ' + (delen.length ? delen.join(' · ') : 'rit nog meten') };
+    }
+    return null;
+  }
+
+  // Polaroid om en om: dag 1 van een plek naar links, dag 2 naar rechts, enz. Geen geldige dag → null (niet kantelen).
+  function kantelKant(dagInPlek) {
+    var n = plekDagNr(dagInPlek);
+    return n ? (n % 2 ? 'links' : 'rechts') : null;
+  }
+
+  // Dagverhalen van één plek op dagvolgorde. Een verhaal na de laatste nacht (plek ingekort) wordt niet getoond maar
+  // geteld (buiten), voor een melding aan de beheerder; niets wordt verwijderd. De laatste plek mag ook de dag naar
+  // huis (nachten + 1). Nachten onbekend → alles tonen. Een verhaal zonder geldige dag telt nergens mee.
+  function verhalenVanPlek(verhalen, stopId, nachten, laatste) {
+    var max = Number(nachten) >= 1 ? Number(nachten) + (laatste ? 1 : 0) : Infinity, tonen = [], buiten = 0;
+    rijen(verhalen).forEach(function (v) {
+      var n = plekDagNr(v.dag_in_plek);
+      if (v.stop_id !== stopId || !n) return;
+      if (n <= max) tonen.push(v); else buiten++;
+    });
+    tonen.sort(function (a, b) { return a.dag_in_plek - b.dag_in_plek; });
+    return { tonen: tonen, buiten: buiten };
+  }
+
+  // Korte zin bij een hoofdstuk in het Overzicht: stops.kort, anders de eerste zin van stops.lede (besluit gebruiker
+  // 2026-11-24: lede blijft voor Route). Een zin eindigt op . ! of ? gevolgd door een hoofdletter (dus "ca. 20" niet).
+  function hoofdstukZin(stop) {
+    var s = stop || {}, kort = tekstOf(s.kort).trim();
+    if (kort) return kort;
+    var lede = tekstOf(s.lede).trim(), m = /^([\s\S]+?[.!?])\s+(?=[A-ZÀ-Ý"'‘“(])/.exec(lede);
+    return m ? m[1] : lede;
+  }
+
+  // Samenvattingsregel van het Overzicht: "Roadtrip · 24 dagen · 8 plekken". Roadtrip alleen als elke rit met een
+  // gekozen vervoer de auto is; dagen = vertrek t/m thuis; wat onbekend is valt weg.
+  function reisSamenvatting(reis, route, stops) {
+    var r = reis || {}, vervoer = rijen(route).map(function (p) { return p.leg_vervoer; }).filter(Boolean);
+    var dagen = dagenTussen(r.start_datum, r.eind_datum), n = rijen(stops).length;
+    return [vervoer.length && vervoer.every(function (v) { return v === 'car'; }) ? 'Roadtrip' : '',
+      dagen != null && dagen >= 0 ? (dagen + 1) + (dagen ? ' dagen' : ' dag') : '',
+      n ? n + (n === 1 ? ' plek' : ' plekken') : ''].filter(Boolean).join(' · ');
+  }
+
+  // Activiteit gekoppeld aan een dagverhaal (activiteiten.dagverhaal_id): een vaste datum (Excel) gaat voor. Valt die
+  // op een andere dag, dan staat de activiteit niet bij het verhaal en krijgt de beheerder een melding (afwijking).
+  // Zonder (geldige) vaste datum hoort ze bij het verhaal; heeft het verhaal zelf geen datum, dan valt er niets te vergelijken.
+  function activiteitBijDag(a, datum) {
+    if (!a || typeof a !== 'object') return { bijVerhaal: false, afwijking: false };
+    if (!isDatum(a.datum)) return { bijVerhaal: true, afwijking: false };
+    return { bijVerhaal: a.datum === datum, afwijking: isDatum(datum) && a.datum !== datum };
+  }
+
+  window.Opmaak = { activiteitBijDag: activiteitBijDag, reisSamenvatting: reisSamenvatting, hoofdstukZin: hoofdstukZin, verhaalDatum: verhaalDatum, verhaalKop: verhaalKop, ritRegel: ritRegel, kantelKant: kantelKant, verhalenVanPlek: verhalenVanPlek, dagLabel: dagLabel, plekPeriode: plekPeriode, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, slaapStand: slaapStand, slaapStandTekst: slaapStandTekst, splitsMoment: splitsMoment, magAchteraf: magAchteraf, naReis: naReis, smaakprofiel: smaakprofiel, smaakScore: smaakScore, pastBijOns: pastBijOns, aankomstPlekken: aankomstPlekken, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
     openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, bewerkFase: bewerkFase, wijzigVelden: wijzigVelden, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,

@@ -280,8 +280,13 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   `stops.profiel` en `stops.leent_zich_voor`, zie Waar leent de reis zich voor; `…0030`: stemming `later`, zie Structuur; `…0031`:
   `reis.dagverhalen`, `activiteiten.dagverhaal_id`, `reizen.highlights`, `stops.kort`, zie Dagverhaal).
 - **Dagverhaal** (migratie `…0031`, besluit gebruiker 2026-11-24; in aanbouw, de app leest het nog
-  niet). Instructie en proefversie staan lokaal in `bron/dagverhaal/` (gitignored); fase 0 (proef) en
-  fase 1 (datamodel) zijn klaar. `reis.dagverhalen`: één rij per "dag N van een plek" (`dag_in_plek`,
+  niet). Instructie en proefversie staan lokaal in `bron/dagverhaal/` (gitignored); fase 0 (proef),
+  fase 1 (datamodel) en fase 2 (afleidingen in `opmaak.js`, met tests) zijn klaar: `O.verhaalDatum`,
+  `O.verhaalKop` ("Dag 5 · za 17 juli"), `O.ritRegel` (rijdag uit de route, nachtvlucht op de
+  aankomstdag, niet nagemeten = "rit nog meten"), `O.kantelKant`, `O.verhalenVanPlek` (buiten de nachten
+  tellen, niet tonen), `O.hoofdstukZin`, `O.reisSamenvatting` ("Roadtrip · 24 dagen · 8 plekken";
+  Roadtrip alleen als elke rit met gekozen vervoer de auto is) en `O.activiteitBijDag` (vaste datum gaat voor, afwijking
+  melden). `reis.dagverhalen`: één rij per "dag N van een plek" (`dag_in_plek`,
   1 = aankomstdag; uniek per plek), met `titel`, `logistiek` (alleen een dag zonder rit: een rijdag krijgt
   zijn regel uit `route_punten`), `verhaal`, `tips` (max. 2), `foto_id`, `uitgelicht` en `status`
   (`concept`/`akkoord`). **Niet opgeslagen, want afleidbaar:** datum (aankomst bij de plek + N − 1, dus het

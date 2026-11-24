@@ -878,6 +878,100 @@
     return tekst('TripCard', { title: 'Testreis', extra: React.createElement('span', null, 'EXTRA-INHOUD') }).indexOf('EXTRA-INHOUD') > -1;
   });
 
+  // --- Dagverhaal (fase 2, 2026-11-24): afleidingen uit dag_in_plek en de route; verzonnen waarden ---
+  test('verhaalDatum: dag 1 = aankomstdag, dag 3 = twee dagen later', ['2030-05-10', '2030-05-12'], function () {
+    return [O.verhaalDatum('2030-05-10', 1), O.verhaalDatum('2030-05-10', 3)];
+  });
+  test('verhaalDatum: over de maandgrens', '2030-06-02', function () { return O.verhaalDatum('2030-05-30', 4); });
+  test('verhaalDatum: geen aankomst, ongeldige datum, dag 0, negatief, geen heel getal → null', [null, null, null, null, null], function () {
+    return [O.verhaalDatum(null, 1), O.verhaalDatum('2030-02-30', 1), O.verhaalDatum('2030-05-10', 0), O.verhaalDatum('2030-05-10', -2), O.verhaalDatum('2030-05-10', 1.5)];
+  });
+
+  test('verhaalKop: dagnummer in de reis + datum', ['Dag 1 · vr 10 mei', 'Dag 3 · zo 12 mei'], function () {
+    return [O.verhaalKop('2030-05-10', '2030-05-10'), O.verhaalKop('2030-05-10', '2030-05-12')];
+  });
+  test('verhaalKop: geen (geldig) vertrek of datum vóór vertrek → alleen de datum; ongeldige datum → leeg', ['zo 12 mei', 'zo 12 mei', ''], function () {
+    return [O.verhaalKop(null, '2030-05-12'), O.verhaalKop('2030-05-20', '2030-05-12'), O.verhaalKop('2030-05-10', 'morgen')];
+  });
+
+  var routeDV = [
+    { naam: 'Thuis', volgorde: 1 },
+    { naam: 'Aap', stop_id: 's1', volgorde: 2, leg_datum: '2030-05-10', leg_km: 300, leg_minuten: 200, leg_geverifieerd: true, leg_vervoer: 'car' },
+    { naam: 'Noot', stop_id: 's2', volgorde: 3, leg_datum: '2030-05-13', leg_km: 40, leg_minuten: 45, leg_benadering: true, leg_geverifieerd: true, leg_vervoer: 'car' },
+    { naam: 'Mies', stop_id: 's3', volgorde: 4, leg_datum: '2030-05-15', leg_km: 500, leg_minuten: 400, leg_geverifieerd: false, leg_vervoer: 'car' },
+    { naam: 'Vuur', stop_id: 's4', volgorde: 5, leg_datum: '2030-05-17', leg_aankomst_dagen: 1, leg_minuten: 600, leg_geverifieerd: true, leg_vervoer: 'plane' },
+    { naam: 'Gijs', stop_id: 's5', volgorde: 6, leg_datum: '2030-05-20', leg_minuten: 90, leg_geverifieerd: true }
+  ];
+  test('ritRegel: rijdag → van → naar · km · reistijd, met vervoer', [{ vervoer: 'car', tekst: 'Thuis → Aap · 300 km · 3u20' }, { vervoer: 'car', tekst: 'Aap → Noot · 40 km · ~45 min' }], function () {
+    return [O.ritRegel(routeDV, 's1', '2030-05-10'), O.ritRegel(routeDV, 's2', '2030-05-13')];
+  });
+  test('ritRegel: geen rit op die dag → null', [null, null], function () { return [O.ritRegel(routeDV, 's2', '2030-05-14'), O.ritRegel(routeDV, 's9', '2030-05-10')]; });
+  test('ritRegel: niet nagemeten → "rit nog meten"', { vervoer: 'car', tekst: 'Noot → Mies · rit nog meten' }, function () { return O.ritRegel(routeDV, 's3', '2030-05-15'); });
+  test('ritRegel: nachtvlucht hoort bij de aankomstdag; zonder km alleen de reistijd', [null, { vervoer: 'plane', tekst: 'Mies → Vuur · 10u' }], function () {
+    return [O.ritRegel(routeDV, 's4', '2030-05-17'), O.ritRegel(routeDV, 's4', '2030-05-18')];
+  });
+  test('ritRegel: vervoer nog niet gekozen → vervoer null', { vervoer: null, tekst: 'Vuur → Gijs · 1u30' }, function () { return O.ritRegel(routeDV, 's5', '2030-05-20'); });
+  test('ritRegel: rare invoer → null', [null, null, null], function () {
+    return [O.ritRegel(null, 's1', '2030-05-10'), O.ritRegel(routeDV, 's1', 'gisteren'), O.ritRegel([null, 7, 'x'], 's1', '2030-05-10')];
+  });
+
+  test('ritRegel: rare waarden in de rij → geen "[object Object]", "NaN" of "x km"', { vervoer: 'car', tekst: '? → ? · rit nog meten' }, function () {
+    return O.ritRegel([{ naam: {}, volgorde: 1 }, { naam: 7, stop_id: 's1', volgorde: 2, leg_datum: '2030-05-10', leg_km: 'x', leg_minuten: 'abc', leg_geverifieerd: true, leg_vervoer: 'car' }], 's1', '2030-05-10');
+  });
+  test('kantelKant: oneven dag links, even dag rechts; rare invoer → null', ['links', 'rechts', 'links', null, null], function () {
+    return [O.kantelKant(1), O.kantelKant(2), O.kantelKant(5), O.kantelKant(0), O.kantelKant('x')];
+  });
+
+  var verhalenDV = [{ id: 'a', stop_id: 's1', dag_in_plek: 3 }, { id: 'b', stop_id: 's1', dag_in_plek: 1 }, { id: 'c', stop_id: 's1', dag_in_plek: 5 },
+    { id: 'd', stop_id: 's2', dag_in_plek: 1 }, { id: 'e', stop_id: null, dag_in_plek: 1 }];
+  function idsDV(x) { return { tonen: x.tonen.map(function (v) { return v.id; }), buiten: x.buiten }; }
+  test('verhalenVanPlek: alleen deze plek, op dagvolgorde; buiten de nachten niet tonen maar tellen', { tonen: ['b', 'a'], buiten: 1 }, function () {
+    return idsDV(O.verhalenVanPlek(verhalenDV, 's1', 4, false));
+  });
+  test('verhalenVanPlek: laatste plek mag ook de dag naar huis (nachten + 1)', { tonen: ['b', 'a', 'c'], buiten: 0 }, function () {
+    return idsDV(O.verhalenVanPlek(verhalenDV, 's1', 4, true));
+  });
+  test('verhalenVanPlek: nachten onbekend → alles tonen, niets buiten', { tonen: ['b', 'a', 'c'], buiten: 0 }, function () {
+    return idsDV(O.verhalenVanPlek(verhalenDV, 's1', null, false));
+  });
+  test('verhalenVanPlek: rare invoer → leeg', [{ tonen: [], buiten: 0 }, { tonen: [], buiten: 0 }], function () {
+    return [idsDV(O.verhalenVanPlek(null, 's1', 4)), idsDV(O.verhalenVanPlek([{ stop_id: 's1', dag_in_plek: 'x' }], 's1', 4))];
+  });
+
+  test('hoofdstukZin: eerst kort (zonder witruimte eromheen)', 'Kort en krachtig.', function () {
+    return O.hoofdstukZin({ kort: '  Kort en krachtig.  ', lede: 'Lang verhaal. Nog meer.' });
+  });
+  test('hoofdstukZin: zonder kort de eerste zin van lede (ook na ! of ?)', ['Dorp aan zee met een haven.', 'Wat een plek!', 'Eén zin zonder punt'], function () {
+    return [O.hoofdstukZin({ kort: null, lede: 'Dorp aan zee met een haven. Verder veel stranden.' }), O.hoofdstukZin({ kort: '   ', lede: 'Wat een plek! En nog meer.' }),
+      O.hoofdstukZin({ lede: 'Eén zin zonder punt' })];
+  });
+  test('hoofdstukZin: "ca. 20 km" breekt de zin niet af', 'Ligt ca. 20 km van zee.', function () { return O.hoofdstukZin({ lede: 'Ligt ca. 20 km van zee. Daarna meer.' }); });
+  test('hoofdstukZin: niets of rare invoer → leeg', ['', '', ''], function () { return [O.hoofdstukZin({}), O.hoofdstukZin(null), O.hoofdstukZin({ kort: 5, lede: [] })]; });
+
+  var plekkenDV = [{ id: 's1' }, { id: 's2' }, { id: 's3' }];
+  test('reisSamenvatting: alle ritten met de auto → Roadtrip · dagen · plekken', 'Roadtrip · 11 dagen · 3 plekken', function () {
+    return O.reisSamenvatting({ start_datum: '2030-05-10', eind_datum: '2030-05-20' }, [{ naam: 'Thuis' }, { leg_vervoer: 'car' }, { leg_vervoer: 'car' }], plekkenDV);
+  });
+  test('reisSamenvatting: een vlucht erin → geen soort', '11 dagen · 3 plekken', function () {
+    return O.reisSamenvatting({ start_datum: '2030-05-10', eind_datum: '2030-05-20' }, [{ leg_vervoer: 'plane' }, { leg_vervoer: 'car' }], plekkenDV);
+  });
+  test('reisSamenvatting: enkelvoud, geen datums, geen vervoer bekend', ['1 dag · 1 plek', 'Roadtrip · 3 plekken', '3 plekken'], function () {
+    return [O.reisSamenvatting({ start_datum: '2030-05-10', eind_datum: '2030-05-10' }, [], [{ id: 'x' }]),
+      O.reisSamenvatting({}, [{ leg_vervoer: 'car' }], plekkenDV), O.reisSamenvatting({ start_datum: '2030-05-10' }, [{ leg_vervoer: null }], plekkenDV)];
+  });
+  test('reisSamenvatting: rare invoer → leeg', ['', ''], function () { return [O.reisSamenvatting(null, null, null), O.reisSamenvatting({ start_datum: '2030-05-20', eind_datum: '2030-05-10' }, 'x', 7)]; });
+
+  test('activiteitBijDag: geen vaste datum of dezelfde datum → bij het verhaal, geen melding', [{ bijVerhaal: true, afwijking: false }, { bijVerhaal: true, afwijking: false }], function () {
+    return [O.activiteitBijDag({ datum: null }, '2030-05-12'), O.activiteitBijDag({ datum: '2030-05-12' }, '2030-05-12')];
+  });
+  test('activiteitBijDag: andere vaste datum (Excel) gaat voor → niet bij het verhaal, wel melding', { bijVerhaal: false, afwijking: true }, function () {
+    return O.activiteitBijDag({ datum: '2030-05-14' }, '2030-05-12');
+  });
+  test('activiteitBijDag: verhaal zonder datum → bij de vaste datum, niets te vergelijken; ongeldige datum telt als geen datum', [{ bijVerhaal: false, afwijking: false }, { bijVerhaal: true, afwijking: false }], function () {
+    return [O.activiteitBijDag({ datum: '2030-05-14' }, null), O.activiteitBijDag({ datum: '2030-13-40' }, '2030-05-12')];
+  });
+  test('activiteitBijDag: geen activiteit → nergens', { bijVerhaal: false, afwijking: false }, function () { return O.activiteitBijDag(null, '2030-05-12'); });
+
   // --- Uitslag tonen ---
   var goed = uitslag.filter(function (u) { return u.ok; }).length;
   document.getElementById('som').textContent = goed + ' / ' + uitslag.length + ' geslaagd' + (goed === uitslag.length ? ' ✓' : ' — ' + (uitslag.length - goed) + ' mislukt');
