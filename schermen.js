@@ -793,14 +793,39 @@
       f.credit && h(G.PhotoCredit, { by: f.credit }));
   }
 
+  // Smalle plakbalk: ← · huidig onderdeel · "Onderdelen" (raster van 3 kolommen, nooit horizontaal scrollen).
   function Balk(p) {
-    return h('nav', { className: 'nv-bar', 'aria-label': 'Onderdelen van deze reis' },
-      h('div', { className: 'nv-bar__rij' },
-        h('a', { href: './', className: 'nv-bar__terug', 'aria-label': 'Terug naar alle reizen' }, '←'),
-        p.secties.map(function (s) {
-          return h('a', { key: s[0], href: '#' + s[0], className: p.actief === s[0] ? 'is-on' : '',
-            onClick: function (e) { e.preventDefault(); naar(s[0]); } }, s[1]);
-        })));
+    var o = React.useState(false), open = o[0], setOpen = o[1], navRef = React.useRef(null), knopRef = React.useRef(null);
+    // Open raster: dicht bij Escape (focus terug op de knop) of een tik ernaast.
+    React.useEffect(function () {
+      if (!open) return;
+      function toets(e) { if (e.key === 'Escape') { setOpen(false); if (knopRef.current) knopRef.current.focus(); } }
+      function tik(e) { if (navRef.current && !navRef.current.contains(e.target)) setOpen(false); }
+      document.addEventListener('keydown', toets); document.addEventListener('pointerdown', tik);
+      return function () { document.removeEventListener('keydown', toets); document.removeEventListener('pointerdown', tik); };
+    }, [open]);
+    // Eerst het raster dicht, dan pas scrollen (gevonden in de proef: anders landt het onderdeel te laag).
+    // De focus gaat mee naar het gekozen onderdeel (toetsenbord, schermlezer), zonder extra sprong.
+    function kies(id) {
+      setOpen(false);
+      setTimeout(function () {
+        naar(id);
+        var el = document.getElementById(id);
+        if (el) { if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1'); el.focus({ preventScroll: true }); }
+      }, 0);
+    }
+    var nu = p.secties.filter(function (s) { return s[0] === p.actief; })[0];
+    return h('nav', { className: 'nv-menubalk', 'aria-label': 'Onderdelen van deze reis', ref: navRef },
+      h('div', { className: 'nv-menubalk__rij' },
+        h('a', { href: './', className: 'nv-menubalk__terug', 'aria-label': 'Terug naar alle reizen' }, '←'),
+        h('span', { className: 'nv-menubalk__nu' }, nu ? nu[1] : p.titel),
+        h('button', { type: 'button', ref: knopRef, className: 'nv-knop nv-menubalk__open', 'aria-expanded': open, 'aria-controls': open ? 'menupaneel' : undefined,
+          onClick: function () { setOpen(!open); } }, 'Onderdelen')),
+      open ? h('div', { id: 'menupaneel', className: 'nv-menubalk__paneel' },
+        h('ul', { className: 'nv-menu__raster' }, p.secties.map(function (s) {
+          return h('li', { key: s[0] }, h('a', { href: '#' + s[0], className: 'nv-menu__knop', 'aria-current': p.actief === s[0] ? 'page' : undefined,
+            onClick: function (e) { e.preventDefault(); kies(s[0]); } }, s[1]));
+        }))) : null);
   }
 
   function Intro(p) {
@@ -963,7 +988,7 @@
       if (l < rij.scrollLeft || r > rij.scrollLeft + rij.clientWidth) rij.scrollTo({ left: l - 16, behavior: zichtbaar ? 'smooth' : 'auto' });
     }, [sid]);
     var kopblok = h('div', { className: 'nv-kopblok' },
-      h('span', { className: 'nv-label' }, 'Reisprogramma'),
+      h('span', { className: 'nv-label' }, 'Route'),
       h('h2', { className: 'nv-kop' }, 'Plek voor ', h('em', null, 'plek')));
     if (!s) return h('section', { className: 'nv-blok', id: 'programma' },
       h('div', { className: 'nv-wrap' }, kopblok, h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen plekken.' })));
@@ -1344,7 +1369,7 @@
         })) : null,
         h(HartMelding, { hart: hart }),
         !p.activiteiten.length ? h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen activiteiten gekozen.' }) :
-        !lijst.length ? h('p', { className: 'nv-muted' }, 'Nog niets met een hartje of ster. Geef ze bij ‘Te doen’ in het programma.') :
+        !lijst.length ? h('p', { className: 'nv-muted' }, 'Nog niets met een hartje of ster. Geef ze bij ‘Te doen’ in Route.') :
         !groepen.length ? h('p', { className: 'nv-muted' }, filter === 'tiener' ? 'Nog geen ster van een tiener.' : 'Nog geen hartje van een ouder.') :
         groepen.map(function (x) {
           return h('div', { key: x.s ? x.s.id : 'los', className: 'nv-doengroep' },
@@ -1412,7 +1437,8 @@
   }
 
   // Elke reis dezelfde onderdelen, ook als er (nog) niets in staat.
-  var SECTIES = [['overzicht', 'Overzicht'], ['programma', 'Programma'], ['slapen', 'Slapen'], ['doen', 'Doen'], ['kosten', 'Kosten']];
+  // Het oude Programma heet in het menu Route (id blijft 'programma', besluit gebruiker 2026-11-24).
+  var SECTIES = [['overzicht', 'Overzicht'], ['programma', 'Route'], ['slapen', 'Slapen'], ['doen', 'Doen'], ['kosten', 'Kosten']];
 
   // Bewerken onderweg: de reisdata met de wijzigingen uit de wachtrij erop (meteen zichtbaar, ook zonder bereik).
   // Stand van de pagina = de data bij het openen, plus wat er in deze sessie is opgeslagen (blijft staan na het
@@ -1512,11 +1538,16 @@
       verslagDagen.forEach(function (dag) { uit[dag] = O.dagOverzicht(d, dag).plek; });
       return uit;
     }, [verslagDagen.join()]);
-    var secties = (onderweg ? [['vandaag', 'Vandaag']] : []).concat(SECTIES.slice(0, 4), toonVerslag ? [['verslag', 'Verslag']] : [], SECTIES.slice(4));
+    // Dag voor dag alleen bij een reis met dagverhalen (besluit gebruiker 2026-11-24; de verhalen worden geladen vanaf fase 5).
+    var metVerhalen = (data.dagverhalen || []).length > 0;
+    var secties = (onderweg ? [['vandaag', 'Vandaag']] : []).concat(SECTIES.slice(0, 1), metVerhalen ? [['dagvoordag', 'Dag voor dag']] : [],
+      SECTIES.slice(1, 4), toonVerslag ? [['verslag', 'Verslag']] : [], SECTIES.slice(4));
     var a = React.useState(null), actief = a[0], setActief = a[1];
+    // De lijst kan later groeien (Verslag als de verslagen binnen zijn, straks Dag voor dag): de scroll-spy leest altijd de actuele.
+    var sectiesRef = React.useRef(secties); sectiesRef.current = secties;
     React.useEffect(function () {
       function bijScroll() {
-        var huidige = null;
+        var huidige = null, secties = sectiesRef.current;
         secties.forEach(function (s) { var el = document.getElementById(s[0]); if (el && el.getBoundingClientRect().top < 140) huidige = s[0]; });
         if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) huidige = secties[secties.length - 1][0];
         setActief(huidige);
@@ -1540,7 +1571,7 @@
       wz: wz, bewerk: !!wz.fase, vandaag: vandaag };
     return h(FotoCtx.Provider, { value: p.foto },
       h(Opening, p),
-      h(Balk, { secties: secties, actief: actief }),
+      h(Balk, { secties: secties, actief: actief, titel: r.titel }),
       h('main', null,
         data.fotoFout && h('div', { className: 'nv-wrap' }, h(FotoMelding, { fout: data.fotoFout })),
         onderweg ? h(Vandaag, { dag: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten,

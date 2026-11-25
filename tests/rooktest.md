@@ -19,8 +19,16 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
 - [ ] **Startscherm** — alle reizen, gegroepeerd in "Nog te gaan" en
       "Al gemaakt", met kaartfoto. Onbekend aantal nachten = "?".
 - [ ] **Reispagina** — tik op een reis: foto bovenaan met credit;
-      Overzicht, Programma, Slapen, Doen en Kosten zijn er alle vijf (ook
+      Overzicht, Route, Slapen, Doen en Kosten zijn er alle vijf (ook
       als een onderdeel nog leeg is).
+- [ ] **Menu** — smalle balk bovenaan: ← (naar alle reizen), de naam van
+      het onderdeel waar je bent (bovenaan de reistitel) en "Onderdelen".
+      "Onderdelen" opent een raster van 3 kolommen (het actieve onderdeel
+      gekleurd); kiezen = raster dicht en het onderdeel staat net onder de
+      balk. Esc of tikken naast het raster sluit het. Met 7 knoppen (onderweg
+      Vandaag, na vertrek Verslag) staat de laatste gewoon links op een
+      nieuwe rij. Nergens horizontaal scrollen, ook niet op 320 px. "Dag voor
+      dag" alleen bij een reis met dagverhalen.
 - [ ] **Feiten van de reis** — onder "De reis" de periode uit de reisdatums
       (bijv. "13 jul – 5 aug"); bij een autoreis "roadtrip · … km route" en,
       als ingevuld, "· … km gereden". Past op een telefoon zonder horizontale scrollbalk.
@@ -32,8 +40,9 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       telefoon); met de muis slepen werkt, en loslaten na slepen opent
       niets. Thailand loopt door tot en met Bangkok en Thuis. Eén keer
       op een iPhone bekijken (subgrid: iOS 16+).
-- [ ] **Plek kiezen** — een tegel in het overzicht opent het programma
-      bij die plek; de tabbladen en ← / → wisselen van plek.
+- [ ] **Plek kiezen** — een tegel in het overzicht opent Route bij die
+      plek (kop net onder de menubalk); de tabbladen en ← / → wisselen van
+      plek, het plek-paneel komt net onder de plakkende tabbladen.
 - [ ] **Tips** — bij een plek één tipskader "Tips voor …", altijd open
       (geen losse opsommingspunten en geen uitklapknop); geen tip dubbel.
       Bij twee bezoeken: zie hieronder.
@@ -97,7 +106,7 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
 Lokaal met de tijdreis `?reis=europa&vandaag=2026-07-18` (als ouder en als tiener).
 
 - [ ] **Nu onderweg** — op het startscherm de kaart "Nu onderweg" bovenaan;
-      tik = naar Vandaag. "Vandaag" staat vooraan in de balk.
+      tik = naar Vandaag. "Vandaag" staat als eerste in het menuraster.
 - [ ] **Vandaag** — waar we zijn (dag x van y), het weer, route vandaag met
       tijden en betaalstatus, slapen vannacht met adres/contact, gepland of
       vrije dag (top 3 ideeën), Morgen (met weer), reisverslag.

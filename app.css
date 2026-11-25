@@ -1,6 +1,8 @@
 /* Stijl van de app (ontwerp "Nevel"). Alleen thema-variabelen uit thema.css, geen losse kleuren.
    Prefix nv- (designsysteem: rg-). */
-html { scroll-padding-top: 104px; }
+/* --balk-h = hoogte van de plakkende menubalk (52 px + 1 px rand); onderdelen landen er net onder. */
+:root { --balk-h: 53px; }
+html { scroll-padding-top: calc(var(--balk-h) + 8px); }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-sans); }
 .nv-label { display: block; margin: 0 0 var(--space-3); font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-muted); }
 .nv-kop { font-family: var(--font-display); font-weight: 400; font-size: clamp(34px, 7vw, 52px); line-height: 1.05; margin: 0 0 var(--space-4); }
@@ -27,13 +29,25 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-omlaag:focus-visible { outline: 2px solid var(--on-photo); outline-offset: 3px; }
 @media (orientation: landscape) and (max-height: 500px) { .nv-hero h1 { font-size: 72px; } .nv-omlaag { display: none; } }
 
-/* ---------- balk ---------- */
-.nv-bar { position: sticky; top: 0; z-index: 40; background: var(--paper); border-bottom: 1px solid var(--line); }
-.nv-bar__rij { display: flex; align-items: center; gap: var(--space-3); max-width: 1120px; margin: 0 auto; padding: 0 var(--space-4); height: 48px; overflow-x: auto; scrollbar-width: none; }
-.nv-bar__rij::-webkit-scrollbar { display: none; }
-.nv-bar a { flex: none; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted); text-decoration: none; padding: var(--space-2) 0; }
-.nv-bar a.is-on { color: var(--ink); box-shadow: inset 0 -2px 0 var(--lagoon); }
-.nv-bar a.nv-bar__terug { color: var(--lagoon); margin-right: auto; font-size: 18px; letter-spacing: 0; padding: var(--space-2) var(--space-2) var(--space-2) 0; }
+/* ---------- menubalk: smal, met het huidige onderdeel; "Onderdelen" klapt een raster van 3 kolommen open
+   (besluit gebruiker 2026-11-24). Het raster ligt óver de pagina, zodat de balk altijd --balk-h hoog blijft. ---------- */
+.nv-menubalk { position: sticky; top: 0; z-index: 40; background: var(--paper); border-bottom: 1px solid var(--line); }
+.nv-menubalk__rij { display: flex; align-items: center; gap: var(--space-3); max-width: 1120px; margin: 0 auto; padding: 0 var(--space-4); height: 52px; box-sizing: border-box; }
+.nv-menubalk__terug { display: inline-grid; place-items: center start; flex: none; min-width: 44px; min-height: 44px; color: var(--lagoon); font-size: 18px; text-decoration: none; }
+.nv-menubalk__nu { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); }
+.nv-menubalk__open { flex: none; min-height: 44px; }
+.nv-menubalk__open[aria-expanded="true"] { background: var(--lagoon); border-color: var(--lagoon); color: var(--on-lagoon); }
+.nv-menubalk__open:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+/* Na kiezen in het menu krijgt het onderdeel de focus (tabindex -1): geen rand om het hele blok. */
+.nv-blok[tabindex="-1"]:focus { outline: none; }
+.nv-menubalk__paneel { position: absolute; top: 100%; left: 0; right: 0; background: var(--paper); border-bottom: 1px solid var(--line); box-shadow: var(--shadow-card); padding: var(--space-3) var(--space-4); }
+.nv-menu__raster { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; list-style: none; margin: 0 auto; padding: 0; max-width: 720px; }
+.nv-menu__knop { display: flex; align-items: center; justify-content: center; min-height: 44px; height: 100%; box-sizing: border-box; padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md); border: 1px solid var(--line); background: var(--paper-raised); color: var(--ink);
+  font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; text-align: center; text-decoration: none; overflow-wrap: anywhere; }
+.nv-menu__knop[aria-current="page"] { background: var(--lagoon); border-color: var(--lagoon); color: var(--on-lagoon); }
+.nv-menu__knop:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+@media (max-width: 359px) { .nv-menu__knop { letter-spacing: .02em; font-size: 11px; } }
 
 /* ---------- intro (foto naast tekst) ---------- */
 .nv-intro { display: grid; grid-template-columns: 1fr; background: var(--paper-raised); }
@@ -117,13 +131,15 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 @media (prefers-reduced-motion: reduce) { .nv-tegel img { transition: none; } }
 
 /* ---------- reisprogramma ---------- */
-.nv-tabs { position: sticky; top: 48px; z-index: 30; background: var(--paper); display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; padding: var(--space-3) 0; margin-bottom: var(--space-6); }
+.nv-tabs { position: sticky; top: var(--balk-h); z-index: 30; background: var(--paper); display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; padding: var(--space-3) 0; margin-bottom: var(--space-6); }
 .nv-tabs::-webkit-scrollbar { display: none; }
+/* Het plekpaneel landt onder de plakkende plek-tabs (± 56 px), niet erachter. */
+#plek-paneel { scroll-margin-top: 56px; }
 @media (min-width: 720px) { .nv-tabs { justify-content: center; } }
 .nv-tab { flex: none; font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); background: var(--paper-raised); border: 1px solid var(--line); border-radius: var(--radius-pill); padding: var(--space-2) var(--space-4); cursor: pointer; }
 .nv-tab[aria-selected="true"] { background: var(--lagoon); border-color: var(--lagoon); color: var(--on-lagoon); }
 .nv-plek { display: grid; grid-template-columns: 1fr; gap: var(--space-6); }
-@media (min-width: 900px) { .nv-plek { grid-template-columns: 1.15fr .85fr; gap: var(--space-7); align-items: start; } .nv-plek__foto { position: sticky; top: 124px; order: 2; } }
+@media (min-width: 900px) { .nv-plek { grid-template-columns: 1.15fr .85fr; gap: var(--space-7); align-items: start; } .nv-plek__foto { position: sticky; top: calc(var(--balk-h) + 76px); order: 2; } }
 .nv-plek__foto { position: relative; border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 4 / 3; }
 @media (min-width: 900px) { .nv-plek__foto { aspect-ratio: 4 / 5; } }
 .nv-plek__foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -190,8 +206,6 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 
 /* ---------- vast skelet: lege onderwerpen ---------- */
 .nv-leeg { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3); margin: 0; padding: var(--space-5) var(--space-4); border: 1px dashed var(--line-strong); border-radius: var(--radius-md); font-size: 15px; text-align: center; }
-/* Vijf vaste onderdelen: op een telefoon passend maken. */
-@media (max-width: 420px) { .nv-bar__rij { gap: var(--space-2); } .nv-bar a { letter-spacing: .04em; } }
 
 /* ---------- inloggen en wachtwoord (Nevel-opening met formulier) ---------- */
 .nv-poort { position: relative; min-height: 100vh; min-height: 100svh; display: grid; place-items: center; padding: var(--space-6) var(--space-4); box-sizing: border-box; color: var(--on-photo); overflow: hidden; isolation: isolate; background: var(--scrim); }
@@ -222,9 +236,9 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-start__kop h1 { font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: clamp(52px, 13vw, 96px); line-height: .95; margin: 0 0 var(--space-3); color: var(--ink); }
 .nv-start__kop p { margin: 0 auto; max-width: 40ch; font-size: 17px; line-height: 1.6; color: var(--ink-muted); }
 .nv-start__groep { margin: var(--space-6) 0 var(--space-4); }
-.nv-reizen { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
-@media (min-width: 600px) { .nv-reizen { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 980px) { .nv-reizen { grid-template-columns: repeat(3, 1fr); gap: var(--space-5); } }
+.nv-reizen { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+@media (min-width: 600px) { .nv-reizen { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 980px) { .nv-reizen { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); } }
 /* Jaar en statuslabel naast elkaar; past het niet, dan het label eronder in plaats van afgesneden. */
 .nv-reizen .rg-tripcard__top { flex-wrap: wrap; align-items: flex-start; gap: var(--space-2); }
 .nv-reizen .rg-tripcard__year { white-space: nowrap; }
@@ -235,7 +249,7 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-nu__titel { font-family: var(--font-display); font-size: clamp(30px, 7vw, 44px); line-height: 1.05; }
 .nv-nu__titel, .nv-nu__dag { color: var(--on-lagoon); }
 .nv-nu__dag { font-size: 17px; }
-.nv-nu:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.nv-nu:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: var(--radius-lg); }
 
 /* Vandaag: blokken met wat je nu nodig hebt (route, slapen, gepland, morgen, verslag). */
 /* Compacte kop: onderweg op een telefoon moet de route of de slaapplek meteen in beeld zijn. */
@@ -258,7 +272,7 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-vandaag__morgen { margin: 0; padding-left: 1.2em; font-size: 16px; line-height: 1.6; color: var(--ink); }
 .nv-verslag { width: 100%; box-sizing: border-box; min-height: 120px; padding: 12px; font: inherit; font-size: 16px; line-height: 1.5; color: var(--ink);
   background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); resize: vertical; }
-.nv-verslag:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.nv-verslag:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .nv-verslag__knoppen { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-2); }
 .nv-verslag__ander { margin-top: var(--space-3); }
 .nv-verslag__ander .nv-label { display: block; margin-bottom: 4px; }
@@ -287,11 +301,11 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-vergelijk summary::-webkit-details-marker { display: none; }
 .nv-vergelijk summary::after { content: "+"; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 26px; line-height: 1; color: var(--lagoon); }
 .nv-vergelijk[open] summary::after { content: "–"; }
-.nv-vergelijk summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.nv-vergelijk summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .nv-vergelijk__titel { font-family: var(--font-display); font-size: clamp(26px, 5vw, 36px); line-height: 1.1; color: var(--ink); }
 .nv-vergelijk .nv-tekst { font-size: 15px; margin: 0 0 var(--space-4); }
 .nv-vergelijk__schuif { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper-raised); }
-.nv-vergelijk__schuif:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.nv-vergelijk__schuif:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .nv-vergelijk__tabel { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--ink); white-space: nowrap; }
 .nv-vergelijk__tabel th, .nv-vergelijk__tabel td { padding: 8px 9px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
 .nv-vergelijk__tabel thead th { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); }
@@ -305,7 +319,7 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-vergelijk__erheen { display: inline-flex; align-items: center; gap: 6px; }
 /* Telefoon liggend: twee lagere kaarten, zodat een kaart op het scherm past. */
 @media (orientation: landscape) and (max-height: 500px) {
-  .nv-reizen { grid-template-columns: repeat(2, 1fr); }
+  .nv-reizen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .nv-reizen .rg-tripcard { aspect-ratio: 16 / 10; }
   .nv-start__kop { padding: var(--space-6) 0 var(--space-4); }
 }
@@ -392,7 +406,7 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 .nv-nood__nummer { display: flex; align-items: baseline; align-content: center; flex-wrap: wrap; gap: var(--space-1) var(--space-3); min-height: 44px; padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--paper-raised); color: var(--ink); text-decoration: none; }
 a.nv-nood__nummer:hover { border-color: var(--lagoon); }
-a.nv-nood__nummer:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+a.nv-nood__nummer:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .nv-nood__nummer strong { font-size: 19px; color: var(--lagoon); font-variant-numeric: tabular-nums; }
 .nv-nood__uitleg { font-size: 14px; color: var(--ink-muted); padding-left: var(--space-3); }
 a.nv-nood__uitleg { color: var(--lagoon); font-weight: 600; }
@@ -416,12 +430,12 @@ p.nv-weer__bron { margin: var(--space-1) 0 0; }
 /* Waar leent de reis zich voor (2026-10-28): balkjes 1–5 per onderdeel, tempo als stippen. Op de reiskaart compact
    over de foto (op een eigen scrim), in het reisoverzicht en plek-paneel als lijst. */
 .nv-score { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
-.nv-score__rij { display: grid; grid-template-columns: 9em 1fr 2.4em; align-items: center; gap: var(--space-3); font-size: 14px; color: var(--ink); }
+.nv-score__rij { display: grid; grid-template-columns: 9em minmax(0, 1fr) 2.4em; align-items: center; gap: var(--space-3); font-size: 14px; color: var(--ink); }
 .nv-score__naam { color: var(--ink-muted); }
 .nv-score__balk { position: relative; height: 8px; border-radius: var(--radius-pill); background: var(--lagoon-soft); overflow: hidden; }
 .nv-score__vul { position: absolute; inset: 0 auto 0 0; border-radius: var(--radius-pill); background: var(--lagoon); }
 .nv-score__getal { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
-.nv-score__rij--tempo { grid-template-columns: 9em auto 1fr; padding-top: var(--space-2); border-top: 1px solid var(--line); }
+.nv-score__rij--tempo { grid-template-columns: 9em auto minmax(0, 1fr); padding-top: var(--space-2); border-top: 1px solid var(--line); }
 .nv-score__stippen { display: flex; gap: 6px; }
 .nv-score__stip { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--terracotta); }
 .nv-score__stip.is-aan { background: var(--terracotta); }
@@ -431,7 +445,9 @@ p.nv-weer__bron { margin: var(--space-1) 0 0; }
 .nv-reisscore__noot { margin: var(--space-3) 0 0; font-size: 13px; line-height: 1.5; color: var(--ink-muted); }
 .nv-plekscore { margin: var(--space-4) 0; max-width: 480px; }
 .nv-plekscore__tekst { margin: 0 0 var(--space-3); font-size: 16px; line-height: 1.5; color: var(--ink); }
-.nv-score--plek .nv-score__rij { font-size: 13px; grid-template-columns: 9em 1fr 1.6em; }
+.nv-score--plek .nv-score__rij { font-size: 13px; grid-template-columns: 9em minmax(0, 1fr) 1.6em; }
+/* Smalle telefoon (± 320 px): smallere naamkolom, anders loopt het blok (vooral de tempo-regel) rechts over de rand. */
+@media (max-width: 359px) { .nv-score__rij, .nv-score--plek .nv-score__rij { grid-template-columns: 6.5em minmax(0, 1fr) 2em; gap: var(--space-2); } .nv-score__rij--tempo { grid-template-columns: 6.5em auto minmax(0, 1fr); } .nv-score__stippen { gap: 4px; } .nv-score__stip { width: 10px; height: 10px; } .nv-score__woord { overflow-wrap: anywhere; } }
 /* Op de reiskaart: twee kolommen, getal naast de naam, balk eronder; tempo over de volle breedte. */
 .nv-score--kaart { margin-top: var(--space-3); padding: var(--space-3); grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-4);
   border-radius: var(--radius-md); background: color-mix(in srgb, var(--scrim) 55%, transparent); }

@@ -286,7 +286,15 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   aankomstdag, niet nagemeten = "rit nog meten"), `O.kantelKant`, `O.verhalenVanPlek` (buiten de nachten
   tellen, niet tonen), `O.hoofdstukZin`, `O.reisSamenvatting` ("Roadtrip · 24 dagen · 8 plekken";
   Roadtrip alleen als elke rit met gekozen vervoer de auto is) en `O.activiteitBijDag` (vaste datum gaat voor, afwijking
-  melden). `reis.dagverhalen`: één rij per "dag N van een plek" (`dag_in_plek`,
+  melden). **Besluiten gebruiker op de proef (2026-11-24):** menu = smalle plakbalk (← · huidig
+  onderdeel · knop "Onderdelen") die een raster van 3 kolommen openklapt (geen raster dat blijft plakken:
+  kost op een telefoon te veel ruimte); een 7e knop (Vandaag of Verslag) gewoon links op een nieuwe rij;
+  knop **Dag voor dag alleen bij een reis met dagverhalen** (reizen zonder houden 5 knoppen, geen dubbele
+  inhoud met Route); Overzicht = grote hoofdstukken (polaroid om en om, korte zin als citaat, de rit als
+  stippellijn ertussen, "Bekijk in Route" per hoofdstuk) **in plaats van de tegels**; een compacte dag toont
+  wél de ritregel (rijdag) en de activiteiten met hartjes; uitgelichte dagen mogen ruim (inspiratie gaat
+  voor; de echte planning volgt later). **Live pas als fase 5 klaar is:** fase 3 en 4 lokaal bouwen en
+  committen, niet pushen (een push staat meteen op de telefoons). `reis.dagverhalen`: één rij per "dag N van een plek" (`dag_in_plek`,
   1 = aankomstdag; uniek per plek), met `titel`, `logistiek` (alleen een dag zonder rit: een rijdag krijgt
   zijn regel uit `route_punten`), `verhaal`, `tips` (max. 2), `foto_id`, `uitgelicht` en `status`
   (`concept`/`akkoord`). **Niet opgeslagen, want afleidbaar:** datum (aankomst bij de plek + N − 1, dus het
