@@ -1687,6 +1687,9 @@
       var hier = onderweg && O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, vandaag).plekId;
       return hier || (stops[0] && stops[0].id);
     }), plekId = pk[0], setPlekId = pk[1];
+    // Dag voor dag heeft een eigen gekozen plek: deelt het die met Route, dan verandert bij een tik in Route het onderdeel
+    // erboven van hoogte en springt de pagina weg (gevonden in de rooktest, 2026-11-25).
+    var vpk = React.useState(plekId), verhaalPlekId = vpk[0], setVerhaalPlekId = vpk[1];
     React.useEffect(function () { document.title = r.titel + ' · Onze reizen'; }, [r.titel]);
     // Vanuit een hoofdstuk ("Bekijk in Route"): naar Route, pas nadat de nieuwe plek getekend is (en de tabrij al goed staat).
     // Binnen het programma: alleen terug naar het paneel als je al voorbij het begin bent.
@@ -1716,7 +1719,7 @@
     var nv = React.useState(0), naarVerhaal = nv[0], setNaarVerhaal = nv[1];
     React.useEffect(function () { if (naarVerhaal) naar('verhaal-paneel'); }, [naarVerhaal]);
     function kiesVerhaal(id, spring) {
-      setPlekId(id);
+      setVerhaalPlekId(id);
       if (spring) return setNaarVerhaal(function (n) { return n + 1; });
       var el = document.getElementById('verhaal-paneel');
       if (el && el.getBoundingClientRect().top < 0) naar('verhaal-paneel');
@@ -1763,7 +1766,7 @@
           open: O.openVanGisteren({ reis: r, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten }, vandaag),
           plekGisteren: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, O.plusDagen(vandaag, -1)).plek }) : null,
         h(Intro, p), h(Citaat, p), h(Overzicht, p),
-        metVerhalen ? h(DagVoorDag, A(p, { plekId: plekId, verhalen: verhalen, kiesVerhaal: kiesVerhaal, beheerder: !!gezin.beheerder,
+        metVerhalen ? h(DagVoorDag, A(p, { plekId: verhaalPlekId, verhalen: verhalen, kiesVerhaal: kiesVerhaal, beheerder: !!gezin.beheerder,
           na: p.herinnering || O.naReis(r, vandaag) })) : null,
         h(Programma, A(p, { plekId: plekId })), h(Slapen, p), h(Doen, p),
         toonVerslag ? h(Reisverslag, { reis: r, vs: vs, gezin: gezin, dagen: verslagDagen, plekken: plekken, beheerder: !!gezin.beheerder, vandaag: onderweg ? vandaag : null }) : null,
