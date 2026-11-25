@@ -49,6 +49,17 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       reistijd", niet nagemeten = "rit nog meten", na de reis nooit), een
       polaroid (om en om gekanteld, naast de tekst vanaf 820 px), nummer, naam,
       periode, de korte zin, sterren/hartjes bij de ideeën van die plek.
+- [ ] **Dag voor dag** (alleen bij een reis met dagverhalen; lokaal Noord-Spanje,
+      Llanes) — "Lees het dagverhaal" bij een hoofdstuk opent Dag voor dag bij die
+      plek. Plek-tabs plakken onder de menubalk; plek-hero met gescheurde onderrand;
+      de dagregel als intro; dagen in volgorde: compact (kop, één zin) en uitgelicht
+      (polaroid om en om, vanaf 820 px naast de tekst), met "Dag N · datum", de rit
+      (rijdag) of de praktische regel, "Mijn tips" en de ideeën met ★/♥ (zelfde knop en
+      info-venster als Doen). Plek zonder verhalen: alleen de dagregel. "Volgend
+      hoofdstuk" gaat naar de volgende plek. Als tiener geen verhalen met status
+      concept, geen gestreept fotovlak en geen beheermeldingen (lokaal `&concept=1`:
+      tiener ziet geen knop Dag voor dag, ouder wel met label "Concept"). Rare data:
+      `&verhaalmonkey=1` geeft geen fout. Verslag heet "Ons verslag".
 - [ ] **Plek kiezen** — "Bekijk in Route" bij een hoofdstuk opent Route bij die
       plek (kop net onder de menubalk); de tabbladen en ← / → wisselen van
       plek, het plek-paneel komt net onder de plakkende tabbladen.
@@ -138,7 +149,8 @@ Lokaal met de tijdreis `?reis=europa&vandaag=2026-07-18` (als ouder en als tiene
 - [ ] **Installeren** — "Toevoegen aan beginscherm" geeft het icoon en
       de naam "Reizen"; de app opent zonder adresbalk.
 - [ ] **Offline** — een reis één keer online openen, dan vliegtuigmodus
-      aan en de app opnieuw openen: dezelfde reis is leesbaar, met foto's,
+      aan en de app opnieuw openen: dezelfde reis is leesbaar, met foto's (ook
+      Dag voor dag met de dagfoto's),
       en je blijft ingelogd. Een reis die nog nooit geopend was geeft een
       duidelijke melding "Geen verbinding".
 - [ ] **Verslag offline** — tijdens een actieve reis in vliegtuigmodus het

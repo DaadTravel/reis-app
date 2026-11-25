@@ -851,13 +851,13 @@
   // Ritregel van een rijdag: de rit die op deze datum bij deze plek aankomt (vertrekdag + leg_aankomst_dagen, dus een
   // nachtvlucht hoort bij de dag erna): { vervoer, tekst: "Van → Naar · 506 km · 5u20" }. Alleen wat bekend is (een
   // vlucht zonder km: alleen de reistijd); niet nagemeten of niets bekend → "rit nog meten". Geen rit → null.
-  function ritRegel(route, stopId, datum) {
+  function ritRegel(route, stopId, datum, herinnering) {
     if (!isDatum(datum)) return null;
     var r = rijen(route).slice().sort(function (a, b) { return (a.volgorde || 0) - (b.volgorde || 0); });
     for (var i = 1; i < r.length; i++) {
       var p = r[i];
       if (p.stop_id !== stopId || plusDagen(p.leg_datum, p.leg_aankomst_dagen || 0) !== datum) continue;
-      return { vervoer: p.leg_vervoer || null, tekst: ritTekst(r[i - 1].naam, p.naam, p, false) };
+      return { vervoer: p.leg_vervoer || null, tekst: ritTekst(r[i - 1].naam, p.naam, p, !!herinnering) };
     }
     return null;
   }
@@ -870,7 +870,8 @@
     var km = echt(leg.leg_km), min = echt(leg.leg_minuten, true);
     var delen = leg.leg_geverifieerd || herinnering ? [km != null ? km + ' km' : '', min != null ? reistijd(min, leg.leg_benadering) : ''].filter(Boolean) : [];
     if (!delen.length && !herinnering) delen = ['rit nog meten'];
-    return [(tekstOf(van) || '?') + ' → ' + (tekstOf(naar) || '?')].concat(delen).join(' · ');
+    var naam = function (x) { var t = tekstOf(x).split(' (')[0].trim(); return t || '?'; };
+    return [naam(van) + ' → ' + naam(naar)].concat(delen).join(' · ');
   }
 
   // Polaroid om en om: dag 1 van een plek naar links, dag 2 naar rechts, enz. Geen geldige dag → null (niet kantelen).

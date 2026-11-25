@@ -279,8 +279,8 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   Noodnummers; `…0028`: `stops.lat`/`lon`/`klimaat`, zie Weer per plek; `…0029`:
   `stops.profiel` en `stops.leent_zich_voor`, zie Waar leent de reis zich voor; `…0030`: stemming `later`, zie Structuur; `…0031`:
   `reis.dagverhalen`, `activiteiten.dagverhaal_id`, `reizen.highlights`, `stops.kort`, zie Dagverhaal).
-- **Dagverhaal** (migratie `…0031`, besluit gebruiker 2026-11-24; in aanbouw, de app leest het nog
-  niet). Instructie en proefversie staan lokaal in `bron/dagverhaal/` (gitignored); fase 0 (proef),
+- **Dagverhaal** (migratie `…0031`, besluit gebruiker 2026-11-24; fase 0–5 klaar, de app toont het; teksten
+  en foto's volgen in fase 6–7). Instructie en proefversie staan lokaal in `bron/dagverhaal/` (gitignored); fase 0 (proef),
   fase 1 (datamodel) en fase 2 (afleidingen in `opmaak.js`, met tests) zijn klaar: `O.verhaalDatum`,
   `O.verhaalKop` ("Dag 5 · za 17 juli"), `O.ritRegel` (rijdag uit de route, nachtvlucht op de
   aankomstdag, niet nagemeten = "rit nog meten"), `O.kantelKant`, `O.verhalenVanPlek` (buiten de nachten
@@ -290,7 +290,17 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   na de reis de bekende getallen en nooit "rit nog meten"). **Fase 4 (Overzicht, 2026-11-25):** in "De reis" het label met
   `O.reisSamenvatting`, de lede als citaat ("Stel je voor"), een feitenblok (`dl`: Wanneer, Route/Reis, Weer, Ideeën,
   Stand) en "Waar we naar uitkijken" uit `reizen.highlights`; in Overzicht onder de tijdlijn de hoofdstukken (component
-  `Hoofdstukken`) met de ★/♥-tellers die eerst op de tegels stonden. **Besluiten gebruiker op de proef (2026-11-24):** menu = smalle plakbalk (← · huidig
+  `Hoofdstukken`) met de ★/♥-tellers die eerst op de tegels stonden. **Fase 5 (Dag voor dag, 2026-11-25):** `haalReis` haalt
+  `dagverhalen` apart (geen kolom volgorde; fout = gewoon geen Dag voor dag) met hun foto's; onderdeel `DagVoorDag` tussen Overzicht
+  en Route: plek-tabs (eigen plakstrook `nv-plekplak`, ids `vtab-`/`verhaal-paneel`; de gekozen plek is dezelfde als in Route),
+  plek-hero met gescheurde rand, de dagregel(s) uit `dagen.beleving` als intro, dan de dagen (`Dag`: uitgelicht met polaroid om en om,
+  compact met één zin; beide met ritregel of logistiek, tips en ideeën met hartjes) en "Volgend hoofdstuk". Een plek zonder
+  verhalen toont alleen de dagregel(s). Ideeën bij een dag: gekoppeld via `dagverhaal_id`, of met een vaste datum op die dag (die
+  gaat voor; de ouder ziet een melding bij het verhaal). Status `concept` ziet alleen een ouder (met label "Concept"); een
+  tiener ziet alleen `akkoord`. Een ouder ziet ook een melding bij verhalen buiten de nachten en een gestreept vlak bij een
+  uitgelichte dag zonder foto. Bewuste grens: een plek met twee bezoeken telt de dagen vanaf het eerste bezoek. De kop van
+  Verslag heet "Ons verslag" (was ook "Dag voor dag"). Lokaal testen: `bron/apptest/dagverhaal-test.js` (`&geenverhalen=1`,
+  `&concept=1`, `&verhaalmonkey=1`). **Besluiten gebruiker op de proef (2026-11-24):** menu = smalle plakbalk (← · huidig
   onderdeel · knop "Onderdelen") die een raster van 3 kolommen openklapt (geen raster dat blijft plakken:
   kost op een telefoon te veel ruimte); een 7e knop (Vandaag of Verslag) gewoon links op een nieuwe rij;
   knop **Dag voor dag alleen bij een reis met dagverhalen** (reizen zonder houden 5 knoppen, geen dubbele

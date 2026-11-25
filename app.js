@@ -371,7 +371,11 @@ async function haalReis(slug) {
   if (isFout(rij)) return rij;
   const reis = rij[0];
   if (!reis) return null;
-  const delen = await Promise.all(REIS_TABELLEN.map(t => sbFetch(t + '?select=*&reis_id=eq.' + reis.id + '&order=volgorde')));
+  // Dagverhalen (migratie …0031) tegelijk, maar apart: die tabel heeft geen kolom volgorde, en is een extra
+  // (lukt het niet, dan is er gewoon geen Dag voor dag; de rest van de reis werkt).
+  const [delen, verhalen] = await Promise.all([
+    Promise.all(REIS_TABELLEN.map(t => sbFetch(t + '?select=*&reis_id=eq.' + reis.id + '&order=volgorde'))),
+    sbFetch('dagverhalen?select=*&reis_id=eq.' + reis.id + '&order=dag_in_plek')]);
   const fout = delen.filter(isFout)[0];
   if (fout) return fout;
   const d = {};
@@ -394,13 +398,16 @@ async function haalReis(slug) {
   // Smaak (alle reizen) alleen voor de volgorde van ideeën; lukt het niet, dan gewoon zonder.
   // Noodnummers: de landen van de plekken en de reisverzekering(en) van het gezin (migratie …0027).
   const codes = d.stops.map(s => s.land).filter((c, i, a) => /^[A-Z]{2}$/.test(c || '') && a.indexOf(c) === i);
+  // Een verhaal zonder (eigen) plek toont de app niet.
+  const dagverhalen = isFout(verhalen) || !Array.isArray(verhalen) ? [] : verhalen.filter(v => v && v.stop_id && eigen[v.stop_id]);
+  fotoIds.push.apply(fotoIds, dagverhalen.map(v => v.foto_id));
   const [f, gezin, verslagen, smaak, landen, verzekeringen] = await Promise.all([haalFotos(fotoIds), haalGezin(d.activiteiten.map(a => a.id)),
     sbFetch('verslagen?select=datum,user_id,tekst,gewijzigd&reis_id=eq.' + reis.id + '&order=datum'), haalSmaak(),
     codes.length ? sbFetch('landen?select=code,naam,nummers,ambassade&code=in.(' + codes.join(',') + ')') : [],
     sbFetch('verzekeringen?select=naam,alarmnummer,polisnummer,link&order=volgorde')]);
   return {
     reis: reis, stops: d.stops, dagen: d.dagen, route: d.route_punten, verblijven: d.verblijven,
-    activiteiten: d.activiteiten, budget: d.budget_posten, fotos: f.fotos, fotoFout: f.fout, gezin: gezin, smaak: smaak ? Opmaak.smaakScore(smaak.profiel) : {},
+    activiteiten: d.activiteiten, budget: d.budget_posten, dagverhalen: dagverhalen, fotos: f.fotos, fotoFout: f.fout, gezin: gezin, smaak: smaak ? Opmaak.smaakScore(smaak.profiel) : {},
     // Het verslag is een extra: lukt ophalen niet, dan werkt de reispagina gewoon (en meldt het verslag dat).
     verslagen: isFout(verslagen) ? [] : verslagen, verslagFout: isFout(verslagen),
     // Ook een extra: lukt het niet, dan meldt het blok Noodnummers dat (nooit een lege lijst zonder uitleg).

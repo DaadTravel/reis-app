@@ -918,6 +918,7 @@
   test('ritRegel: rare waarden in de rij → geen "[object Object]", "NaN" of "x km"', { vervoer: 'car', tekst: '? → ? · rit nog meten' }, function () {
     return O.ritRegel([{ naam: {}, volgorde: 1 }, { naam: 7, stop_id: 's1', volgorde: 2, leg_datum: '2030-05-10', leg_km: 'x', leg_minuten: 'abc', leg_geverifieerd: true, leg_vervoer: 'car' }], 's1', '2030-05-10');
   });
+  test('ritRegel: herinnering → bekende getallen, nooit "rit nog meten"', { vervoer: 'car', tekst: 'Noot → Mies · 500 km · 6u40' }, function () { return O.ritRegel(routeDV, 's3', '2030-05-15', true); });
   // ritTekst (fase 4, 2026-11-25): de rit-regel zonder datum, gedeeld door ritRegel en de hoofdstukken.
   test('ritTekst: nagemeten → van → naar · km · reistijd', 'Aap → Noot · 40 km · ~45 min', function () {
     return O.ritTekst('Aap', 'Noot', { leg_geverifieerd: true, leg_km: '40', leg_minuten: 45, leg_benadering: true }, false);
@@ -931,6 +932,9 @@
   test('ritTekst: rare getallen (leeg, negatief, true, breuk) → geen "0 km", "1 km" of "1u35.5"', ['Aap → Noot · 1u36', 'Aap → Noot · rit nog meten'], function () {
     return [O.ritTekst('Aap', 'Noot', { leg_geverifieerd: true, leg_km: true, leg_minuten: 95.5 }, false),
       O.ritTekst('Aap', 'Noot', { leg_geverifieerd: true, leg_km: '', leg_minuten: -5 }, false)];
+  });
+  test('ritTekst: plaatsnaam ingekort zoals elders ("Dorp (aan de rivier)" → "Dorp")', 'Aap → Noot · rit nog meten', function () {
+    return O.ritTekst('Aap (aan zee)', 'Noot (centrum)', { leg_geverifieerd: false }, false);
   });
   test('ritTekst: rare namen → "?"; geen rit → null', ['? → ? · rit nog meten', null, null], function () {
     return [O.ritTekst({}, null, { leg_geverifieerd: false }, false), O.ritTekst('Aap', 'Noot', null, false), O.ritTekst('Aap', 'Noot', 'x', false)];

@@ -755,7 +755,7 @@
       h('div', { className: 'nv-wrap', style: { maxWidth: '760px' } },
         h('div', { className: 'nv-kopblok' },
           h('span', { className: 'nv-label' }, 'Reisverslag'),
-          h('h2', { className: 'nv-kop' }, 'Dag voor dag'),
+          h('h2', { className: 'nv-kop' }, 'Ons verslag'),
           vs.fout ? h('p', { className: 'nv-melding' }, 'Het verslag kon niet geladen worden. Dagen zonder eigen kopie op deze telefoon kun je pas bewerken na herladen met verbinding.') : null,
           heeftTekst ? h('p', null, h('button', { type: 'button', className: 'nv-knop', onClick: download }, 'Download verslag')) : null),
         p.dagen.slice().reverse().map(function (d) {
@@ -965,7 +965,7 @@
   // als stippellijn, een polaroid (om en om), nummer, naam, periode, de korte zin als citaat, de sterren/hartjes van
   // de ideeën (zoals op de oude tegel) en de sprong naar Route (en later naar het dagverhaal).
   function Hoofdstukken(p) {
-    var g = p.hart.g, verhalen = p.dagverhalen || [], na = p.herinnering || O.naReis(p.reis, p.vandaag);
+    var g = p.hart.g, na = p.herinnering || O.naReis(p.reis, p.vandaag);
     var route = (p.route || []).slice().sort(function (a, b) { return (a.volgorde || 0) - (b.volgorde || 0); });
     // Teken + aantal; voor schermlezers een gewone zin (een naam op een kale span wordt niet altijd voorgelezen).
     function teller(n, groep, een, meer, wie) {
@@ -984,7 +984,7 @@
         var wanneer = bezoeken > 1 ? bezoeken + ' bezoeken · ' + nachtenPlek(p.route, s) : wanneerTekst(dagenVan(p.dagen, s.id)[0], s);
         var tel = g.werkt ? O.telVormen(p.hart.hartjes, p.activiteiten.filter(function (a) { return a.stop_id === s.id; }).map(function (a) { return a.id; }), g.leden) : null;
         var zin = O.hoofdstukZin(s);
-        var heeft = verhalen.some(function (v) { return v.stop_id === s.id; });
+        var heeft = !!(p.perPlek && p.perPlek[s.id] && p.perPlek[s.id].tonen.length);
         return h('li', { key: s.id, className: 'nv-hst' + (i % 2 ? ' nv-hst--om' : '') },
           ritTekst ? h('p', { className: 'nv-hst__rit' }, h(G.Icon, { name: leg.leg_vervoer || 'reis', size: 16 }), h('span', null, ritTekst)) : h('div', { className: 'nv-hst__tussen' }),
           h('div', { className: 'nv-hst__rij' },
@@ -1005,6 +1005,132 @@
                   'Bekijk in Route', h('span', { className: 'nv-onzichtbaar' }, ': ' + kortNaam(s.naam)), PIJL)))));
       })));
   }
+  // ═════════════ Dag voor dag (dagverhaal fase 5) ═════════════
+  // Per plek (zelfde plek-tabs als Route) de dagverhalen uit reis.dagverhalen; een plek zonder verhalen toont de
+  // dagregel(s) uit reis.dagen (niets verdwijnt). Datum en dagnummer worden afgeleid (O.verhaalDatum/O.verhaalKop),
+  // een rijdag krijgt zijn regel uit de route (O.ritRegel). Verhalen met status concept ziet alleen een ouder.
+  // Bewuste grens: een plek met twee bezoeken telt de dagen vanaf het eerste bezoek (nog geen reis met verhalen
+  // heeft zo'n plek; pas aanpakken als dat nodig is).
+  // Per plek welke verhalen getoond worden (O.verhalenVanPlek). De laatste plek (in de route, niet in de lijst
+  // plekken) mag ook de dag naar huis.
+  function verhalenPerPlek(stops, route, verhalen) {
+    var r = route.slice().sort(function (a, b) { return (a.volgorde || 0) - (b.volgorde || 0); }).filter(function (x) { return x.stop_id; });
+    var laatste = r.length ? r[r.length - 1].stop_id : stops.length ? stops[stops.length - 1].id : null, uit = {};
+    stops.forEach(function (s) { uit[s.id] = O.verhalenVanPlek(verhalen, s.id, s.nachten, s.id === laatste); });
+    return uit;
+  }
+  function aankomstVan(route, dagen, stopId) {
+    var leg = route.filter(function (x) { return x.stop_id === stopId; }).sort(function (a, b) { return (a.volgorde || 0) - (b.volgorde || 0); })[0];
+    return (leg && O.plusDagen(leg.leg_datum, leg.leg_aankomst_dagen || 0)) || ((dagenVan(dagen, stopId)[0] || {}).datum_van) || null;
+  }
+  function DagVoorDag(p) {
+    var i = Math.max(0, p.stops.findIndex(function (s) { return s.id === p.plekId; })), s = p.stops[i];
+    var tabsRef = React.useRef(null), sid = s && s.id;
+    // Actieve tab in beeld (zelfde aanpak als Route).
+    React.useEffect(function () {
+      var rij = tabsRef.current, knop = rij && rij.querySelector('[aria-selected="true"]');
+      if (!knop) return;
+      var l = knop.getBoundingClientRect().left - rij.getBoundingClientRect().left + rij.scrollLeft, r = l + knop.offsetWidth;
+      var b = rij.getBoundingClientRect(), zichtbaar = b.bottom > 0 && b.top < window.innerHeight;
+      if (l < rij.scrollLeft || r > rij.scrollLeft + rij.clientWidth) rij.scrollTo({ left: l - 16, behavior: zichtbaar ? 'smooth' : 'auto' });
+    }, [sid]);
+    var kop = h('div', { className: 'nv-kopblok' }, h('span', { className: 'nv-label' }, 'Dag voor dag'), h('h2', { className: 'nv-kop' }, 'Hoe de ', h('em', null, 'dagen'), ' eruitzien'));
+    if (!s) return null;
+    function kies(id, focus) {
+      p.kiesVerhaal(id, false);
+      if (focus) setTimeout(function () { var k = document.getElementById('vtab-' + id); if (k) k.focus(); }, 0);
+    }
+    function toets(e) {
+      var n = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!n) return;
+      e.preventDefault();
+      kies(p.stops[(i + n + p.stops.length) % p.stops.length].id, true);
+    }
+    var f = p.foto(s.foto_id), d0 = dagenVan(p.dagen, s.id);
+    var bezoeken = p.route.filter(function (x) { return x.stop_id === s.id; }).length;
+    var aankomst = aankomstVan(p.route, p.dagen, s.id);
+    var vp = p.perPlek[s.id] || { tonen: [], buiten: 0 };
+    var uit = 0, volgende = p.stops[i + 1];
+    // Plekintro boven de dagen = de dagregel(s) uit reis.dagen (CLAUDE.md → Dagverhaal; stops.lede staat al in Route).
+    var terugval = d0.map(function (d) { return O.tekstOf(d.beleving).trim(); }).filter(Boolean);
+    return h('section', { className: 'nv-blok', id: 'dagvoordag' },
+      h('div', { className: 'nv-wrap' }, kop),
+      // Eigen plakstrook over de volle breedte: de hero eronder staat buiten nv-wrap, en een plakkend element blijft
+      // alleen binnen zijn eigen ouder plakken.
+      h('div', { className: 'nv-plekplak' }, h('div', { className: 'nv-wrap' },
+        h('div', { className: 'nv-tabs', role: 'tablist', 'aria-label': 'Plekken', ref: tabsRef, onKeyDown: toets },
+          p.stops.map(function (x) {
+            var aan = x.id === s.id;
+            return h('button', { key: x.id, id: 'vtab-' + x.id, type: 'button', role: 'tab', className: 'nv-tab',
+              'aria-selected': aan, 'aria-controls': 'verhaal-paneel', tabIndex: aan ? 0 : -1, onClick: function () { kies(x.id); } }, kortNaam(x.naam));
+          })))),
+      h('div', { id: 'verhaal-paneel', role: 'tabpanel', 'aria-labelledby': 'vtab-' + s.id },
+        h('header', { className: 'nv-plekhero' + (f.image ? '' : ' nv-plekhero--leeg') },
+          f.image && h('img', { src: f.image, alt: '' }),
+          h('div', { className: 'nv-plekhero__tekst' },
+            h('p', { className: 'nv-plekhero__eyebrow' }, 'Hoofdstuk ' + (i + 1)),
+            h('h3', null, kortNaam(s.naam)),
+            h('p', { className: 'nv-plekhero__sub' }, bezoeken > 1 ? bezoeken + ' bezoeken · ' + nachtenPlek(p.route, s) : wanneerTekst(d0[0], s))),
+          f.credit && h(G.PhotoCredit, { by: f.credit })),
+        h('div', { className: 'nv-wrap' },
+          p.beheerder && vp.buiten ? h('p', { className: 'nv-melding' }, vp.buiten + (vp.buiten === 1 ? ' dagverhaal valt' : ' dagverhalen vallen') + ' buiten de nachten van ' + kortNaam(s.naam) + ' en ' + (vp.buiten === 1 ? 'wordt' : 'worden') + ' niet getoond.') : null,
+          vp.tonen.length ? [
+            terugval.length ? h('div', { key: 'i' }, terugval.map(function (t, k) { return h('p', { key: k, className: 'nv-plekintro' }, t); })) : null,
+            h('div', { key: 'd', className: 'nv-dagen' }, vp.tonen.map(function (v) {
+              var om = v.uitgelicht === true && (uit++ % 2 === 1);
+              return h(Dag, { key: v.id, v: v, s: s, om: om, datum: O.verhaalDatum(aankomst, v.dag_in_plek), p: p });
+            }))
+          ] : terugval.length ? terugval.map(function (t, k) { return h('p', { key: k, className: 'nv-plekintro' }, t); })
+            : h('p', { className: 'nv-plekintro nv-muted' }, 'Voor ' + kortNaam(s.naam) + ' is nog geen dagverhaal.'),
+          volgende ? h('button', { type: 'button', className: 'nv-volgend', onClick: function () { p.kiesVerhaal(volgende.id, true); } },
+            p.foto(volgende.foto_id).image ? h('img', { src: p.foto(volgende.foto_id).image, alt: '' }) : h('span', { className: 'nv-volgend__leeg', 'aria-hidden': 'true' }),
+            h('span', { className: 'nv-volgend__tekst' },
+              h('span', { className: 'nv-volgend__eyebrow' }, 'Volgend hoofdstuk'),
+              h('span', { className: 'nv-volgend__naam' }, kortNaam(volgende.naam)),
+              h('span', { className: 'nv-volgend__data' }, wanneerTekst(dagenVan(p.dagen, volgende.id)[0], volgende))),
+            h(G.Icon, { name: 'arrow', size: 22, className: 'nv-volgend__pijl' })) : null)));
+  }
+  function Dag(q) {
+    var v = q.v, p = q.p, s = q.s, datum = q.datum;
+    var id = 'dag-' + v.id, uitgelicht = v.uitgelicht === true;
+    var titel = O.tekstOf(v.titel).trim() || 'Dag ' + (Number(v.dag_in_plek) || '?');
+    var verhaal = O.tekstOf(v.verhaal).trim();
+    var tips = (Array.isArray(v.tips) ? v.tips : []).map(function (t) { return O.tekstOf(t).trim(); }).filter(Boolean).slice(0, 2);
+    // Rijdag: de regel uit de route (na de reis zonder "rit nog meten"); anders de eigen logistiek van de dag.
+    var rit = datum && O.ritRegel(p.route, s.id, datum, p.na);
+    var log = rit ? { icoon: rit.vervoer || 'reis', tekst: rit.tekst, wat: 'Rit: ' }
+      : O.tekstOf(v.logistiek).trim() ? { icoon: 'clock', tekst: O.tekstOf(v.logistiek).trim(), wat: 'Praktisch: ' } : null;
+    // Ideeën bij deze dag: gekoppeld aan dit verhaal (tenzij een vaste datum elders ligt), of met een vaste datum op deze dag.
+    var acts = p.activiteiten.filter(function (a) {
+      if (a.stop_id !== s.id) return false;
+      var w = O.activiteitBijDag(a, datum);
+      return (a.dagverhaal_id === v.id && w.bijVerhaal) || (!!datum && a.datum === datum);
+    });
+    var elders = p.beheerder ? p.activiteiten.filter(function (a) { return a.dagverhaal_id === v.id && O.activiteitBijDag(a, datum).afwijking; }) : [];
+    var f = p.foto(v.foto_id), kant = O.kantelKant(v.dag_in_plek);
+    var kopEl = [
+      h('p', { key: 'e', className: 'nv-dag__eyebrow' }, O.verhaalKop(p.reis.start_datum, datum) || 'Dag ' + (Number(v.dag_in_plek) || '?') + ' in ' + kortNaam(s.naam),
+        p.beheerder && v.status !== 'akkoord' ? h('span', { className: 'nv-dag__concept' }, 'Concept') : null),
+      h('h4', { key: 'k', className: 'nv-dag__kop', id: id }, titel)];
+    var logEl = log ? h('p', { className: 'nv-dag__log' }, h(G.Icon, { name: log.icoon, size: 16 }),
+      h('span', null, h('span', { className: 'nv-onzichtbaar' }, log.wat), log.tekst)) : null;
+    var tipsEl = tips.length ? h(G.TipNote, { items: tips }) : null;
+    var doen = acts.length || elders.length ? h('div', { className: 'nv-dag__doen' },
+      acts.map(function (a) { return h(ActiviteitRij, { key: a.id, x: a, hart: p.hart }); }),
+      elders.map(function (a) { return h('p', { key: 'm' + a.id, className: 'nv-melding' }, '‘' + O.tekstOf(a.naam) + '’ hoort bij dit verhaal, maar heeft een vaste datum (' + O.dagLabel(a.datum) + ') die gaat voor.'); })) : null;
+    if (!uitgelicht) return h('article', { className: 'nv-dag nv-dag--compact', 'aria-labelledby': id },
+      kopEl, logEl, verhaal ? h('p', { className: 'nv-dag__zin' }, verhaal) : null, tipsEl, doen);
+    return h('article', { className: 'nv-dag nv-dag--uit' + (q.om ? ' nv-dag--om' : ''), 'aria-labelledby': id },
+      h(Ornament), kopEl, logEl,
+      f.image ? h('figure', { className: 'nv-polaroid' + (kant ? ' nv-polaroid--' + kant : '') },
+        h('div', { className: 'nv-polaroid__foto' }, h('img', { src: f.image, alt: '' }), f.credit && h(G.PhotoCredit, { by: f.credit })),
+        h('figcaption', { 'aria-hidden': 'true' }, titel))
+        // Geen foto: een ouder ziet het gestreepte vlak als werkpunt; de rest van het gezin ziet gewoon geen foto.
+        : p.beheerder ? h('figure', { className: 'nv-polaroid nv-polaroid--leeg' + (kant ? ' nv-polaroid--' + kant : ''), 'aria-hidden': 'true' },
+          h('div', { className: 'nv-polaroid__foto' }, 'Foto van deze dag: nog toevoegen'), h('figcaption', null, '')) : null,
+      verhaal ? h('p', { className: 'nv-dag__verhaal' }, verhaal) : null, tipsEl, doen);
+  }
+
   // Pijl achter een knoptekst: niet voorlezen.
   var PIJL = h('span', { 'aria-hidden': true }, ' →');
   // Zes ruitjes als scheiding (decoratie).
@@ -1581,8 +1707,20 @@
       verslagDagen.forEach(function (dag) { uit[dag] = O.dagOverzicht(d, dag).plek; });
       return uit;
     }, [verslagDagen.join()]);
-    // Dag voor dag alleen bij een reis met dagverhalen (besluit gebruiker 2026-11-24; de verhalen worden geladen vanaf fase 5).
-    var metVerhalen = (data.dagverhalen || []).length > 0;
+    // Dag voor dag alleen bij een reis met dagverhalen (besluit gebruiker 2026-11-24). Een verhaal met status
+    // concept (nog niet nagekeken) ziet alleen een ouder.
+    var verhalen = (data.dagverhalen || []).filter(function (v) { return v && typeof v === 'object' && (!!gezin.beheerder || v.status === 'akkoord'); });
+    var perPlek = verhalenPerPlek(stops, data.route, verhalen);
+    var metVerhalen = stops.some(function (s) { return perPlek[s.id].tonen.length > 0; });
+    // Naar Dag voor dag (vanuit een hoofdstuk of "Volgend hoofdstuk"): pas scrollen als de nieuwe plek getekend is.
+    var nv = React.useState(0), naarVerhaal = nv[0], setNaarVerhaal = nv[1];
+    React.useEffect(function () { if (naarVerhaal) naar('verhaal-paneel'); }, [naarVerhaal]);
+    function kiesVerhaal(id, spring) {
+      setPlekId(id);
+      if (spring) return setNaarVerhaal(function (n) { return n + 1; });
+      var el = document.getElementById('verhaal-paneel');
+      if (el && el.getBoundingClientRect().top < 0) naar('verhaal-paneel');
+    }
     var secties = (onderweg ? [['vandaag', 'Vandaag']] : []).concat(SECTIES.slice(0, 1), metVerhalen ? [['dagvoordag', 'Dag voor dag']] : [],
       SECTIES.slice(1, 4), toonVerslag ? [['verslag', 'Verslag']] : [], SECTIES.slice(4));
     var a = React.useState(null), actief = a[0], setActief = a[1];
@@ -1609,7 +1747,8 @@
     var hart = useHartjes(data.gezin, { herinnering: r.stemming === 'herinnering' || O.naReis(r, vandaag), vandaag: onderweg ? vandaag : null,
       aankomst: O.aankomstPlekken(data.verblijven), smaak: data.smaak });
     var p = { reis: r, herinnering: r.stemming === 'herinnering', stops: stops, dagen: data.dagen, route: data.route,
-      verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, dagverhalen: data.dagverhalen || [], hart: hart, foto: maakFoto(data.fotos), kiesPlek: kiesPlek,
+      verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, dagverhalen: verhalen, hart: hart, foto: maakFoto(data.fotos), kiesPlek: kiesPlek,
+      naarVerhaal: metVerhalen ? function (id) { kiesVerhaal(id, true); } : null, perPlek: perPlek,
       // Bewerken: alleen ouders; onderweg alles, vóór de reis alleen contact (besluit gebruiker 2026-10-18).
       wz: wz, bewerk: !!wz.fase, vandaag: vandaag };
     return h(FotoCtx.Provider, { value: p.foto },
@@ -1623,7 +1762,10 @@
           stops: stops, plekMorgen: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, O.plusDagen(vandaag, 1)).plekId,
           open: O.openVanGisteren({ reis: r, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten }, vandaag),
           plekGisteren: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, O.plusDagen(vandaag, -1)).plek }) : null,
-        h(Intro, p), h(Citaat, p), h(Overzicht, p), h(Programma, A(p, { plekId: plekId })), h(Slapen, p), h(Doen, p),
+        h(Intro, p), h(Citaat, p), h(Overzicht, p),
+        metVerhalen ? h(DagVoorDag, A(p, { plekId: plekId, verhalen: verhalen, kiesVerhaal: kiesVerhaal, beheerder: !!gezin.beheerder,
+          na: p.herinnering || O.naReis(r, vandaag) })) : null,
+        h(Programma, A(p, { plekId: plekId })), h(Slapen, p), h(Doen, p),
         toonVerslag ? h(Reisverslag, { reis: r, vs: vs, gezin: gezin, dagen: verslagDagen, plekken: plekken, beheerder: !!gezin.beheerder, vandaag: onderweg ? vandaag : null }) : null,
         h(Kosten, p),
         // Noodnummers alleen bij een reis die nog komt of loopt (niet bij een herinnering of na thuiskomst).
