@@ -82,7 +82,7 @@
     return { aantal: van.length, ikOok: ik, namen: gevers.map(function (x) { return x.naam; }), gevers: gevers };
   }
   // Aantal sterren (tieners) en hartjes (volwassenen; groep onbekend telt als hart) bij een set activiteiten,
-  // bijv. alle activiteiten van één plek (indicatie op de tegel).
+  // bijv. alle activiteiten van één plek (indicatie bij het hoofdstuk in het Overzicht).
   function telVormen(hartjes, activiteitIds, leden) {
     var groep = {}, ids = {}, uit = { tiener: 0, volwassene: 0 };
     (leden || []).forEach(function (l) { groep[l.user_id] = l.groep; });
@@ -857,12 +857,20 @@
     for (var i = 1; i < r.length; i++) {
       var p = r[i];
       if (p.stop_id !== stopId || plusDagen(p.leg_datum, p.leg_aankomst_dagen || 0) !== datum) continue;
-      var km = getal(p.leg_km), min = getal(p.leg_minuten);
-      var delen = p.leg_geverifieerd ? [km != null ? km + ' km' : '', min != null ? reistijd(min, p.leg_benadering) : ''].filter(Boolean) : [];
-      return { vervoer: p.leg_vervoer || null,
-        tekst: (tekstOf(r[i - 1].naam) || '?') + ' → ' + (tekstOf(p.naam) || '?') + ' · ' + (delen.length ? delen.join(' · ') : 'rit nog meten') };
+      return { vervoer: p.leg_vervoer || null, tekst: ritTekst(r[i - 1].naam, p.naam, p, false) };
     }
     return null;
+  }
+  // De rit-regel zelf, zonder datum: "Van → Naar · km · reistijd" (ook voor de hoofdstukken in het Overzicht).
+  // Alleen nagemeten getallen; anders "rit nog meten". Bij een herinnering de bekende getallen en nooit "nog meten".
+  // Een getal telt alleen als echt getal ≥ 0 (geen leeg, negatief of true); minuten afgerond.
+  function ritTekst(van, naar, leg, herinnering) {
+    if (!leg || typeof leg !== 'object') return null;
+    var echt = function (x, rond) { return typeof x === 'number' || typeof x === 'string' ? getal(x, rond) : null; };
+    var km = echt(leg.leg_km), min = echt(leg.leg_minuten, true);
+    var delen = leg.leg_geverifieerd || herinnering ? [km != null ? km + ' km' : '', min != null ? reistijd(min, leg.leg_benadering) : ''].filter(Boolean) : [];
+    if (!delen.length && !herinnering) delen = ['rit nog meten'];
+    return [(tekstOf(van) || '?') + ' → ' + (tekstOf(naar) || '?')].concat(delen).join(' · ');
   }
 
   // Polaroid om en om: dag 1 van een plek naar links, dag 2 naar rechts, enz. Geen geldige dag → null (niet kantelen).
@@ -913,7 +921,7 @@
     return { bijVerhaal: a.datum === datum, afwijking: isDatum(datum) && a.datum !== datum };
   }
 
-  window.Opmaak = { activiteitBijDag: activiteitBijDag, reisSamenvatting: reisSamenvatting, hoofdstukZin: hoofdstukZin, verhaalDatum: verhaalDatum, verhaalKop: verhaalKop, ritRegel: ritRegel, kantelKant: kantelKant, verhalenVanPlek: verhalenVanPlek, dagLabel: dagLabel, plekPeriode: plekPeriode, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
+  window.Opmaak = { ritTekst: ritTekst, activiteitBijDag: activiteitBijDag, reisSamenvatting: reisSamenvatting, hoofdstukZin: hoofdstukZin, verhaalDatum: verhaalDatum, verhaalKop: verhaalKop, ritRegel: ritRegel, kantelKant: kantelKant, verhalenVanPlek: verhalenVanPlek, dagLabel: dagLabel, plekPeriode: plekPeriode, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, slaapStand: slaapStand, slaapStandTekst: slaapStandTekst, splitsMoment: splitsMoment, magAchteraf: magAchteraf, naReis: naReis, smaakprofiel: smaakprofiel, smaakScore: smaakScore, pastBijOns: pastBijOns, aankomstPlekken: aankomstPlekken, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
     openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, bewerkFase: bewerkFase, wijzigVelden: wijzigVelden, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,

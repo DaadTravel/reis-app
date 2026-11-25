@@ -286,7 +286,11 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   aankomstdag, niet nagemeten = "rit nog meten"), `O.kantelKant`, `O.verhalenVanPlek` (buiten de nachten
   tellen, niet tonen), `O.hoofdstukZin`, `O.reisSamenvatting` ("Roadtrip · 24 dagen · 8 plekken";
   Roadtrip alleen als elke rit met gekozen vervoer de auto is) en `O.activiteitBijDag` (vaste datum gaat voor, afwijking
-  melden). **Besluiten gebruiker op de proef (2026-11-24):** menu = smalle plakbalk (← · huidig
+  melden); fase 4 voegde `O.ritTekst` toe (de rit-regel zonder datum, gedeeld door `O.ritRegel` en de hoofdstukken;
+  na de reis de bekende getallen en nooit "rit nog meten"). **Fase 4 (Overzicht, 2026-11-25):** in "De reis" het label met
+  `O.reisSamenvatting`, de lede als citaat ("Stel je voor"), een feitenblok (`dl`: Wanneer, Route/Reis, Weer, Ideeën,
+  Stand) en "Waar we naar uitkijken" uit `reizen.highlights`; in Overzicht onder de tijdlijn de hoofdstukken (component
+  `Hoofdstukken`) met de ★/♥-tellers die eerst op de tegels stonden. **Besluiten gebruiker op de proef (2026-11-24):** menu = smalle plakbalk (← · huidig
   onderdeel · knop "Onderdelen") die een raster van 3 kolommen openklapt (geen raster dat blijft plakken:
   kost op een telefoon te veel ruimte); een 7e knop (Vandaag of Verslag) gewoon links op een nieuwe rij;
   knop **Dag voor dag alleen bij een reis met dagverhalen** (reizen zonder houden 5 knoppen, geen dubbele
@@ -469,9 +473,9 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   hartje of ster, geboekt e.d. altijd** (`O.opVerlanglijst`, besluit gebruiker
   2026-10-04; afgeronde reis of geen gezinsdata: alles). **Alles rond een plek bij elkaar** (besluit gebruiker
   2026-10-04): het plek-paneel toont onder de tips "Te doen in …" met
-  dezelfde activiteiten en hartjes, en de tegel in het reisoverzicht
-  rechtsonder het aantal ★ en ♥ (`O.telVormen`). Eén hartjes-stand per
-  reispagina (`useHartjes`), gedeeld door paneel, tegels en Doen. **Een idee
+  dezelfde activiteiten en hartjes, en het hoofdstuk in het reisoverzicht
+  het aantal ★ en ♥ (`O.telVormen`). Eén hartjes-stand per
+  reispagina (`useHartjes`), gedeeld door paneel, hoofdstukken en Doen. **Een idee
   (status voorstel) is een compacte regel** (`O.isIdee`; besluit gebruiker
   2026-10-04): icoon, naam, één regel uitleg en de hartjes, zonder prijs en
   zonder statuslabel; geboekt/betaald/optie (en status onbekend) houdt de
@@ -520,7 +524,7 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   einddatum: `O.naReis`, ook als de stemming nog niet is omgezet)
   altijd; onderweg vanaf de datum van de activiteit, zonder (geldige) datum
   vanaf de aankomst op de plek (`O.aankomstPlekken` = vroegste inchecken).
-  `haalGezin` geeft `hartjes` (= vooraf, zoals altijd: ideeën, tegels,
+  `haalGezin` geeft `hartjes` (= vooraf, zoals altijd: ideeën, hoofdstukken,
   Vandaag, ★/♥ in de vergelijkingstabel) en `achteraf` apart
   (`O.splitsMoment`); bij een afgeronde reis filtert Doen op achteraf.
   **Smaakprofiel** (`O.smaakprofiel`): per groep per soort (= `activiteiten.icoon`,
@@ -600,7 +604,7 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   staat die in `dagen.tips` van de dag van dat bezoek; de
   app toont hem in het blok van dat bezoek. `stops.tips` houdt dan alleen
   wat bij elk bezoek geldt. Bij een plek met één bezoek blijft
-  `dagen.tips` leeg. Tegel en chip tonen de nachten per bezoek
+  `dagen.tips` leeg. Hoofdstuk en chip tonen de nachten per bezoek
   ("3 + 1 nachten").
 - **Koppel op ID, nooit op naam:** dagen, routepunten, verblijven en
   activiteiten hangen via `stop_id` aan hun plek (migratie `…0009`).

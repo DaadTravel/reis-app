@@ -59,9 +59,18 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
   .nv-intro__foto { aspect-ratio: auto; }
   .nv-intro__tekst { padding: var(--space-8) var(--space-7); align-self: center; }
 }
-.nv-feiten { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-5); margin: var(--space-5) 0 0; padding: var(--space-4) 0 0; border-top: 1px solid var(--line); list-style: none; font-size: 14px; font-weight: 600; }
-.nv-feiten li { display: inline-flex; align-items: center; gap: var(--space-2); }
-.nv-feiten .rg-icon { color: var(--lagoon); }
+/* "Stel je voor" (de lede als citaat), feitenblok en "Waar we naar uitkijken" (dagverhaal fase 4). */
+.nv-intro__lede { margin: var(--space-3) 0 0; font-family: var(--font-display); font-style: italic; font-size: 24px; line-height: 1.3; color: var(--ink); }
+.nv-feitenblok { margin: var(--space-5) 0 0; padding: var(--space-2) var(--space-4); background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.nv-feitenblok > div { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--line); }
+.nv-feitenblok > div:first-child { border-top: 0; }
+.nv-feitenblok dt { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.nv-feitenblok dd { margin: 0; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
+.nv-uitkijk { margin-top: var(--space-5); }
+.nv-uitkijk__kop { margin: 0 0 var(--space-2); font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--terracotta); }
+.nv-uitkijk ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.nv-uitkijk li { display: flex; align-items: flex-start; gap: var(--space-2); font-size: 16px; font-weight: 500; line-height: 1.4; }
+.nv-uitkijk .rg-icon { flex: none; margin-top: 2px; color: var(--lagoon); }
 
 /* ---------- citaat ---------- */
 .nv-citaat { position: relative; min-height: 62vh; min-height: 62svh; display: grid; place-items: center; text-align: center; color: var(--on-photo); overflow: hidden; isolation: isolate; padding: var(--space-8) var(--space-4); }
@@ -81,23 +90,45 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-tijdlijn__datum { display: block; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-muted); }
 .nv-tijdlijn__naam { display: block; font-family: var(--font-display); font-size: 24px; line-height: 1.1; margin: var(--space-1) 0; }
 .nv-tijdlijn__nacht { font-size: 13px; color: var(--ink-muted); }
-.nv-tegels { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
-@media (min-width: 720px) { .nv-tegels { grid-template-columns: repeat(3, 1fr); gap: var(--space-4); } }
-.nv-tegel { position: relative; display: block; width: 100%; aspect-ratio: 3 / 4; border: 0; padding: 0; border-radius: var(--radius-md); overflow: hidden; cursor: pointer; color: var(--on-photo); text-align: left; font: inherit; isolation: isolate; }
-@media (min-width: 720px) { .nv-tegel { aspect-ratio: 4 / 3; border-radius: var(--radius-lg); } }
-.nv-tegel img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; transition: transform .6s ease; }
-.nv-tegel:hover img { transform: scale(1.04); }
-.nv-tegel::after { content: ""; position: absolute; inset: 40% 0 0; background: linear-gradient(to top, var(--scrim), transparent); opacity: .85; z-index: -1; }
-.nv-tegel__tekst { position: absolute; left: var(--space-3); right: var(--space-3); bottom: var(--space-3); }
-@media (min-width: 720px) { .nv-tegel__tekst { left: var(--space-5); right: var(--space-5); bottom: var(--space-5); } }
-.nv-tegel__naam { display: block; font-family: var(--font-display); font-style: italic; font-size: clamp(24px, 6.5vw, 36px); line-height: 1; overflow-wrap: anywhere; }
-.nv-tegel__meer { display: block; margin-top: var(--space-1); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-/* Rechtsonder: sterren (tieners) en hartjes (ouders) bij de activiteiten van deze plek. */
-.nv-tegel__hart { position: absolute; right: var(--space-2); bottom: var(--space-2); display: flex; gap: var(--space-2); padding: 2px var(--space-2); border-radius: var(--radius-pill); background: color-mix(in srgb, var(--scrim) 70%, transparent); font-size: 12px; font-weight: 700; line-height: 1.5; }
-@media (min-width: 720px) { .nv-tegel__hart { right: var(--space-4); bottom: var(--space-4); font-size: 13px; } }
-/* Ruimte voor de teller, ook bij twee cijfers (★ 12 ♥ 10) op een smalle telefoontegel. */
-.nv-tegel--hart .nv-tegel__tekst { bottom: calc(var(--space-3) + 26px); }
-@media (min-width: 720px) { .nv-tegel--hart .nv-tegel__tekst { bottom: var(--space-5); } .nv-tegel--hart .nv-tegel__meer { padding-right: 110px; } }
+/* ---------- de reis in hoofdstukken (in plaats van de sfeertegels, besluit gebruiker 2026-11-24) ---------- */
+.nv-hoofdstukken { margin-top: var(--space-7); }
+.nv-hoofdstukken__kop { display: grid; gap: var(--space-2); justify-items: center; text-align: center; margin: 0 0 var(--space-2); }
+.nv-hoofdstukken__kop h3 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 6vw, 40px); line-height: 1.1; color: var(--ink); }
+.nv-ornament { display: flex; justify-content: center; gap: 10px; margin: 0; }
+.nv-ornament > span { width: 6px; height: 6px; box-sizing: border-box; border: 1.5px solid var(--lagoon); transform: rotate(45deg); }
+.nv-reisboek { list-style: none; margin: 0 auto; padding: 0; max-width: 1100px; }
+/* De rit ernaartoe als stippellijn tussen de hoofdstukken. */
+.nv-hst__rit { display: flex; align-items: center; justify-content: center; gap: var(--space-2); margin: 0; padding: var(--space-5) 0; font-size: 13px; font-weight: 600; color: var(--lagoon); text-align: center; }
+.nv-hst__rit::before, .nv-hst__rit::after { content: ""; flex: 0 1 64px; min-width: 12px; border-top: 1.5px dashed var(--line-strong); }
+.nv-hst__rit > span { flex: 0 1 auto; min-width: 0; }
+.nv-hst__rit .rg-icon { flex: none; }
+@media (max-width: 519px) { .nv-hst__rit::before, .nv-hst__rit::after { flex-basis: 20px; } }
+.nv-hst__tussen { height: var(--space-6); }
+.nv-hst__rij { display: grid; gap: var(--space-4); }
+.nv-hst__foto { margin: 0; padding: 10px 10px 0; background: var(--paper-raised); box-shadow: var(--shadow-polaroid); }
+.nv-hst__beeld { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--sand); }
+.nv-hst__beeld img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nv-hst__foto figcaption { height: 34px; display: flex; align-items: center; justify-content: center; font-family: var(--font-hand); font-size: 22px; font-weight: 600; color: var(--ink); }
+@media (min-width: 360px) { .nv-hst__foto { transform: rotate(-1.2deg); } .nv-hst--om .nv-hst__foto { transform: rotate(1.2deg); } }
+.nv-hst__tekst { min-width: 0; }
+.nv-hst__nr { margin: 0; font-family: var(--font-display); font-size: 56px; line-height: .9; color: var(--line-strong); }
+.nv-hst__naam { margin: var(--space-1) 0 0; font-family: var(--font-display); font-weight: 400; font-size: 40px; line-height: 1.05; color: var(--ink); overflow-wrap: anywhere; }
+.nv-hst__data { margin: var(--space-1) 0 var(--space-3); font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted); }
+.nv-hst__citaat { margin: 0; font-family: var(--font-display); font-style: italic; font-size: 24px; line-height: 1.3; color: var(--ink); }
+/* Sterren (tieners) en hartjes (ouders) bij de ideeën van deze plek, zoals eerder op de tegel. */
+.nv-hst__hart { display: flex; gap: var(--space-3); margin: var(--space-3) 0 0; font-size: 14px; font-weight: 700; color: var(--ink); }
+.nv-hst__links { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: var(--space-2) 0 0; }
+.nv-hst__knop { display: inline-flex; align-items: center; min-height: 44px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--lagoon); cursor: pointer; }
+.nv-hst__knop--stil { color: var(--ink-muted); }
+.nv-hst__knop:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+@media (min-width: 820px) {
+  .nv-hst__rij { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--space-7); align-items: center; }
+  .nv-hst--om .nv-hst__foto { order: 2; }
+  .nv-hst__nr { font-size: 88px; }
+  .nv-hst__naam { font-size: 52px; }
+  .nv-hst__citaat { font-size: 28px; }
+  .nv-hst__rit { padding: var(--space-6) 0; }
+}
 /* Idee (voorstel): compacte regel, knop rechts, wie het leuk vindt onder de uitleg. */
 .nv-idee { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--line); }
 .nv-idee > .rg-act__icon { margin-top: 2px; }
@@ -128,7 +159,7 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 /* Te doen in het plek-paneel: zelfde regels als in Doen. */
 .nv-plekdoen { margin-top: var(--space-5); }
 .nv-plekdoen > .nv-label { display: block; margin-bottom: var(--space-1); }
-@media (prefers-reduced-motion: reduce) { .nv-tegel img { transition: none; } }
+
 
 /* ---------- reisprogramma ---------- */
 .nv-tabs { position: sticky; top: var(--balk-h); z-index: 30; background: var(--paper); display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; padding: var(--space-3) 0; margin-bottom: var(--space-6); }

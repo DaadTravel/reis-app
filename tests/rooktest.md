@@ -40,7 +40,16 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       telefoon); met de muis slepen werkt, en loslaten na slepen opent
       niets. Thailand loopt door tot en met Bangkok en Thuis. Eén keer
       op een iPhone bekijken (subgrid: iOS 16+).
-- [ ] **Plek kiezen** — een tegel in het overzicht opent Route bij die
+- [ ] **De reis (intro)** — label "De reis · Roadtrip · 24 dagen · 8 plekken"
+      (Roadtrip alleen als elke rit met gekozen vervoer de auto is), de lede als
+      schuin citaat, een feitenblok (Wanneer, Route/Reis, Weer, Ideeën, Stand) en,
+      als ingevuld, "Waar we naar uitkijken" met max. 3 vinkjes (lokaal: `&hl=1`).
+- [ ] **Hoofdstukken** — in Overzicht onder de tijdlijn "De reis in N
+      hoofdstukken": per plek de rit ernaartoe als stippellijn ("Van → Naar · km ·
+      reistijd", niet nagemeten = "rit nog meten", na de reis nooit), een
+      polaroid (om en om gekanteld, naast de tekst vanaf 820 px), nummer, naam,
+      periode, de korte zin, sterren/hartjes bij de ideeën van die plek.
+- [ ] **Plek kiezen** — "Bekijk in Route" bij een hoofdstuk opent Route bij die
       plek (kop net onder de menubalk); de tabbladen en ← / → wisselen van
       plek, het plek-paneel komt net onder de plakkende tabbladen.
 - [ ] **Tips** — bij een plek één tipskader "Tips voor …", altijd open
@@ -58,8 +67,8 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       rit).
 - [ ] **Twee bezoeken** — een plek die twee keer in de route staat
       (Thailand: Bangkok, Chumphon) toont "2 bezoeken", per bezoek datum,
-      nachten, eigen tekst en eigen tips ("Tips 1e bezoek"); tegel en
-      chip tonen "3 + 1 nachten". Bangkok: elk bezoek een eigen tipskader,
+      nachten, eigen tekst en eigen tips ("Tips 1e bezoek"); het hoofdstuk
+      ("2 bezoeken · 3 + 1 nachten") en de chip tonen de nachten per bezoek. Bangkok: elk bezoek een eigen tipskader,
       geen tip in beide.
 - [ ] **Rit, verblijf, excursie** — onder elke rit datum en tijden
       (vorm: "wo 1 jan, 22:00 → 06:00 (+1 dag)"); in het plek-paneel een

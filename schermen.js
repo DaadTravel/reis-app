@@ -829,22 +829,33 @@
   }
 
   function Intro(p) {
-    // Niet dezelfde foto als de opening of het citaat vlak eronder; dubbel met een tegel is onvermijdelijk.
+    // Niet dezelfde foto als de opening of het citaat vlak eronder; dubbel met een hoofdstuk-polaroid is onvermijdelijk.
     var r = p.reis, bezet = [r.hero_foto_id, r.quote_foto_id];
     var kandidaten = [r.kaart_foto_id].concat(p.stops.map(function (s) { return s.foto_id; }));
     var f = p.foto(kandidaten.filter(function (id) { return id && bezet.indexOf(id) < 0; })[0] || r.hero_foto_id);
     var kop = (r.secties && r.secties.plekken) || {};
-    var feiten = O.reisFeiten(r, p.route || []);
+    // Feitenblok (fase 4 dagverhaal): de bestaande feiten van de reis met een label, plus het aantal ideeën en de stand.
+    var feiten = O.reisFeiten(r, p.route || []).map(function (x) { return [FEITLABEL[x[0]] || 'Ook', x[1]]; });
+    var ideeen = (p.activiteiten || []).length;
+    if (ideeen) feiten.push(['Ideeën', ideeen + (ideeen === 1 ? ' idee' : ' ideeën') + ' om uit te kiezen']);
+    if (O.tekstOf(r.status_label)) feiten.push(['Stand', O.tekstOf(r.status_label)]);
+    var samen = O.reisSamenvatting(r, p.route || [], p.stops);
+    var hoogte = (r.highlights || []).map(O.tekstOf).filter(Boolean).slice(0, 3);
     return h('section', { className: 'nv-intro', id: 'reis' },
       h('div', { className: 'nv-intro__foto' }, f.image && h('img', { src: f.image, alt: '' }), f.credit && h(G.PhotoCredit, { by: f.credit })),
       h('div', { className: 'nv-intro__tekst' },
-        h('span', { className: 'nv-label' }, 'De reis'),
+        h('span', { className: 'nv-label' }, samen ? 'De reis · ' + samen : 'De reis'),
         h('h2', { className: 'nv-kop' }, kop.title || r.titel),
-        r.lede && h('p', { className: 'nv-tekst' }, r.lede),
-        feiten.length ? h('ul', { className: 'nv-feiten' }, feiten.map(function (x, i) {
-          return h('li', { key: i }, h(G.Icon, { name: x[0], size: 18 }), x[1]);
-        })) : null));
+        // "Stel je voor": de lede als citaat.
+        r.lede && h('p', { className: 'nv-intro__lede' }, r.lede),
+        feiten.length ? h('dl', { className: 'nv-feitenblok' }, feiten.map(function (x, i) {
+          return h('div', { key: i }, h('dt', null, x[0]), h('dd', null, x[1]));
+        })) : null,
+        hoogte.length ? h('div', { className: 'nv-uitkijk' },
+          h('h3', { className: 'nv-uitkijk__kop' }, 'Waar we naar uitkijken'),
+          h('ul', null, hoogte.map(function (t, i) { return h('li', { key: i }, h(G.Icon, { name: 'check', size: 18 }), t); }))) : null));
   }
+  var FEITLABEL = { calendar: 'Wanneer', car: 'Route', plane: 'Reis', train: 'Reis', boat: 'Reis', bus: 'Reis', sun: 'Weer' };
 
   function Citaat(p) {
     var r = p.reis, f = p.foto(r.quote_foto_id);
@@ -947,26 +958,58 @@
               etappeTijdPrijs(l).join(' · '),
               onzeker ? h('span', { className: 'nv-tijdlijn__check' }, 'te verifiëren') : null) : null);
         })) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen route.' }),
-        // Elke plek een sfeertegel (besluit gebruiker 2026-09-29).
-        // Rechtsonder op de tegel: sterren (tieners) en hartjes (ouders) bij de activiteiten van die plek, als indicatie.
-        h('div', { className: 'nv-tegels' }, p.stops.map(function (s) {
-          var f = p.foto(s.foto_id), g = p.hart.g;
-          var tel = g.werkt ? O.telVormen(p.hart.hartjes, p.activiteiten.filter(function (a) { return a.stop_id === s.id; }).map(function (a) { return a.id; }), g.leden) : null;
-          var telt = tel && (tel.tiener || tel.volwassene);
-          // Teken + aantal; voor schermlezers een gewone zin (een naam op een kale span wordt niet altijd voorgelezen).
-          function teller(n, groep, een, meer, wie) {
-            return n ? h('span', null, h('span', { 'aria-hidden': true }, O.hartVorm(groep) + ' ' + n),
-              h('span', { className: 'nv-onzichtbaar' }, ', ' + n + ' ' + (n === 1 ? een : meer) + ' van ' + wie)) : null;
-          }
-          return h('button', { key: s.id, type: 'button', className: 'nv-tegel' + (telt ? ' nv-tegel--hart' : ''), onClick: function () { p.kiesPlek(s.id); } },
-            f.image && h('img', { src: f.image, alt: '' }),
-            h('span', { className: 'nv-tegel__tekst' },
-              h('span', { className: 'nv-tegel__naam' }, kortNaam(s.naam)),
-              h('span', { className: 'nv-tegel__meer' }, nachtenPlek(p.route, s) + ' →')),
-            telt ? h('span', { className: 'nv-tegel__hart' },
-              teller(tel.tiener, 'tiener', 'ster', 'sterren', 'tieners'),
-              teller(tel.volwassene, 'volwassene', 'hartje', 'hartjes', 'ouders')) : null);
-        }))));
+        p.stops.length ? h(Hoofdstukken, p) : null));
+  }
+
+  // De reis in hoofdstukken (besluit gebruiker 2026-11-24, in plaats van de sfeertegels): per plek de rit ernaartoe
+  // als stippellijn, een polaroid (om en om), nummer, naam, periode, de korte zin als citaat, de sterren/hartjes van
+  // de ideeën (zoals op de oude tegel) en de sprong naar Route (en later naar het dagverhaal).
+  function Hoofdstukken(p) {
+    var g = p.hart.g, verhalen = p.dagverhalen || [], na = p.herinnering || O.naReis(p.reis, p.vandaag);
+    var route = (p.route || []).slice().sort(function (a, b) { return (a.volgorde || 0) - (b.volgorde || 0); });
+    // Teken + aantal; voor schermlezers een gewone zin (een naam op een kale span wordt niet altijd voorgelezen).
+    function teller(n, groep, een, meer, wie) {
+      return n ? h('span', null, h('span', { 'aria-hidden': true }, O.hartVorm(groep) + ' ' + n),
+        h('span', { className: 'nv-onzichtbaar' }, ', ' + n + ' ' + (n === 1 ? een : meer) + ' van ' + wie)) : null;
+    }
+    return h('div', { className: 'nv-hoofdstukken' },
+      h('div', { className: 'nv-hoofdstukken__kop' }, h(Ornament),
+        h('h3', null, 'De reis in ' + p.stops.length + (p.stops.length === 1 ? ' hoofdstuk' : ' hoofdstukken'))),
+      h('ol', { className: 'nv-reisboek' }, p.stops.map(function (s, i) {
+        var f = p.foto(s.foto_id);
+        // De rit naar het eerste bezoek aan deze plek (O.ritTekst, ook zonder datum). Na de reis is er niets meer te meten.
+        var k = route.findIndex(function (x) { return x.stop_id === s.id; }), leg = k > 0 ? route[k] : null;
+        var ritTekst = leg && O.ritTekst(kortNaam(route[k - 1].naam), kortNaam(s.naam), leg, na);
+        var bezoeken = route.filter(function (x) { return x.stop_id === s.id; }).length;
+        var wanneer = bezoeken > 1 ? bezoeken + ' bezoeken · ' + nachtenPlek(p.route, s) : wanneerTekst(dagenVan(p.dagen, s.id)[0], s);
+        var tel = g.werkt ? O.telVormen(p.hart.hartjes, p.activiteiten.filter(function (a) { return a.stop_id === s.id; }).map(function (a) { return a.id; }), g.leden) : null;
+        var zin = O.hoofdstukZin(s);
+        var heeft = verhalen.some(function (v) { return v.stop_id === s.id; });
+        return h('li', { key: s.id, className: 'nv-hst' + (i % 2 ? ' nv-hst--om' : '') },
+          ritTekst ? h('p', { className: 'nv-hst__rit' }, h(G.Icon, { name: leg.leg_vervoer || 'reis', size: 16 }), h('span', null, ritTekst)) : h('div', { className: 'nv-hst__tussen' }),
+          h('div', { className: 'nv-hst__rij' },
+            h('figure', { className: 'nv-hst__foto' },
+              h('div', { className: 'nv-hst__beeld' }, f.image && h('img', { src: f.image, alt: '' }), f.credit && h(G.PhotoCredit, { by: f.credit })),
+              h('figcaption', { 'aria-hidden': 'true' }, kortNaam(s.naam))),
+            h('div', { className: 'nv-hst__tekst' },
+              h('p', { className: 'nv-hst__nr', 'aria-hidden': 'true' }, (i + 1 < 10 ? '0' : '') + (i + 1)),
+              h('h4', { className: 'nv-hst__naam' }, h('span', { className: 'nv-onzichtbaar' }, 'Hoofdstuk ' + (i + 1) + ': '), kortNaam(s.naam)),
+              h('p', { className: 'nv-hst__data' }, wanneer),
+              zin ? h('p', { className: 'nv-hst__citaat' }, zin) : null,
+              tel && (tel.tiener || tel.volwassene) ? h('p', { className: 'nv-hst__hart' },
+                teller(tel.tiener, 'tiener', 'ster', 'sterren', 'tieners'),
+                teller(tel.volwassene, 'volwassene', 'hartje', 'hartjes', 'ouders')) : null,
+              h('p', { className: 'nv-hst__links' },
+                heeft && p.naarVerhaal ? h('button', { type: 'button', className: 'nv-hst__knop', onClick: function () { p.naarVerhaal(s.id); } }, 'Lees het dagverhaal', PIJL) : null,
+                h('button', { type: 'button', className: 'nv-hst__knop' + (heeft ? ' nv-hst__knop--stil' : ''), onClick: function () { p.kiesPlek(s.id); } },
+                  'Bekijk in Route', h('span', { className: 'nv-onzichtbaar' }, ': ' + kortNaam(s.naam)), PIJL)))));
+      })));
+  }
+  // Pijl achter een knoptekst: niet voorlezen.
+  var PIJL = h('span', { 'aria-hidden': true }, ' →');
+  // Zes ruitjes als scheiding (decoratie).
+  function Ornament() {
+    return h('p', { className: 'nv-ornament', 'aria-hidden': 'true' }, [0, 1, 2, 3, 4, 5].map(function (i) { return h('span', { key: i }); }));
   }
 
   var TE_DOEN_EERST = 4;
@@ -1189,9 +1232,9 @@
         })) : null));
   }
 
-  // Hartjes van het gezin (reis.hartjes), gedeeld door plek-paneel, tegels en Doen: één stand per reispagina.
+  // Hartjes van het gezin (reis.hartjes), gedeeld door plek-paneel, hoofdstukken en Doen: één stand per reispagina.
   // wissel: meteen tonen, bij een fout alleen déze activiteit terugzetten (functioneel) en melden.
-  // Twee momenten (2026-10-06): vooraf (lijkt me leuk; ideeën, tegels, Vandaag) en achteraf (was leuk; bij wat je
+  // Twee momenten (2026-10-06): vooraf (lijkt me leuk; ideeën, hoofdstukken, Vandaag) en achteraf (was leuk; bij wat je
   // deed, na de reis of onderweg vanaf de dag zelf: O.magAchteraf). hartjes = vooraf, zoals altijd.
   function useHartjes(gezin, opties) {
     var g = gezin || { werkt: false, hartjes: [], achteraf: [], leden: [] }, o = opties || {};
@@ -1519,7 +1562,7 @@
       return hier || (stops[0] && stops[0].id);
     }), plekId = pk[0], setPlekId = pk[1];
     React.useEffect(function () { document.title = r.titel + ' · Onze reizen'; }, [r.titel]);
-    // Vanuit een tegel: naar het programma, pas nadat de nieuwe plek getekend is (en de tabrij al goed staat).
+    // Vanuit een hoofdstuk ("Bekijk in Route"): naar Route, pas nadat de nieuwe plek getekend is (en de tabrij al goed staat).
     // Binnen het programma: alleen terug naar het paneel als je al voorbij het begin bent.
     var np = React.useState(0), naarProgramma = np[0], setNaarProgramma = np[1];
     React.useEffect(function () { if (naarProgramma) naar('programma'); }, [naarProgramma]);
@@ -1566,7 +1609,7 @@
     var hart = useHartjes(data.gezin, { herinnering: r.stemming === 'herinnering' || O.naReis(r, vandaag), vandaag: onderweg ? vandaag : null,
       aankomst: O.aankomstPlekken(data.verblijven), smaak: data.smaak });
     var p = { reis: r, herinnering: r.stemming === 'herinnering', stops: stops, dagen: data.dagen, route: data.route,
-      verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, hart: hart, foto: maakFoto(data.fotos), kiesPlek: kiesPlek,
+      verblijven: data.verblijven, budget: data.budget, activiteiten: data.activiteiten, dagverhalen: data.dagverhalen || [], hart: hart, foto: maakFoto(data.fotos), kiesPlek: kiesPlek,
       // Bewerken: alleen ouders; onderweg alles, vóór de reis alleen contact (besluit gebruiker 2026-10-18).
       wz: wz, bewerk: !!wz.fase, vandaag: vandaag };
     return h(FotoCtx.Provider, { value: p.foto },

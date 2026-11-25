@@ -595,7 +595,7 @@ async function haalGezin(activiteitIds) {
     : [];
   if (isFout(leden) || isFout(hartjes)) return { werkt: false, leden: [], hartjes: [], achteraf: [], mijnId: ik, groep: null, beheerder: false };
   const zelf = leden.filter(l => l.user_id === ik)[0];
-  // hartjes = vooraf (zoals altijd: ideeën, tegels, Vandaag); achteraf apart (wat echt goed viel).
+  // hartjes = vooraf (zoals altijd: ideeën, hoofdstukken, Vandaag); achteraf apart (wat echt goed viel).
   const s = Opmaak.splitsMoment(hartjes);
   return { werkt: true, leden: leden, hartjes: s.vooraf, achteraf: s.achteraf, mijnId: ik, groep: (zelf && zelf.groep) || null, beheerder: !!zelf && zelf.rol === 'bewerker' };
 }

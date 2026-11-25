@@ -22,6 +22,8 @@
   --on-photo: #f7fbfb;
   --focus-ring: #1f5f6b;
   --shadow-card: 0 1px 2px rgba(22,50,58,0.06), 0 12px 32px rgba(22,50,58,0.10);
+  /* Polaroid in de hoofdstukken en het dagverhaal: bewuste uitzondering op "foto's geen schaduw" (akkoord gebruiker 2026-11-24). */
+  --shadow-polaroid: 0 1px 3px rgba(22,50,58,0.10), 0 10px 24px rgba(22,50,58,0.16);
   /* statuskleuren (designsysteem) */
   --status-betaald: #1c6a43;
   --status-betaald-soft: #dcefe3;
