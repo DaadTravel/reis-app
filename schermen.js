@@ -861,30 +861,6 @@
   var FEITLABEL = { calendar: 'Wanneer', car: 'Route', plane: 'Reis', train: 'Reis', boat: 'Reis', bus: 'Reis', sun: 'Weer' };
 
 
-  // Zijwaartse strook: houdt bij of er links/rechts nog iets buiten beeld staat (voor vervaging en pijltjes).
-  // Geeft { ref, el, l, r }: ref aan de strook hangen; el is de strook zelf (of null zolang die er niet is).
-  function useRanden() {
-    var e = React.useState(null), el = e[0], setEl = e[1];
-    var s = React.useState({ l: false, r: false }), randen = s[0], setRanden = s[1];
-    function meet() {
-      if (!el) return;
-      var l = el.scrollLeft > 2, r = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
-      setRanden(function (o) { return o.l === l && o.r === r ? o : { l: l, r: r }; });
-    }
-    // Na elke weergave meten (inhoud kan veranderen), vóór het tekenen: geen verspringen.
-    React.useLayoutEffect(meet);
-    React.useEffect(function () {
-      if (!el) return;
-      // Opnieuw meten bij een andere breedte en zodra de lettertypes er zijn (namen worden dan breder).
-      var ro = window.ResizeObserver ? new ResizeObserver(meet) : null;
-      if (ro) ro.observe(el); else window.addEventListener('resize', meet);
-      if (document.fonts) document.fonts.ready.then(meet);
-      el.addEventListener('scroll', meet, { passive: true });
-      return function () { el.removeEventListener('scroll', meet); if (ro) ro.disconnect(); else window.removeEventListener('resize', meet); };
-    }, [el]);
-    return { ref: setEl, el: el, l: randen.l, r: randen.r };
-  }
-
   // Overzicht = de reis in hoofdstukken (de reisscore staat sinds 2026-11-26 in het kader van de opening, de
   // tijdlijn in Route).
   function Overzicht(p) {
@@ -892,65 +868,42 @@
       h('div', { className: 'nv-wrap' }, p.stops.length ? h(Hoofdstukken, p) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen plekken.' })));
   }
 
-  // Tijdlijn van de route, bovenaan Route (besluit gebruiker 2026-11-26; stond eerst in Overzicht).
-  function Tijdlijn(p) {
-    var r = p.reis;
-    var randen = useRanden();
-    function schuif(n) { var el = randen.el; if (el) el.scrollBy({ left: n * el.clientWidth * 0.8, behavior: 'smooth' }); }
-    // Tijdlijn volgt de route (met heen- en terugreis); zonder route de plekken.
-    var punten = p.route.length ? p.route.map(function (x) {
-      return { naam: x.naam, stop: stopOpId(p.stops, x.stop_id), leg: x };
-    }) : p.stops.map(function (s) { return { naam: s.naam, stop: s }; });
-    // Slepen met de muis (vinger en touchpad scrollen vanzelf); na slepen geen klik doorlaten.
-    function sleep(e) {
-      var el = randen.el; if (e.pointerType !== 'mouse' || e.button !== 0 || !el) return;
-      var x0 = e.clientX, s0 = el.scrollLeft, gesleept = false;
-      e.preventDefault(); // geen tekst selecteren
-      function beweeg(ev) {
-        var dx = ev.clientX - x0; if (Math.abs(dx) > 4 && !gesleept) { gesleept = true; el.style.scrollSnapType = 'none'; el.style.cursor = 'grabbing'; }
-        if (gesleept) el.scrollLeft = s0 - dx;
-      }
-      function los() {
-        window.removeEventListener('pointermove', beweeg); window.removeEventListener('pointerup', los); window.removeEventListener('pointercancel', los);
-        el.style.scrollSnapType = ''; el.style.cursor = '';
-        if (!gesleept) return;
-        function stop(ev) { ev.stopPropagation(); ev.preventDefault(); }
-        window.addEventListener('click', stop, true);
-        setTimeout(function () { window.removeEventListener('click', stop, true); }, 0);
-      }
-      window.addEventListener('pointermove', beweeg); window.addEventListener('pointerup', los); window.addEventListener('pointercancel', los);
+  // Route: de plekken als één lijst die ook de keuze is (besluit gebruiker 2026-11-26, variant "dienstregeling";
+  // vervangt de zijwaartse tijdlijn en de tabrij). Per plek nummer, aankomstdatum, naam, nachten en de rit ernaartoe;
+  // vertrek en thuiskomst als rustige regel erboven en eronder. Een rit zonder gekozen vervoer: "keuze nodig".
+  function PlekKeuze(p) {
+    var r = (p.route || []).slice().sort(function (a, b) { return (a.volgorde || 0) - (b.volgorde || 0); });
+    var eerste = r[0], laatste = r[r.length - 1];
+    var vertrek = eerste && !eerste.stop_id ? eerste : null, thuis = r.length > 1 && laatste && !laatste.stop_id ? laatste : null;
+    var dag = function (iso) { return /^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? O.dagLabel(iso) : '?'; };
+    var tijd = function (l) { return l && l.leg_minuten != null ? O.reistijd(l.leg_minuten, l.leg_benadering) : null; };
+    function rit(l) {
+      if (!l) return null;
+      var opties = O.vervoerOpties(l);
+      if (opties.length) return h('span', { className: 'nv-plekkeus__rit nv-plekkeus__rit--keuze' },
+        opties.map(function (o, k) { return h(G.Icon, { key: k, name: o.vervoer, size: 13 }); }), 'keuze nodig');
+      var t = tijd(l);
+      return t ? h('span', { className: 'nv-plekkeus__rit' }, h(G.Icon, { name: l.leg_vervoer || 'reis', size: 13 }), t) : null;
     }
-    return h('div', { className: 'nv-routetijd' },
-        punten.length && (randen.l || randen.r) ? h('div', { className: 'nv-pijlen nv-pijlen--altijd' },
-          h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Eerder in de route', disabled: !randen.l, onClick: function () { schuif(-1); } }, '‹'),
-          h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Verder in de route', disabled: !randen.r, onClick: function () { schuif(1); } }, '›')) : null,
-        punten.length ? h('ol', { ref: randen.ref, onPointerDown: sleep, className: 'nv-tijdlijn' + (randen.l ? ' meer-links' : '') + (randen.r ? ' meer-rechts' : ''), 'aria-label': 'Route in volgorde' }, punten.map(function (x, i) {
-          // Plek die twee keer in de route staat: de dag van dít bezoek (route_punt_id, anders het hoeveelste bezoek).
-          var keer = punten.slice(0, i).filter(function (y) { return x.stop && y.stop === x.stop; }).length;
-          var l = x.leg, d = x.stop && (l ? dagVanBezoek(p.dagen, l, keer) : dagenVan(p.dagen, x.stop.id)[keer]), datum = d && d.datum_van;
-          // Nachten van dít bezoek (route), anders die van de plek.
-          var n = l && l.nachten != null ? l.nachten : x.stop ? x.stop.nachten : null;
-          var nacht = nachtenTekst(n);
-          // Begin- of eindpunt zonder plek is vertrek of thuiskomst: datum van de reis zelf.
-          var rand = !x.stop && (i === 0 || i === punten.length - 1);
-          if (rand) { nacht = i === 0 ? 'Vertrek' : 'Thuis'; datum = i === 0 ? r.start_datum : r.eind_datum; }
-          // Vervoer nog niet gekozen maar wel opties: hun iconen en de reistijd van kortste tot langste.
-          var opties = l ? O.vervoerOpties(l) : [];
-          var onzeker = l && !p.herinnering && !l.leg_geverifieerd;
-          return h('li', { key: i, className: rand ? 'is-thuis' : '' },
-            h('span', { className: 'nv-tijdlijn__datum' }, datum ? O.kortDatum(datum) : '?'),
-            h('span', { className: 'nv-tijdlijn__naam' }, kortNaam(x.naam)),
-            h('span', { className: 'nv-tijdlijn__nacht' }, nacht),
-            i > 0 && l && opties.length ? h('span', { className: 'nv-tijdlijn__reis' },
-              h('span', { className: 'nv-opties__iconen', role: 'img', 'aria-label': opties.map(function (o) { return O.tekstOf(o.label) || VERVOER[o.vervoer]; }).join(' of ') },
-                opties.map(function (o, k) { return h(G.Icon, { key: k, name: o.vervoer, size: 14 }); })),
-              O.reistijdBereik(opties),
-              h('span', { className: 'nv-tijdlijn__check nv-opties__kies' }, O.optiesKop(opties))) :
-            i > 0 && l ? h('span', { className: 'nv-tijdlijn__reis' },
-              h(G.Icon, { name: l.leg_vervoer || 'reis', size: 14 }),
-              etappeTijdPrijs(l).join(' · '),
-              onzeker ? h('span', { className: 'nv-tijdlijn__check' }, 'te verifiëren') : null) : null);
-        })) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen route.' }));
+    return h('div', { className: 'nv-plekkeuze', id: 'plekkeuze' },
+      vertrek ? h('p', { className: 'nv-routerand' }, h(G.Icon, { name: 'pin', size: 16 }),
+        h('span', null, h('strong', null, 'Vertrek'), ' ' + dag(p.reis.start_datum) + ' vanaf ' + kortNaam(vertrek.naam))) : null,
+      h('ol', { role: 'tablist', 'aria-label': 'Plekken', 'aria-orientation': 'vertical', onKeyDown: p.toets, style: { '--rijen': Math.ceil(p.stops.length / 2) } }, p.stops.map(function (x, i) {
+        var aan = x.id === p.gekozen;
+        var k = r.findIndex(function (y) { return y.stop_id === x.id; }), leg = k > 0 ? r[k] : null;
+        var aankomst = aankomstVan(p.route, p.dagen, x.id);
+        return h('li', { key: x.id, role: 'presentation' },
+          h('button', { id: 'tab-' + x.id, type: 'button', role: 'tab', className: 'nv-plekkeus' + (leg && O.vervoerOpties(leg).length ? ' nv-plekkeus--keuze' : ''), 'aria-selected': aan, 'aria-controls': 'plek-paneel',
+            tabIndex: aan ? 0 : -1, onClick: function () { p.kies(x.id); } },
+            h('span', { className: 'nv-plekkeus__nr', 'aria-hidden': 'true' }, i + 1),
+            h('span', { className: 'nv-plekkeus__datum' }, aankomst ? O.kortDatum(aankomst) : '?'),
+            h('span', { className: 'nv-plekkeus__naam' }, kortNaam(x.naam), h('small', null, nachtenPlek(p.route, x))),
+            rit(leg),
+            h('span', { className: 'nv-plekkeus__pijl', 'aria-hidden': 'true' }, '›')));
+      })),
+      thuis ? h('p', { className: 'nv-routerand' }, h(G.Icon, { name: 'village', size: 16 }),
+        h('span', null, h('strong', null, 'Thuis'), ' ' + dag(p.reis.eind_datum) + (tijd(thuis) ? ' · ' + tijd(thuis) : '') +
+          (r.length > 1 ? ' vanaf ' + kortNaam(r[r.length - 2].naam) : ''))) : null);
   }
 
   // De reis in hoofdstukken (besluit gebruiker 2026-11-24, in plaats van de sfeertegels): per plek de rit ernaartoe
@@ -1018,7 +971,7 @@
   function DagVoorDag(p) {
     var i = Math.max(0, p.stops.findIndex(function (s) { return s.id === p.plekId; })), s = p.stops[i];
     var tabsRef = React.useRef(null), sid = s && s.id;
-    // Actieve tab in beeld (zelfde aanpak als Route).
+    // Actieve tab in beeld (de tabrij kan zijwaarts schuiven).
     React.useEffect(function () {
       var rij = tabsRef.current, knop = rij && rij.querySelector('[aria-selected="true"]');
       if (!knop) return;
@@ -1134,20 +1087,10 @@
   function Programma(p) {
     var i = Math.max(0, p.stops.findIndex(function (s) { return s.id === p.plekId; }));
     var s = p.stops[i];
-    var tabsRef = React.useRef(null);
     var sid = s && s.id;
     // Te doen: eerst de 4 bovenste, "toon nog …" voor de rest; bij een andere plek weer ingeklapt.
     var ta = React.useState(false), toonAlles = ta[0], setToonAlles = ta[1];
     React.useEffect(function () { setToonAlles(false); }, [sid]);
-    React.useEffect(function () {
-      var rij = tabsRef.current, knop = rij && rij.querySelector('[aria-selected="true"]');
-      if (!knop) return;
-      var l = knop.getBoundingClientRect().left - rij.getBoundingClientRect().left + rij.scrollLeft, r = l + knop.offsetWidth;
-      // Buiten beeld (bijv. na een tik op een tegel) direct, niet vloeiend: twee vloeiende scrolls tegelijk breken de
-      // paginascroll naar het programma soms af.
-      var b = rij.getBoundingClientRect(), zichtbaar = b.bottom > 0 && b.top < window.innerHeight;
-      if (l < rij.scrollLeft || r > rij.scrollLeft + rij.clientWidth) rij.scrollTo({ left: l - 16, behavior: zichtbaar ? 'smooth' : 'auto' });
-    }, [sid]);
     var kopblok = h('div', { className: 'nv-kopblok' },
       h('span', { className: 'nv-label' }, 'Route'),
       h('h2', { className: 'nv-kop' }, 'Plek voor ', h('em', null, 'plek')));
@@ -1157,12 +1100,15 @@
     var f = p.foto(s.foto_id);
     var dagen = dagenVan(p.dagen, s.id), d = dagen[0];
     var opties = p.verblijven.filter(function (x) { return x.stop_id === s.id && x.status !== 'open'; });
+    // Kiezen in de plekkenlijst of met ‹ › in de plakbalk: naar het begin van die plek. Met de pijltoetsen in de
+    // lijst (toetsenbord) alleen wisselen en de focus meenemen, niet wegscrollen.
     function kies(id, focus) {
       p.kiesPlek(id, true);
       if (focus) setTimeout(function () { var k = document.getElementById('tab-' + id); if (k) k.focus(); }, 0);
+      else setTimeout(function () { naar('plek-paneel'); }, 0);
     }
     function toets(e) {
-      var n = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      var n = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
       if (!n) return;
       e.preventDefault();
       kies(p.stops[(i + n + p.stops.length) % p.stops.length].id, true);
@@ -1194,13 +1140,19 @@
 
     return h('section', { className: 'nv-blok', id: 'programma' },
       h('div', { className: 'nv-wrap' },
-        kopblok, h(Tijdlijn, p),
-        h('div', { className: 'nv-tabs', role: 'tablist', 'aria-label': 'Plekken', ref: tabsRef, onKeyDown: toets },
-          p.stops.map(function (x) {
-            var aan = x.id === s.id;
-            return h('button', { key: x.id, id: 'tab-' + x.id, type: 'button', role: 'tab', className: 'nv-tab',
-              'aria-selected': aan, 'aria-controls': 'plek-paneel', tabIndex: aan ? 0 : -1, onClick: function () { kies(x.id); } }, kortNaam(x.naam));
-          })),
+        kopblok,
+        h(PlekKeuze, { reis: p.reis, stops: p.stops, route: p.route, dagen: p.dagen, gekozen: s.id, kies: kies, toets: toets }),
+        // Plakbalk tijdens het lezen: de gekozen plek met ‹ › er direct achter; een tik op de naam = terug naar de lijst.
+        h('div', { className: 'nv-plekbalk' },
+          h('button', { type: 'button', className: 'nv-plekbalk__nu', 'aria-label': (i + 1) + '. ' + kortNaam(s.naam) + ', terug naar de lijst met plekken',
+            onClick: function () { naar('plekkeuze'); } },
+            h('span', { className: 'nv-plekbalk__naam' }, (i + 1) + '. ' + kortNaam(s.naam)),
+            h('span', { className: 'nv-plekbalk__wanneer' }, meer ? bezoeken.length + ' bezoeken · ' + nachtenPlek(p.route, s) : wanneerTekst(d, s))),
+          h('span', { className: 'nv-plekbalk__pijlen' },
+            h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Vorige plek' + (vorige ? ': ' + kortNaam(vorige.naam) : ''), disabled: !vorige,
+              onClick: function () { if (vorige) kies(vorige.id); } }, '‹'),
+            h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Volgende plek' + (volgende ? ': ' + kortNaam(volgende.naam) : ''), disabled: !volgende,
+              onClick: function () { if (volgende) kies(volgende.id); } }, '›'))),
         h('article', { className: 'nv-plek', id: 'plek-paneel', role: 'tabpanel', 'aria-labelledby': 'tab-' + s.id },
           h('div', { className: 'nv-plek__foto' }, f.image && h('img', { src: f.image, alt: '' }), f.credit && h(G.PhotoCredit, { by: f.credit })),
           h('div', null,
@@ -1686,7 +1638,7 @@
     // Vanuit een hoofdstuk ("Bekijk in Route"): naar Route, pas nadat de nieuwe plek getekend is (en de tabrij al goed staat).
     // Binnen het programma: alleen terug naar het paneel als je al voorbij het begin bent.
     var np = React.useState(0), naarProgramma = np[0], setNaarProgramma = np[1];
-    React.useEffect(function () { if (naarProgramma) naar('programma'); }, [naarProgramma]);
+    React.useEffect(function () { if (naarProgramma) naar('plek-paneel'); }, [naarProgramma]);
     function kiesPlek(id, blijf) {
       setPlekId(id);
       if (!blijf) return setNaarProgramma(function (n) { return n + 1; });

@@ -306,7 +306,7 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   als er reisdatums zijn) en de reisscore; vanaf 820 px links kop + feiten, rechts de reisscore. Vervallen: het blok "De
   reis" met eigen foto, de citaatfoto (`quote_tekst`/`quote_sub`/`quote_foto_id` blijven in de database), de kop "23 nachten,
   8 plekken", het label met `O.reisSamenvatting` en "Waar we naar uitkijken" (`reizen.highlights` blijft in de database maar
-  wordt niet getoond). Overzicht = alleen de hoofdstukken; de tijdlijn staat bovenaan Route (component `Tijdlijn`). De
+  wordt niet getoond). Overzicht = alleen de hoofdstukken; Route begint met een plekkenlijst die ook de keuze is (component `PlekKeuze`, "dienstregeling", vervangt tijdlijn en tabrij; besluit 2026-11-26) en een plakbalk "N. Plek ‹ ›" (`nv-plekbalk`). De
   menuknop is een hamburger (alleen icoon, `aria-label` "Onderdelen"). Onderdelen wisselen automatisch om en om papier/zand
   (`main > .nv-blok:nth-child(odd of …)`, Vandaag telt niet mee; `--blok-bg` voor plakkende tabs en de bannerrand). **Besluiten gebruiker op de proef (2026-11-24):** menu = smalle plakbalk (← · huidig
   onderdeel · knop "Onderdelen") die een raster van 3 kolommen openklapt (geen raster dat blijft plakken:
@@ -575,8 +575,8 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
 - **Vervoersopties** (migratie `…0017`, besluit gebruiker 2026-10-04): zolang
   het vervoer van een rit niet gekozen is (`leg_vervoer` leeg), toont de app
   de opties uit `route_punten.leg_opties` (lijst van `{vervoer, label,
-  minuten, prijs, toelichting}`; `O.vervoerOpties`): in de tijdlijn de
-  iconen + reistijd kortste–langste + "nog te kiezen", in Onderweg per optie
+  minuten, prijs, toelichting}`; `O.vervoerOpties`): in de plekkenlijst van Route de
+  iconen + "keuze nodig", in Onderweg per optie
   naam · ~reistijd · ~prijs en één regel uitleg. Is het vervoer gekozen (bijv.
   via de Excel), dan verdwijnen de opties vanzelf. Suggesties van Claude, net
   als voorstel-activiteiten: de Excel raakt dit veld nooit. Regels bij het

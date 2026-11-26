@@ -40,14 +40,12 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
 - [ ] **Feiten van de reis** — in het kader bij een autoreis "roadtrip · … km
       route" en, als ingevuld, "· … km gereden". Past op een telefoon zonder
       horizontale scrollbalk.
-- [ ] **Tijdlijn** — bovenaan Route (boven de plek-tabs) staan datum, plaatsnaam, nachten
-      en reistijd bij elke plek op dezelfde hoogte, ook als een naam over
-      twee regels loopt (bijv. Picos de Europa); vertrek/thuis in dezelfde
-      letter als de plekken; zijwaarts swipen werkt. Staat er meer buiten
-      beeld, dan vervaagt die kant en staan er pijltjes ‹ › (ook op de
-      telefoon); met de muis slepen werkt, en loslaten na slepen opent
-      niets. Thailand loopt door tot en met Bangkok en Thuis. Eén keer
-      op een iPhone bekijken (subgrid: iOS 16+).
+- [ ] **Plekkenlijst in Route** — bovenaan Route "Vertrek …", dan één regel per plek
+      (nummer, aankomstdatum, naam, nachten, reistijd van de rit ernaartoe, ›) in
+      een licht vlak, de gekozen plek gekleurd; "Thuis …" eronder. Alles in één
+      overzicht, nergens zijwaarts scrollen; vanaf 820 px in twee kolommen. Een rit
+      zonder gekozen vervoer toont de iconen en "keuze nodig". Tik op een regel =
+      die plek en naar het plek-paneel.
 - [ ] **Hoofdstukken** — Overzicht is "De reis in N
       hoofdstukken": per plek de rit ernaartoe als stippellijn ("Van → Naar · km ·
       reistijd", niet nagemeten = "rit nog meten", na de reis nooit), een
@@ -64,16 +62,17 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       concept, geen gestreept fotovlak en geen beheermeldingen (lokaal `&concept=1`:
       tiener ziet geen knop Dag voor dag, ouder wel met label "Concept"). Rare data:
       `&verhaalmonkey=1` geeft geen fout. Verslag heet "Ons verslag".
-- [ ] **Plek kiezen** — "Bekijk in Route" bij een hoofdstuk opent Route bij die
-      plek (kop net onder de menubalk); de tabbladen en ← / → wisselen van
-      plek, het plek-paneel komt net onder de plakkende tabbladen.
+- [ ] **Plek kiezen** — "Bekijk in Route" bij een hoofdstuk opent Route direct bij
+      die plek. Tijdens het lezen plakt een balk "3. Llanes ‹ ›" onder de menubalk:
+      ‹ › wisselt van plek (het paneel begint net onder de balk), een tik op de naam
+      gaat terug naar de plekkenlijst. Toetsenbord: pijltjes in de lijst.
 - [ ] **Tips** — bij een plek één tipskader "Tips voor …", altijd open
       (geen losse opsommingspunten en geen uitklapknop); geen tip dubbel.
       Bij twee bezoeken: zie hieronder.
 - [ ] **Onderweg** — onderaan elke plek een groen kader met aankomst
       (vorige → deze plek) en vertrek (deze plek → volgende), met vervoer,
       km, reistijd en prijs (onbekend = "?" / "€ ?"); een autorit toont
-      géén prijs (ook niet in de tijdlijn), vlucht/boot/overig vervoer wel;
+      géén prijs (ook niet in de plekkenlijst), vlucht/boot/overig vervoer wel;
       tik op een regel = naar die plek. Bus en trein krijgen een eigen
       icoon en naam; een eigen naam (bijv. "Privébusje") gaat voor; "? km"
       alleen bij een autorit. Noord-Spanje: bij elke plek ingevuld.
