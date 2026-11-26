@@ -913,6 +913,17 @@
       n ? n + (n === 1 ? ' plek' : ' plekken') : ''].filter(Boolean).join(' · ');
   }
 
+  // Eén regel onder de reistitel (besluit gebruiker 2026-11-26): "13 juli – 5 augustus · 24 dagen · 23 nachten · 8 plekken".
+  // Vervangt datum, nachten, dagen en plekken die eerst op vier plekken stonden. Onbekend = "Data ?" / "? nachten".
+  function startRegel(reis, stops) {
+    var r = reis && typeof reis === 'object' ? reis : {}, n = rijen(stops).length;
+    var dagen = isDatum(r.start_datum) && isDatum(r.eind_datum) ? dagenTussen(r.start_datum, r.eind_datum) : null;
+    return [isDatum(r.start_datum) ? langeDatum(r.start_datum) + ' – ' + (isDatum(r.eind_datum) ? langeDatum(r.eind_datum) : '?') : 'Data ?',
+      dagen != null && dagen >= 0 ? (dagen + 1) + (dagen ? ' dagen' : ' dag') : '',
+      nachtenTekst(getal(r.nachten, true)),
+      n ? n + (n === 1 ? ' plek' : ' plekken') : ''].filter(Boolean).join(' · ');
+  }
+
   // Activiteit gekoppeld aan een dagverhaal (activiteiten.dagverhaal_id): een vaste datum (Excel) gaat voor. Valt die
   // op een andere dag, dan staat de activiteit niet bij het verhaal en krijgt de beheerder een melding (afwijking).
   // Zonder (geldige) vaste datum hoort ze bij het verhaal; heeft het verhaal zelf geen datum, dan valt er niets te vergelijken.
@@ -922,7 +933,7 @@
     return { bijVerhaal: a.datum === datum, afwijking: isDatum(datum) && a.datum !== datum };
   }
 
-  window.Opmaak = { ritTekst: ritTekst, activiteitBijDag: activiteitBijDag, reisSamenvatting: reisSamenvatting, hoofdstukZin: hoofdstukZin, verhaalDatum: verhaalDatum, verhaalKop: verhaalKop, ritRegel: ritRegel, kantelKant: kantelKant, verhalenVanPlek: verhalenVanPlek, dagLabel: dagLabel, plekPeriode: plekPeriode, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
+  window.Opmaak = { startRegel: startRegel, ritTekst: ritTekst, activiteitBijDag: activiteitBijDag, reisSamenvatting: reisSamenvatting, hoofdstukZin: hoofdstukZin, verhaalDatum: verhaalDatum, verhaalKop: verhaalKop, ritRegel: ritRegel, kantelKant: kantelKant, verhalenVanPlek: verhalenVanPlek, dagLabel: dagLabel, plekPeriode: plekPeriode, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, slaapStand: slaapStand, slaapStandTekst: slaapStandTekst, splitsMoment: splitsMoment, magAchteraf: magAchteraf, naReis: naReis, smaakprofiel: smaakprofiel, smaakScore: smaakScore, pastBijOns: pastBijOns, aankomstPlekken: aankomstPlekken, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
     openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, bewerkFase: bewerkFase, wijzigVelden: wijzigVelden, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,

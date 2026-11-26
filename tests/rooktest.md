@@ -20,19 +20,26 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       "Al gemaakt", met kaartfoto. Onbekend aantal nachten = "?".
 - [ ] **Reispagina** — tik op een reis: foto bovenaan met credit;
       Overzicht, Route, Slapen, Doen en Kosten zijn er alle vijf (ook
-      als een onderdeel nog leeg is).
+      als een onderdeel nog leeg is). Geen citaatfoto meer.
+- [ ] **Opening** — op de foto: kicker, titel en één regel "13 juli – 5 augustus ·
+      24 dagen · 23 nachten · 8 plekken" (wit, leesbaar); daaronder een
+      halfdoorzichtig kader met de kop ("Van duin tot bergtop"), de lede als schuin
+      citaat, het feitenblok (Route/Reis, Weer, Ideeën, Stand; "Wanneer" alleen
+      zonder reisdatums) en "Waar de reis zich voor leent". Vanaf 820 px links kop +
+      feiten, rechts de reisscore, even hoog. Een reis zonder foto: zandkleur,
+      donkere titel. Geen "Waar we naar uitkijken".
 - [ ] **Menu** — smalle balk bovenaan: ← (naar alle reizen), de naam van
-      het onderdeel waar je bent (bovenaan de reistitel) en "Onderdelen".
-      "Onderdelen" opent een raster van 3 kolommen (het actieve onderdeel
+      het onderdeel waar je bent (bovenaan de reistitel) en de hamburgerknop (☰,
+      voorgelezen als "Onderdelen"). Die opent een raster van 3 kolommen (het actieve onderdeel
       gekleurd); kiezen = raster dicht en het onderdeel staat net onder de
       balk. Esc of tikken naast het raster sluit het. Met 7 knoppen (onderweg
       Vandaag, na vertrek Verslag) staat de laatste gewoon links op een
       nieuwe rij. Nergens horizontaal scrollen, ook niet op 320 px. "Dag voor
       dag" alleen bij een reis met dagverhalen.
-- [ ] **Feiten van de reis** — onder "De reis" de periode uit de reisdatums
-      (bijv. "13 jul – 5 aug"); bij een autoreis "roadtrip · … km route" en,
-      als ingevuld, "· … km gereden". Past op een telefoon zonder horizontale scrollbalk.
-- [ ] **Tijdlijn** — in het reisoverzicht staan datum, plaatsnaam, nachten
+- [ ] **Feiten van de reis** — in het kader bij een autoreis "roadtrip · … km
+      route" en, als ingevuld, "· … km gereden". Past op een telefoon zonder
+      horizontale scrollbalk.
+- [ ] **Tijdlijn** — bovenaan Route (boven de plek-tabs) staan datum, plaatsnaam, nachten
       en reistijd bij elke plek op dezelfde hoogte, ook als een naam over
       twee regels loopt (bijv. Picos de Europa); vertrek/thuis in dezelfde
       letter als de plekken; zijwaarts swipen werkt. Staat er meer buiten
@@ -40,11 +47,7 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       telefoon); met de muis slepen werkt, en loslaten na slepen opent
       niets. Thailand loopt door tot en met Bangkok en Thuis. Eén keer
       op een iPhone bekijken (subgrid: iOS 16+).
-- [ ] **De reis (intro)** — label "De reis · Roadtrip · 24 dagen · 8 plekken"
-      (Roadtrip alleen als elke rit met gekozen vervoer de auto is), de lede als
-      schuin citaat, een feitenblok (Wanneer, Route/Reis, Weer, Ideeën, Stand) en,
-      als ingevuld, "Waar we naar uitkijken" met max. 3 vinkjes (lokaal: `&hl=1`).
-- [ ] **Hoofdstukken** — in Overzicht onder de tijdlijn "De reis in N
+- [ ] **Hoofdstukken** — Overzicht is "De reis in N
       hoofdstukken": per plek de rit ernaartoe als stippellijn ("Van → Naar · km ·
       reistijd", niet nagemeten = "rit nog meten", na de reis nooit), een
       polaroid (om en om gekanteld, naast de tekst vanaf 820 px), nummer, naam,

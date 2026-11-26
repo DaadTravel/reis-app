@@ -970,6 +970,16 @@
   test('hoofdstukZin: niets of rare invoer → leeg', ['', '', ''], function () { return [O.hoofdstukZin({}), O.hoofdstukZin(null), O.hoofdstukZin({ kort: 5, lede: [] })]; });
 
   var plekkenDV = [{ id: 's1' }, { id: 's2' }, { id: 's3' }];
+  // startRegel (2026-11-26): één regel onder de titel in plaats van datum/nachten/dagen/plekken op vier plekken.
+  test('startRegel: periode · dagen · nachten · plekken', '10 mei – 20 mei · 11 dagen · 10 nachten · 3 plekken', function () {
+    return O.startRegel({ start_datum: '2030-05-10', eind_datum: '2030-05-20', nachten: 10 }, plekkenDV);
+  });
+  test('startRegel: enkelvoud, onbekende nachten en geen data', ['10 mei – 10 mei · 1 dag · 1 nacht · 1 plek', 'Data ? · ? nachten'], function () {
+    return [O.startRegel({ start_datum: '2030-05-10', eind_datum: '2030-05-10', nachten: 1 }, [{ id: 'x' }]), O.startRegel({}, [])];
+  });
+  test('startRegel: alleen een begindatum, of rare invoer → geen fout', ['10 mei – ? · 4 nachten', 'Data ? · ? nachten'], function () {
+    return [O.startRegel({ start_datum: '2030-05-10', nachten: 4 }, null), O.startRegel(null, 'x')];
+  });
   test('reisSamenvatting: alle ritten met de auto → Roadtrip · dagen · plekken', 'Roadtrip · 11 dagen · 3 plekken', function () {
     return O.reisSamenvatting({ start_datum: '2030-05-10', eind_datum: '2030-05-20' }, [{ naam: 'Thuis' }, { leg_vervoer: 'car' }, { leg_vervoer: 'car' }], plekkenDV);
   });

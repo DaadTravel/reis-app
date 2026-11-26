@@ -777,19 +777,46 @@
   }
 
   // ═════════════ reispagina ═════════════
+  // Opening van een reis (besluit gebruiker 2026-11-26): de foto met titel en één regel (O.startRegel), en daarop een
+  // halfdoorzichtig kader met de kop, "Stel je voor", de feiten en "Waar de reis zich voor leent". Vervangt de
+  // schermvullende foto, het blok "De reis" met eigen foto, de citaatfoto en de kop van Reisoverzicht.
+  // Niet meer getoond (blijft in de database): reizen.highlights, quote_tekst/quote_sub/quote_foto_id.
   function Opening(p) {
-    var r = p.reis, f = p.foto(r.hero_foto_id);
-    return h('header', { className: 'nv-hero' },
-      f.image && h('img', { src: f.image, alt: '' }),
-      h('div', { className: 'nv-scrim' }),
-      h('div', { className: 'nv-hero__inner' },
-        h('span', { className: 'nv-label' }, r.kicker || 'Reisgids'),
-        h('h1', null, r.titel),
-        h('p', { className: 'nv-hero__datum' },
-          (r.start_datum ? O.langeDatum(r.start_datum) + ' – ' + (r.eind_datum ? O.langeDatum(r.eind_datum) : '?') : 'Data ?') +
-          ' · ' + nachtenTekst(r.nachten))),
-      h('button', { type: 'button', className: 'nv-omlaag', 'aria-label': 'Naar de reis', onClick: function () { naar('reis'); } },
-        h(G.Icon, { name: 'arrow', size: 18, className: 'nv-omlaag__pijl' })),
+    var r = p.reis, f = p.foto(r.hero_foto_id), kop = (r.secties && r.secties.plekken) || {};
+    // De periode staat al in de regel onder de titel; een losse tekst (bijv. "~3 weken") alleen zonder datums.
+    // Alleen weglaten als de regel echt de hele periode toont (begin én eind een geldige datum, bijv. niet 2027-02-30).
+    var echt = function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d || '') && O.plusDagen(d, 0) === d; };
+    var metData = echt(r.start_datum) && echt(r.eind_datum);
+    var feiten = O.reisFeiten(r, p.route || []).filter(function (x) { return !(metData && x[0] === 'calendar'); })
+      .map(function (x) { return [FEITLABEL[x[0]] || 'Ook', x[1]]; });
+    var ideeen = (p.activiteiten || []).length;
+    if (ideeen) feiten.push(['Ideeën', ideeen + (ideeen === 1 ? ' idee' : ' ideeën') + ' om uit te kiezen']);
+    if (O.tekstOf(r.status_label)) feiten.push(['Stand', O.tekstOf(r.status_label)]);
+    var profiel = O.reisProfiel(p.stops, p.route);
+    var feitEl = feiten.length ? h('dl', { className: 'nv-feitenblok' }, feiten.map(function (x, i) {
+      return h('div', { key: i }, h('dt', null, x[0]), h('dd', null, x[1]));
+    })) : null;
+    var scoreEl = profiel ? h('div', { className: 'nv-reisscore' },
+      h('span', { className: 'nv-label' }, 'Waar de reis zich voor leent'),
+      h(ScoreBlok, { soort: 'vol', scores: reisScores(profiel), tempo: O.tempo(p.route, r.nachten) }),
+      h('p', { className: 'nv-reisscore__noot' }, 'Op basis van de plekken, naar het aantal nachten. Doorreisplekken tellen niet mee.')) : null;
+    var titel = O.tekstOf(kop.title).trim(), lede = O.tekstOf(r.lede).trim();
+    var links = titel || lede || feitEl, kader = links || scoreEl;
+    return h('header', { className: 'nv-opening' + (f.image ? '' : ' nv-opening--zonder'), id: 'reis' },
+      f.image && h('div', { className: 'nv-opening__foto' }, h('img', { src: f.image, alt: '' })),
+      h('div', { className: 'nv-opening__in' },
+        h('div', { className: 'nv-opening__kop' },
+          h('p', { className: 'nv-label' }, r.kicker || 'Reisgids'),
+          h('h1', null, r.titel),
+          h('p', { className: 'nv-opening__regel' }, O.startRegel(r, p.stops))),
+        // Links de kop, "Stel je voor" en de feiten (onderaan uitgelijnd), rechts de reisscore: even hoog, zonder lege vlakken.
+        kader ? h('section', { className: 'nv-kader' + (scoreEl && links ? '' : ' nv-kader--een'), 'aria-label': titel || 'Over deze reis' },
+          links ? h('div', { className: 'nv-kader__links' },
+            titel || lede ? h('div', null,
+              titel ? h('h2', { className: 'nv-kader__titel' }, titel) : null,
+              lede ? h('p', { className: 'nv-intro__lede' }, lede) : null) : null,
+            feitEl) : null,
+          scoreEl) : null),
       f.credit && h(G.PhotoCredit, { by: f.credit }));
   }
 
@@ -819,8 +846,11 @@
       h('div', { className: 'nv-menubalk__rij' },
         h('a', { href: './', className: 'nv-menubalk__terug', 'aria-label': 'Terug naar alle reizen' }, '←'),
         h('span', { className: 'nv-menubalk__nu' }, nu ? nu[1] : p.titel),
-        h('button', { type: 'button', ref: knopRef, className: 'nv-knop nv-menubalk__open', 'aria-expanded': open, 'aria-controls': open ? 'menupaneel' : undefined,
-          onClick: function () { setOpen(!open); } }, 'Onderdelen')),
+        // Hamburger: alleen het icoon (besluit gebruiker 2026-11-26), voor schermlezers "Onderdelen".
+        h('button', { type: 'button', ref: knopRef, className: 'nv-menubalk__open', 'aria-label': 'Onderdelen', 'aria-expanded': open, 'aria-controls': open ? 'menupaneel' : undefined,
+          onClick: function () { setOpen(!open); } },
+          h('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', 'aria-hidden': 'true' },
+            h('path', { d: 'M4 7h16M4 12h16M4 17h16' })))),
       open ? h('div', { id: 'menupaneel', className: 'nv-menubalk__paneel' },
         h('ul', { className: 'nv-menu__raster' }, p.secties.map(function (s) {
           return h('li', { key: s[0] }, h('a', { href: '#' + s[0], className: 'nv-menu__knop', 'aria-current': p.actief === s[0] ? 'page' : undefined,
@@ -828,44 +858,8 @@
         }))) : null);
   }
 
-  function Intro(p) {
-    // Niet dezelfde foto als de opening of het citaat vlak eronder; dubbel met een hoofdstuk-polaroid is onvermijdelijk.
-    var r = p.reis, bezet = [r.hero_foto_id, r.quote_foto_id];
-    var kandidaten = [r.kaart_foto_id].concat(p.stops.map(function (s) { return s.foto_id; }));
-    var f = p.foto(kandidaten.filter(function (id) { return id && bezet.indexOf(id) < 0; })[0] || r.hero_foto_id);
-    var kop = (r.secties && r.secties.plekken) || {};
-    // Feitenblok (fase 4 dagverhaal): de bestaande feiten van de reis met een label, plus het aantal ideeën en de stand.
-    var feiten = O.reisFeiten(r, p.route || []).map(function (x) { return [FEITLABEL[x[0]] || 'Ook', x[1]]; });
-    var ideeen = (p.activiteiten || []).length;
-    if (ideeen) feiten.push(['Ideeën', ideeen + (ideeen === 1 ? ' idee' : ' ideeën') + ' om uit te kiezen']);
-    if (O.tekstOf(r.status_label)) feiten.push(['Stand', O.tekstOf(r.status_label)]);
-    var samen = O.reisSamenvatting(r, p.route || [], p.stops);
-    var hoogte = (r.highlights || []).map(O.tekstOf).filter(Boolean).slice(0, 3);
-    return h('section', { className: 'nv-intro', id: 'reis' },
-      h('div', { className: 'nv-intro__foto' }, f.image && h('img', { src: f.image, alt: '' }), f.credit && h(G.PhotoCredit, { by: f.credit })),
-      h('div', { className: 'nv-intro__tekst' },
-        h('span', { className: 'nv-label' }, samen ? 'De reis · ' + samen : 'De reis'),
-        h('h2', { className: 'nv-kop' }, kop.title || r.titel),
-        // "Stel je voor": de lede als citaat.
-        r.lede && h('p', { className: 'nv-intro__lede' }, r.lede),
-        feiten.length ? h('dl', { className: 'nv-feitenblok' }, feiten.map(function (x, i) {
-          return h('div', { key: i }, h('dt', null, x[0]), h('dd', null, x[1]));
-        })) : null,
-        hoogte.length ? h('div', { className: 'nv-uitkijk' },
-          h('h3', { className: 'nv-uitkijk__kop' }, 'Waar we naar uitkijken'),
-          h('ul', null, hoogte.map(function (t, i) { return h('li', { key: i }, h(G.Icon, { name: 'check', size: 18 }), t); }))) : null));
-  }
   var FEITLABEL = { calendar: 'Wanneer', car: 'Route', plane: 'Reis', train: 'Reis', boat: 'Reis', bus: 'Reis', sun: 'Weer' };
 
-  function Citaat(p) {
-    var r = p.reis, f = p.foto(r.quote_foto_id);
-    if (!r.quote_tekst) return null;
-    return h('section', { className: 'nv-citaat' },
-      f.image && h('img', { src: f.image, alt: '' }),
-      h('div', { className: 'nv-scrim' }),
-      h('div', null, h('blockquote', null, r.quote_tekst), r.quote_sub && h('span', { className: 'nv-label' }, r.quote_sub)),
-      f.credit && h(G.PhotoCredit, { by: f.credit }));
-  }
 
   // Zijwaartse strook: houdt bij of er links/rechts nog iets buiten beeld staat (voor vervaging en pijltjes).
   // Geeft { ref, el, l, r }: ref aan de strook hangen; el is de strook zelf (of null zolang die er niet is).
@@ -891,10 +885,17 @@
     return { ref: setEl, el: el, l: randen.l, r: randen.r };
   }
 
+  // Overzicht = de reis in hoofdstukken (de reisscore staat sinds 2026-11-26 in het kader van de opening, de
+  // tijdlijn in Route).
   function Overzicht(p) {
+    return h('section', { className: 'nv-blok nv-blok--zand', id: 'overzicht' },
+      h('div', { className: 'nv-wrap' }, p.stops.length ? h(Hoofdstukken, p) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen plekken.' })));
+  }
+
+  // Tijdlijn van de route, bovenaan Route (besluit gebruiker 2026-11-26; stond eerst in Overzicht).
+  function Tijdlijn(p) {
     var r = p.reis;
     var randen = useRanden();
-    var profiel = O.reisProfiel(p.stops, p.route);
     function schuif(n) { var el = randen.el; if (el) el.scrollBy({ left: n * el.clientWidth * 0.8, behavior: 'smooth' }); }
     // Tijdlijn volgt de route (met heen- en terugreis); zonder route de plekken.
     var punten = p.route.length ? p.route.map(function (x) {
@@ -919,15 +920,7 @@
       }
       window.addEventListener('pointermove', beweeg); window.addEventListener('pointerup', los); window.addEventListener('pointercancel', los);
     }
-    return h('section', { className: 'nv-blok nv-blok--zand', id: 'overzicht' },
-      h('div', { className: 'nv-wrap' },
-        h('div', { className: 'nv-kopblok' },
-          h('span', { className: 'nv-label' }, 'Reisoverzicht'),
-          h('h2', { className: 'nv-kop' }, h('em', null, nachtenTekst(r.nachten)), ', ' + p.stops.length + (p.stops.length === 1 ? ' plek' : ' plekken'))),
-        profiel ? h('div', { className: 'nv-reisscore' },
-          h('span', { className: 'nv-label' }, 'Waar de reis zich voor leent'),
-          h(ScoreBlok, { soort: 'vol', scores: reisScores(profiel), tempo: O.tempo(p.route, r.nachten) }),
-          h('p', { className: 'nv-reisscore__noot' }, 'Op basis van de plekken, naar het aantal nachten. Doorreisplekken tellen niet mee.')) : null,
+    return h('div', { className: 'nv-routetijd' },
         punten.length && (randen.l || randen.r) ? h('div', { className: 'nv-pijlen nv-pijlen--altijd' },
           h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Eerder in de route', disabled: !randen.l, onClick: function () { schuif(-1); } }, '‹'),
           h('button', { type: 'button', className: 'nv-pijl', 'aria-label': 'Verder in de route', disabled: !randen.r, onClick: function () { schuif(1); } }, '›')) : null,
@@ -957,8 +950,7 @@
               h(G.Icon, { name: l.leg_vervoer || 'reis', size: 14 }),
               etappeTijdPrijs(l).join(' · '),
               onzeker ? h('span', { className: 'nv-tijdlijn__check' }, 'te verifiëren') : null) : null);
-        })) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen route.' }),
-        p.stops.length ? h(Hoofdstukken, p) : null));
+        })) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen route.' }));
   }
 
   // De reis in hoofdstukken (besluit gebruiker 2026-11-24, in plaats van de sfeertegels): per plek de rit ernaartoe
@@ -974,7 +966,7 @@
     }
     return h('div', { className: 'nv-hoofdstukken' },
       h('div', { className: 'nv-hoofdstukken__kop' }, h(Ornament),
-        h('h3', null, 'De reis in ' + p.stops.length + (p.stops.length === 1 ? ' hoofdstuk' : ' hoofdstukken'))),
+        h('h2', null, 'De reis in ' + p.stops.length + (p.stops.length === 1 ? ' hoofdstuk' : ' hoofdstukken'))),
       h('ol', { className: 'nv-reisboek' }, p.stops.map(function (s, i) {
         var f = p.foto(s.foto_id);
         // De rit naar het eerste bezoek aan deze plek (O.ritTekst, ook zonder datum). Na de reis is er niets meer te meten.
@@ -993,7 +985,7 @@
               h('figcaption', { 'aria-hidden': 'true' }, kortNaam(s.naam))),
             h('div', { className: 'nv-hst__tekst' },
               h('p', { className: 'nv-hst__nr', 'aria-hidden': 'true' }, (i + 1 < 10 ? '0' : '') + (i + 1)),
-              h('h4', { className: 'nv-hst__naam' }, h('span', { className: 'nv-onzichtbaar' }, 'Hoofdstuk ' + (i + 1) + ': '), kortNaam(s.naam)),
+              h('h3', { className: 'nv-hst__naam' }, h('span', { className: 'nv-onzichtbaar' }, 'Hoofdstuk ' + (i + 1) + ': '), kortNaam(s.naam)),
               h('p', { className: 'nv-hst__data' }, wanneer),
               zin ? h('p', { className: 'nv-hst__citaat' }, zin) : null,
               tel && (tel.tiener || tel.volwassene) ? h('p', { className: 'nv-hst__hart' },
@@ -1202,7 +1194,7 @@
 
     return h('section', { className: 'nv-blok', id: 'programma' },
       h('div', { className: 'nv-wrap' },
-        kopblok,
+        kopblok, h(Tijdlijn, p),
         h('div', { className: 'nv-tabs', role: 'tablist', 'aria-label': 'Plekken', ref: tabsRef, onKeyDown: toets },
           p.stops.map(function (x) {
             var aan = x.id === s.id;
@@ -1765,7 +1757,7 @@
           stops: stops, plekMorgen: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, O.plusDagen(vandaag, 1)).plekId,
           open: O.openVanGisteren({ reis: r, route: data.route, verblijven: data.verblijven, activiteiten: data.activiteiten }, vandaag),
           plekGisteren: O.dagOverzicht({ reis: r, stops: stops, route: data.route, verblijven: data.verblijven }, O.plusDagen(vandaag, -1)).plek }) : null,
-        h(Intro, p), h(Citaat, p), h(Overzicht, p),
+        h(Overzicht, p),
         metVerhalen ? h(DagVoorDag, A(p, { plekId: verhaalPlekId, verhalen: verhalen, kiesVerhaal: kiesVerhaal, beheerder: !!gezin.beheerder,
           na: p.herinnering || O.naReis(r, vandaag) })) : null,
         h(Programma, A(p, { plekId: plekId })), h(Slapen, p), h(Doen, p),

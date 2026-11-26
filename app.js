@@ -393,7 +393,7 @@ async function haalReis(slug) {
     const p = x.route_punt_id && punten[x.route_punt_id];
     if (x.route_punt_id && (!p || (x.stop_id && p.stop_id !== x.stop_id))) x.route_punt_id = null;
   });
-  const fotoIds = [reis.hero_foto_id, reis.quote_foto_id, reis.kaart_foto_id]
+  const fotoIds = [reis.hero_foto_id, reis.kaart_foto_id]
     .concat(d.stops.map(s => s.foto_id), d.verblijven.map(v => v.foto_id), d.activiteiten.map(a => a.foto_id));
   // Smaak (alle reizen) alleen voor de volgorde van ideeën; lukt het niet, dan gewoon zonder.
   // Noodnummers: de landen van de plekken en de reisverzekering(en) van het gezin (migratie …0027).

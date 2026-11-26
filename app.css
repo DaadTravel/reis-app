@@ -17,17 +17,40 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-kopblok { text-align: center; margin: 0 auto var(--space-6); max-width: 46ch; }
 .nv-kopblok .nv-tekst { margin: 0 auto; }
 
-/* ---------- opening ---------- */
-.nv-hero { position: relative; min-height: 100vh; min-height: 100svh; display: grid; place-items: center; text-align: center; color: var(--on-photo); overflow: hidden; isolation: isolate; }
-.nv-hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
-.nv-scrim { position: absolute; inset: 0; background: var(--scrim); opacity: .48; z-index: -1; }
-.nv-hero__inner { padding: var(--space-7) var(--space-4); }
-.nv-hero .nv-label { color: var(--on-photo); letter-spacing: .34em; font-size: 13px; }
-.nv-hero h1 { font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: clamp(76px, 20vw, 168px); line-height: .9; margin: var(--space-2) 0 var(--space-4); }
-.nv-hero__datum { margin-top: var(--space-5); font-size: 12px; font-weight: 700; letter-spacing: .24em; text-transform: uppercase; }
-.nv-omlaag { position: absolute; left: 50%; bottom: var(--space-6); transform: translateX(-50%); width: 44px; height: 44px; border-radius: var(--radius-pill); border: 1px solid currentColor; background: none; color: var(--on-photo); cursor: pointer; display: grid; place-items: center; }
-.nv-omlaag:focus-visible { outline: 2px solid var(--on-photo); outline-offset: 3px; }
-@media (orientation: landscape) and (max-height: 500px) { .nv-hero h1 { font-size: 72px; } .nv-omlaag { display: none; } }
+/* ---------- opening van een reis (besluit gebruiker 2026-11-26): foto met titel en één regel, en daarop een
+   halfdoorzichtig kader met de kop, "Stel je voor", de feiten en de reisscore ---------- */
+.nv-opening { position: relative; isolation: isolate; color: var(--ink); background: var(--lagoon); }
+.nv-opening--zonder { background: var(--sand); }
+.nv-opening__foto { position: absolute; inset: 0; z-index: -2; }
+.nv-opening__foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nv-opening::before { content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--scrim) 55%, transparent) 0%, color-mix(in srgb, var(--scrim) 25%, transparent) 22%, transparent 38%, transparent 55%, color-mix(in srgb, var(--scrim) 35%, transparent) 100%); }
+.nv-opening--zonder::before { content: none; }
+.nv-opening--zonder .nv-opening__regel { background: none; padding: 0; }
+.nv-opening__in { max-width: 1120px; margin: 0 auto; padding: var(--space-6) var(--space-4) calc(var(--space-6) + 18px); box-sizing: border-box; }
+.nv-opening__kop { color: var(--on-photo); text-align: center; text-shadow: 0 1px 2px color-mix(in srgb, var(--scrim) 85%, transparent), 0 1px 14px color-mix(in srgb, var(--scrim) 80%, transparent), 0 0 32px color-mix(in srgb, var(--scrim) 55%, transparent); padding: 18vh 0 var(--space-6); padding: 18svh 0 var(--space-6); }
+.nv-opening--zonder .nv-opening__kop { color: var(--ink); text-shadow: none; padding-top: var(--space-7); }
+.nv-opening__kop .nv-label { color: inherit; text-align: center; letter-spacing: .34em; font-size: 13px; margin: 0; }
+.nv-opening__kop h1 { color: inherit; font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: clamp(64px, 16vw, 140px); line-height: .9; margin: var(--space-2) 0 var(--space-3); overflow-wrap: anywhere; }
+.nv-opening__regel { display: inline-block; color: inherit; margin: 0; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: color-mix(in srgb, var(--scrim) 45%, transparent); line-height: 1.6; font-size: 12px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+/* Het kader: papier voor 86 % dekkend met wat vervaging, zodat de foto erdoor schemert en de tekst leesbaar blijft. */
+.nv-kader { border-radius: var(--radius-lg); padding: var(--space-5) var(--space-4); box-shadow: var(--shadow-card);
+  background: color-mix(in srgb, var(--paper) 86%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.nv-kader__titel { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 6vw, 44px); line-height: 1.05; margin: 0 0 var(--space-2); color: var(--ink); }
+.nv-kader .nv-intro__lede { margin: 0; font-size: 21px; }
+.nv-kader { display: grid; gap: var(--space-5); }
+.nv-kader__links { display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-5); min-width: 0; }
+.nv-kader .nv-feitenblok { margin: 0; background: color-mix(in srgb, var(--paper-raised) 70%, transparent); }
+.nv-kader .nv-reisscore { margin: 0; max-width: none; background: color-mix(in srgb, var(--paper-raised) 70%, transparent); }
+/* Vanaf 820 px de feiten en de reisscore naast elkaar, even hoog. */
+@media (min-width: 820px) {
+  .nv-opening__kop { padding-top: 22vh; padding-top: 22svh; }
+  .nv-kader { padding: var(--space-6) var(--space-7); }
+  .nv-kader { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); column-gap: var(--space-7); align-items: stretch; }
+  .nv-kader--een { grid-template-columns: minmax(0, 1fr); }
+  .nv-kader > .nv-reisscore { height: 100%; box-sizing: border-box; }
+}
+@media (orientation: landscape) and (max-height: 500px) { .nv-opening__kop { padding-top: var(--space-5); } .nv-opening__kop h1 { font-size: 64px; } }
 
 /* ---------- menubalk: smal, met het huidige onderdeel; "Onderdelen" klapt een raster van 3 kolommen open
    (besluit gebruiker 2026-11-24). Het raster ligt óver de pagina, zodat de balk altijd --balk-h hoog blijft. ---------- */
@@ -35,7 +58,8 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-menubalk__rij { display: flex; align-items: center; gap: var(--space-3); max-width: 1120px; margin: 0 auto; padding: 0 var(--space-4); height: 52px; box-sizing: border-box; }
 .nv-menubalk__terug { display: inline-grid; place-items: center start; flex: none; min-width: 44px; min-height: 44px; color: var(--lagoon); font-size: 18px; text-decoration: none; }
 .nv-menubalk__nu { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); }
-.nv-menubalk__open { flex: none; min-height: 44px; }
+.nv-menubalk__open { flex: none; display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: var(--radius-pill); border: 1px solid var(--line-strong); background: none; color: var(--lagoon); cursor: pointer; }
+.nv-menubalk__open svg { display: block; }
 .nv-menubalk__open[aria-expanded="true"] { background: var(--lagoon); border-color: var(--lagoon); color: var(--on-lagoon); }
 .nv-menubalk__open:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 /* Na kiezen in het menu krijgt het onderdeel de focus (tabindex -1): geen rand om het hele blok. */
@@ -49,34 +73,14 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-menu__knop:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 @media (max-width: 359px) { .nv-menu__knop { letter-spacing: .02em; font-size: 11px; } }
 
-/* ---------- intro (foto naast tekst) ---------- */
-.nv-intro { display: grid; grid-template-columns: 1fr; background: var(--paper-raised); }
-.nv-intro__foto { position: relative; aspect-ratio: 4 / 3; }
-.nv-intro__foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.nv-intro__tekst { padding: var(--space-7) var(--space-4); }
-@media (min-width: 860px) {
-  .nv-intro { grid-template-columns: 1fr 1fr; min-height: 560px; }
-  .nv-intro__foto { aspect-ratio: auto; }
-  .nv-intro__tekst { padding: var(--space-8) var(--space-7); align-self: center; }
-}
-/* "Stel je voor" (de lede als citaat), feitenblok en "Waar we naar uitkijken" (dagverhaal fase 4). */
+/* "Stel je voor" (de lede als citaat) en het feitenblok, in het kader van de opening. */
 .nv-intro__lede { margin: var(--space-3) 0 0; font-family: var(--font-display); font-style: italic; font-size: 24px; line-height: 1.3; color: var(--ink); }
 .nv-feitenblok { margin: var(--space-5) 0 0; padding: var(--space-2) var(--space-4); background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); }
 .nv-feitenblok > div { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--line); }
 .nv-feitenblok > div:first-child { border-top: 0; }
 .nv-feitenblok dt { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
 .nv-feitenblok dd { margin: 0; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
-.nv-uitkijk { margin-top: var(--space-5); }
-.nv-uitkijk__kop { margin: 0 0 var(--space-2); font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--terracotta); }
-.nv-uitkijk ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
-.nv-uitkijk li { display: flex; align-items: flex-start; gap: var(--space-2); font-size: 16px; font-weight: 500; line-height: 1.4; }
-.nv-uitkijk .rg-icon { flex: none; margin-top: 2px; color: var(--lagoon); }
 
-/* ---------- citaat ---------- */
-.nv-citaat { position: relative; min-height: 62vh; min-height: 62svh; display: grid; place-items: center; text-align: center; color: var(--on-photo); overflow: hidden; isolation: isolate; padding: var(--space-8) var(--space-4); }
-.nv-citaat > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
-.nv-citaat blockquote { margin: 0 auto; max-width: 22ch; font-family: var(--font-display); font-style: italic; font-size: clamp(30px, 6.4vw, 58px); line-height: 1.12; }
-.nv-citaat .nv-label { color: var(--on-photo); margin-top: var(--space-5); letter-spacing: .3em; }
 
 /* ---------- reisoverzicht ---------- */
 /* Raster met vaste rijen (datum, naam, nachten, reis) die elke plek deelt
@@ -91,9 +95,9 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-tijdlijn__naam { display: block; font-family: var(--font-display); font-size: 24px; line-height: 1.1; margin: var(--space-1) 0; }
 .nv-tijdlijn__nacht { font-size: 13px; color: var(--ink-muted); }
 /* ---------- de reis in hoofdstukken (in plaats van de sfeertegels, besluit gebruiker 2026-11-24) ---------- */
-.nv-hoofdstukken { margin-top: var(--space-7); }
+.nv-hoofdstukken { margin-top: 0; }
 .nv-hoofdstukken__kop { display: grid; gap: var(--space-2); justify-items: center; text-align: center; margin: 0 0 var(--space-2); }
-.nv-hoofdstukken__kop h3 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 6vw, 40px); line-height: 1.1; color: var(--ink); }
+.nv-hoofdstukken__kop h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 6vw, 40px); line-height: 1.1; color: var(--ink); }
 .nv-ornament { display: flex; justify-content: center; gap: 10px; margin: 0; }
 .nv-ornament > span { width: 6px; height: 6px; box-sizing: border-box; border: 1.5px solid var(--lagoon); transform: rotate(45deg); }
 .nv-reisboek { list-style: none; margin: 0 auto; padding: 0; max-width: 1100px; }
@@ -289,8 +293,6 @@ button.nv-onderweg__rij:hover .nv-onderweg__route, button.nv-onderweg__rij:focus
 
 /* fotocredit-links (zelfde regel als mockup 1) */
 .rg-credit a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
-.nv-omlaag__pijl { transform: rotate(90deg); }
-.nv-hero__inner, .nv-citaat > div { text-shadow: 0 1px 14px color-mix(in srgb, var(--scrim) 75%, transparent); }
 .nv-tijdlijn::-webkit-scrollbar { display: none; }
 .nv-tijdlijn__nacht, .nv-tijdlijn__reis { display: block; }
 .nv-tijdlijn__reis { margin-top: var(--space-2); font-size: 12px; color: var(--ink-muted); font-style: italic; }

@@ -300,7 +300,14 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   tiener ziet alleen `akkoord`. Een ouder ziet ook een melding bij verhalen buiten de nachten en een gestreept vlak bij een
   uitgelichte dag zonder foto. Bewuste grens: een plek met twee bezoeken telt de dagen vanaf het eerste bezoek. De kop van
   Verslag heet "Ons verslag" (was ook "Dag voor dag"). Lokaal testen: `bron/apptest/dagverhaal-test.js` (`&geenverhalen=1`,
-  `&concept=1`, `&verhaalmonkey=1`). **Besluiten gebruiker op de proef (2026-11-24):** menu = smalle plakbalk (← · huidig
+  `&concept=1`, `&verhaalmonkey=1`). **Opening (besluit gebruiker 2026-11-26, na mockup `bron/dagverhaal/mockup-start/`):** de
+  reis begint met de foto, titel en één regel (`O.startRegel`: periode · dagen · nachten · plekken) en daarop een
+  halfdoorzichtig kader (`nv-opening`, `nv-kader`, 86 % papier + blur) met de kop, de lede, het feitenblok (zonder "Wanneer"
+  als er reisdatums zijn) en de reisscore; vanaf 820 px links kop + feiten, rechts de reisscore. Vervallen: het blok "De
+  reis" met eigen foto, de citaatfoto (`quote_tekst`/`quote_sub`/`quote_foto_id` blijven in de database), de kop "23 nachten,
+  8 plekken", het label met `O.reisSamenvatting` en "Waar we naar uitkijken" (`reizen.highlights` blijft in de database maar
+  wordt niet getoond). Overzicht = alleen de hoofdstukken; de tijdlijn staat bovenaan Route (component `Tijdlijn`). De
+  menuknop is een hamburger (alleen icoon, `aria-label` "Onderdelen"). **Besluiten gebruiker op de proef (2026-11-24):** menu = smalle plakbalk (← · huidig
   onderdeel · knop "Onderdelen") die een raster van 3 kolommen openklapt (geen raster dat blijft plakken:
   kost op een telefoon te veel ruimte); een 7e knop (Vandaag of Verslag) gewoon links op een nieuwe rij;
   knop **Dag voor dag alleen bij een reis met dagverhalen** (reizen zonder houden 5 knoppen, geen dubbele
@@ -373,7 +380,7 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   routepunten met nachten, per week → 1 Standplaats, 2 Rustig, 3 Gemiddeld,
   4 Frequent, 5 Steeds onderweg. Te zien op de reiskaart (compact over de
   foto, voor iedereen; `haalProfielen` in app.js, zonder gegevens geen
-  scores), bovenaan het reisoverzicht en in het plek-paneel ("Leent zich
+  scores), in het kader van de opening en in het plek-paneel ("Leent zich
   voor"). Claude scoort een nieuwe plek meteen; de gebruiker stelt bij.
   Referentie voor het gevoel: Thailand (cultuur 4,1, actief 3,7).
 - **Onderweg** (besluit gebruiker 2026-10-04). Een gekozen reis (geboekt of
