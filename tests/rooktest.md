@@ -18,7 +18,8 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       wachtwoord: het startscherm.
 - [ ] **Startscherm** — alle reizen, gegroepeerd in "Nog te gaan" en
       "Al gemaakt", met kaartfoto. Onbekend aantal nachten = "?".
-- [ ] **Reispagina** — tik op een reis: foto bovenaan met credit;
+- [ ] **Reispagina** — tik op een reis: foto bovenaan met credit; de onderdelen wisselen om en om
+      van achtergrond (papier / zand), ook met Dag voor dag, Verslag of Vandaag erbij;
       Overzicht, Route, Slapen, Doen en Kosten zijn er alle vijf (ook
       als een onderdeel nog leeg is). Geen citaatfoto meer.
 - [ ] **Opening** — op de foto: kicker, titel en één regel "13 juli – 5 augustus ·

@@ -888,7 +888,7 @@
   // Overzicht = de reis in hoofdstukken (de reisscore staat sinds 2026-11-26 in het kader van de opening, de
   // tijdlijn in Route).
   function Overzicht(p) {
-    return h('section', { className: 'nv-blok nv-blok--zand', id: 'overzicht' },
+    return h('section', { className: 'nv-blok', id: 'overzicht' },
       h('div', { className: 'nv-wrap' }, p.stops.length ? h(Hoofdstukken, p) : h(Leeg, { herinnering: p.herinnering, tekst: 'Nog geen plekken.' })));
   }
 
@@ -1325,7 +1325,7 @@
     var rij = React.useRef(null), r = p.reis, kop = (r.secties && r.secties.slapen) || {};
     function schuif(n) { var el = rij.current; if (el) el.scrollBy({ left: n * el.clientWidth * 0.8, behavior: 'smooth' }); }
     var heeft = p.verblijven.length > 0, stand = O.slaapStandTekst(O.slaapStand(p.stops, p.verblijven));
-    return h('section', { className: 'nv-blok nv-blok--zand', id: 'slapen' },
+    return h('section', { className: 'nv-blok', id: 'slapen' },
       h('div', { className: 'nv-wrap' },
         h('div', { className: 'nv-kopblok' },
           h('span', { className: 'nv-label' }, 'Slapen'),
@@ -1541,7 +1541,7 @@
 
   function Kosten(p) {
     var r = p.reis, kop = (r.secties && r.secties.kosten) || {};
-    return h('section', { className: 'nv-blok nv-blok--zand', id: 'kosten' },
+    return h('section', { className: 'nv-blok', id: 'kosten' },
       h('div', { className: 'nv-wrap', style: { maxWidth: '760px' } },
         h('div', { className: 'nv-kopblok' },
           h('span', { className: 'nv-label' }, 'Kosten'),

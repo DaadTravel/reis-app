@@ -12,8 +12,12 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .nv-wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--space-4); }
 @media (min-width: 720px) { .nv-wrap { padding: 0 var(--space-6); } }
 .nv-blok { padding: var(--space-8) 0; }
-.nv-blok--zand { background: var(--sand); }
-.nv-blok--zand .rg-budget { background: var(--paper-raised); }
+/* Onderdelen om en om papier en zand (besluit gebruiker 2026-11-26: elk onderdeel duidelijk een nieuw stuk), automatisch
+   op volgorde, zodat het klopt met of zonder Dag voor dag, Verslag enz. Vandaag telt niet mee. --blok-bg geeft de
+   kleur door aan plakkende tabs en de gescheurde rand van de plek-banner. */
+main > .nv-blok:not(.nv-vandaag) { --blok-bg: var(--paper); background: var(--blok-bg); }
+main > .nv-blok:nth-child(odd of .nv-blok:not(.nv-vandaag)) { --blok-bg: var(--sand); }
+main > .nv-blok:nth-child(odd of .nv-blok:not(.nv-vandaag)) .rg-budget { background: var(--paper-raised); }
 .nv-kopblok { text-align: center; margin: 0 auto var(--space-6); max-width: 46ch; }
 .nv-kopblok .nv-tekst { margin: 0 auto; }
 
@@ -136,13 +140,13 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 
 /* ---------- Dag voor dag (dagverhaal fase 5): plek-hero met gescheurde onderrand, dagen, polaroid, volgend hoofdstuk ---------- */
 #verhaal-paneel { scroll-margin-top: 56px; }
-.nv-plekplak { position: sticky; top: var(--balk-h); z-index: 30; background: var(--paper); }
+.nv-plekplak { position: sticky; top: var(--balk-h); z-index: 30; background: var(--blok-bg, var(--paper)); }
 .nv-plekplak .nv-tabs { position: static; margin-bottom: 0; }
 .nv-plekhero { position: relative; height: 460px; max-height: 85svh; display: flex; align-items: flex-end; color: var(--on-photo); overflow: hidden; isolation: isolate; background: var(--lagoon); }
 .nv-plekhero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
 .nv-plekhero::before { content: ""; position: absolute; inset: 0; z-index: -1;
   background: linear-gradient(to top, color-mix(in srgb, var(--scrim) 78%, transparent) 0%, color-mix(in srgb, var(--scrim) 30%, transparent) 55%, transparent 80%); }
-.nv-plekhero::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 18px; background: var(--paper); z-index: 2;
+.nv-plekhero::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 18px; background: var(--blok-bg, var(--paper)); z-index: 2;
   clip-path: polygon(0 55%, 3% 30%, 7% 62%, 12% 28%, 16% 58%, 21% 22%, 26% 60%, 31% 34%, 36% 66%, 41% 30%, 46% 56%, 51% 24%, 56% 62%, 61% 36%, 66% 64%, 71% 26%, 76% 58%, 81% 32%, 86% 66%, 91% 30%, 95% 58%, 100% 36%, 100% 100%, 0 100%); }
 .nv-plekhero--leeg { height: 260px; }
 .nv-plekhero__tekst { width: 100%; max-width: 1120px; margin: 0 auto; box-sizing: border-box; padding: 0 var(--space-4) calc(18px + var(--space-6)); }
@@ -233,7 +237,7 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 
 
 /* ---------- reisprogramma ---------- */
-.nv-tabs { position: sticky; top: var(--balk-h); z-index: 30; background: var(--paper); display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; padding: var(--space-3) 0; margin-bottom: var(--space-6); }
+.nv-tabs { position: sticky; top: var(--balk-h); z-index: 30; background: var(--blok-bg, var(--paper)); display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; padding: var(--space-3) 0; margin-bottom: var(--space-6); }
 .nv-tabs::-webkit-scrollbar { display: none; }
 /* Het plekpaneel landt onder de plakkende plek-tabs (± 56 px), niet erachter. */
 #plek-paneel { scroll-margin-top: 56px; }

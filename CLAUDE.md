@@ -307,7 +307,8 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   reis" met eigen foto, de citaatfoto (`quote_tekst`/`quote_sub`/`quote_foto_id` blijven in de database), de kop "23 nachten,
   8 plekken", het label met `O.reisSamenvatting` en "Waar we naar uitkijken" (`reizen.highlights` blijft in de database maar
   wordt niet getoond). Overzicht = alleen de hoofdstukken; de tijdlijn staat bovenaan Route (component `Tijdlijn`). De
-  menuknop is een hamburger (alleen icoon, `aria-label` "Onderdelen"). **Besluiten gebruiker op de proef (2026-11-24):** menu = smalle plakbalk (← · huidig
+  menuknop is een hamburger (alleen icoon, `aria-label` "Onderdelen"). Onderdelen wisselen automatisch om en om papier/zand
+  (`main > .nv-blok:nth-child(odd of …)`, Vandaag telt niet mee; `--blok-bg` voor plakkende tabs en de bannerrand). **Besluiten gebruiker op de proef (2026-11-24):** menu = smalle plakbalk (← · huidig
   onderdeel · knop "Onderdelen") die een raster van 3 kolommen openklapt (geen raster dat blijft plakken:
   kost op een telefoon te veel ruimte); een 7e knop (Vandaag of Verslag) gewoon links op een nieuwe rij;
   knop **Dag voor dag alleen bij een reis met dagverhalen** (reizen zonder houden 5 knoppen, geen dubbele
