@@ -292,7 +292,7 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   Stand) en "Waar we naar uitkijken" uit `reizen.highlights`; in Overzicht onder de tijdlijn de hoofdstukken (component
   `Hoofdstukken`) met de ★/♥-tellers die eerst op de tegels stonden. **Fase 5 (Dag voor dag, 2026-11-25):** `haalReis` haalt
   `dagverhalen` apart (geen kolom volgorde; fout = gewoon geen Dag voor dag) met hun foto's; onderdeel `DagVoorDag` tussen Overzicht
-  en Route: plek-tabs (eigen plakstrook `nv-plekplak`, ids `vtab-`/`verhaal-paneel`; eigen gekozen plek, los van Route: anders springt de pagina bij een tik in Route),
+  en Route: plek-hero (`verhaal-start`) en daaronder de plek-tabs (besluit 2026-11-26; eigen plakstrook `nv-plekplak`, ids `vtab-`/`verhaal-paneel`; eigen gekozen plek, los van Route: anders springt de pagina bij een tik in Route),
   plek-hero met gescheurde rand, de dagregel(s) uit `dagen.beleving` als intro, dan de dagen (`Dag`: uitgelicht met polaroid om en om,
   compact met één zin; beide met ritregel of logistiek, tips en ideeën met hartjes) en "Volgend hoofdstuk". Een plek zonder
   verhalen toont alleen de dagregel(s). Ideeën bij een dag: gekoppeld via `dagverhaal_id`, of met een vaste datum op die dag (die

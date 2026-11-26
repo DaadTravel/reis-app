@@ -1047,8 +1047,15 @@
     var terugval = d0.map(function (d) { return O.tekstOf(d.beleving).trim(); }).filter(Boolean);
     return h('section', { className: 'nv-blok', id: 'dagvoordag' },
       h('div', { className: 'nv-wrap' }, kop),
-      // Eigen plakstrook over de volle breedte: de hero eronder staat buiten nv-wrap, en een plakkend element blijft
-      // alleen binnen zijn eigen ouder plakken.
+      // Eerst de banner van de gekozen plek, dan pas de plek-tabs (besluit gebruiker 2026-11-26: vindbaarder).
+      h('header', { className: 'nv-plekhero' + (f.image ? '' : ' nv-plekhero--leeg'), id: 'verhaal-start' },
+        f.image && h('img', { src: f.image, alt: '' }),
+        h('div', { className: 'nv-plekhero__tekst' },
+          h('p', { className: 'nv-plekhero__eyebrow' }, 'Hoofdstuk ' + (i + 1)),
+          h('h3', null, kortNaam(s.naam)),
+          h('p', { className: 'nv-plekhero__sub' }, bezoeken > 1 ? bezoeken + ' bezoeken · ' + nachtenPlek(p.route, s) : wanneerTekst(d0[0], s))),
+        f.credit && h(G.PhotoCredit, { by: f.credit })),
+      // Eigen plakstrook over de volle breedte (een plakkend element blijft alleen binnen zijn eigen ouder plakken).
       h('div', { className: 'nv-plekplak' }, h('div', { className: 'nv-wrap' },
         h('div', { className: 'nv-tabs', role: 'tablist', 'aria-label': 'Plekken', ref: tabsRef, onKeyDown: toets },
           p.stops.map(function (x) {
@@ -1057,13 +1064,6 @@
               'aria-selected': aan, 'aria-controls': 'verhaal-paneel', tabIndex: aan ? 0 : -1, onClick: function () { kies(x.id); } }, kortNaam(x.naam));
           })))),
       h('div', { id: 'verhaal-paneel', role: 'tabpanel', 'aria-labelledby': 'vtab-' + s.id },
-        h('header', { className: 'nv-plekhero' + (f.image ? '' : ' nv-plekhero--leeg') },
-          f.image && h('img', { src: f.image, alt: '' }),
-          h('div', { className: 'nv-plekhero__tekst' },
-            h('p', { className: 'nv-plekhero__eyebrow' }, 'Hoofdstuk ' + (i + 1)),
-            h('h3', null, kortNaam(s.naam)),
-            h('p', { className: 'nv-plekhero__sub' }, bezoeken > 1 ? bezoeken + ' bezoeken · ' + nachtenPlek(p.route, s) : wanneerTekst(d0[0], s))),
-          f.credit && h(G.PhotoCredit, { by: f.credit })),
         h('div', { className: 'nv-wrap' },
           p.beheerder && vp.buiten ? h('p', { className: 'nv-melding' }, vp.buiten + (vp.buiten === 1 ? ' dagverhaal valt' : ' dagverhalen vallen') + ' buiten de nachten van ' + kortNaam(s.naam) + ' en ' + (vp.buiten === 1 ? 'wordt' : 'worden') + ' niet getoond.') : null,
           vp.tonen.length ? [
@@ -1709,12 +1709,12 @@
     var metVerhalen = stops.some(function (s) { return perPlek[s.id].tonen.length > 0; });
     // Naar Dag voor dag (vanuit een hoofdstuk of "Volgend hoofdstuk"): pas scrollen als de nieuwe plek getekend is.
     var nv = React.useState(0), naarVerhaal = nv[0], setNaarVerhaal = nv[1];
-    React.useEffect(function () { if (naarVerhaal) naar('verhaal-paneel'); }, [naarVerhaal]);
+    React.useEffect(function () { if (naarVerhaal) naar('verhaal-start'); }, [naarVerhaal]);
     function kiesVerhaal(id, spring) {
       setVerhaalPlekId(id);
       if (spring) return setNaarVerhaal(function (n) { return n + 1; });
-      var el = document.getElementById('verhaal-paneel');
-      if (el && el.getBoundingClientRect().top < 0) naar('verhaal-paneel');
+      var el = document.getElementById('verhaal-start');
+      if (el && el.getBoundingClientRect().top < 0) naar('verhaal-start');
     }
     var secties = (onderweg ? [['vandaag', 'Vandaag']] : []).concat(SECTIES.slice(0, 1), metVerhalen ? [['dagvoordag', 'Dag voor dag']] : [],
       SECTIES.slice(1, 4), toonVerslag ? [['verslag', 'Verslag']] : [], SECTIES.slice(4));

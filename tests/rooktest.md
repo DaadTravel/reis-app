@@ -54,7 +54,7 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       periode, de korte zin, sterren/hartjes bij de ideeën van die plek.
 - [ ] **Dag voor dag** (alleen bij een reis met dagverhalen; lokaal Noord-Spanje,
       Llanes) — "Lees het dagverhaal" bij een hoofdstuk opent Dag voor dag bij die
-      plek. Plek-tabs plakken onder de menubalk; plek-hero met gescheurde onderrand;
+      plek. Plek-hero met gescheurde onderrand, daaronder de plek-tabs (plakken onder de menubalk);
       de dagregel als intro; dagen in volgorde: compact (kop, één zin) en uitgelicht
       (polaroid om en om, vanaf 820 px naast de tekst), met "Dag N · datum", de rit
       (rijdag) of de praktische regel, "Mijn tips" en de ideeën met ★/♥ (zelfde knop en
