@@ -811,6 +811,13 @@
     return [O.magAchteraf({ status: 'optie' }, true, '2026-07-10'), O.magAchteraf({ status: null }, true, '2026-07-10')];
   });
   // Na thuiskomst geldt een gekozen reis als afgerond, ook als de stemming nog niet op herinnering staat.
+  // groepOp (2026-11-27): groep op het startscherm; een gekozen reis na thuiskomst = "Al gemaakt".
+  test('groepOp: voorpret na de einddatum van een geboekte reis → herinnering', ['herinnering', 'voorpret', 'voorpret', 'later', 'herinnering', 'voorpret'], function () {
+    var r = { stemming: 'voorpret', status: 'geboekt', eind_datum: '2027-08-05' };
+    return [O.groepOp(r, '2027-08-06'), O.groepOp(r, '2027-08-05'), O.groepOp({ stemming: 'voorpret', status: 'voorstel', eind_datum: '2027-08-05' }, '2027-09-01'),
+      O.groepOp({ stemming: 'later', status: 'geboekt', eind_datum: '2027-08-05' }, '2027-09-01'), O.groepOp({ stemming: 'herinnering' }, '2020-01-01'), O.groepOp(r, 'onzin')];
+  });
+  test('groepOp: rare invoer → stemming of voorpret', ['voorpret', 'voorpret'], function () { return [O.groepOp(null, '2027-08-06'), O.groepOp({}, '2027-08-06')]; });
   test('naReis: gekozen reis na de einddatum', [true, false, false, false, false], function () {
     var r = { status: 'betaald', eind_datum: '2026-07-30' };
     return [O.naReis(r, '2026-07-31'), O.naReis(r, '2026-07-30'), O.naReis({ status: 'voorstel', eind_datum: '2026-07-30' }, '2026-08-10'),

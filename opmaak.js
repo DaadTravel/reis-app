@@ -193,6 +193,12 @@
   }
   // Na thuiskomst (code-controleur 2026-10-06): een gekozen reis (geboekt/betaald) geldt na de einddatum als
   // afgerond voor "was leuk", ook als de stemming nog niet met de hand op herinnering staat.
+  // Groep op het startscherm (besluit gebruiker 2026-11-27): een gekozen reis staat na thuiskomst bij "Al gemaakt",
+  // ook als de stemming nog op voorpret staat. Andere stemmingen (later, herinnering) blijven zoals ze zijn.
+  function groepOp(r, vandaag) {
+    var s = r && typeof r === 'object' && r.stemming ? r.stemming : 'voorpret';
+    return s === 'voorpret' && naReis(r, vandaag) ? 'herinnering' : s;
+  }
   function naReis(r, vandaag) {
     return !!(r && typeof r === 'object' && (r.status === 'geboekt' || r.status === 'betaald') && isDatum(r.eind_datum) && isDatum(vandaag) && r.eind_datum < vandaag);
   }
@@ -933,7 +939,7 @@
     return { bijVerhaal: a.datum === datum, afwijking: isDatum(datum) && a.datum !== datum };
   }
 
-  window.Opmaak = { startRegel: startRegel, ritTekst: ritTekst, activiteitBijDag: activiteitBijDag, reisSamenvatting: reisSamenvatting, hoofdstukZin: hoofdstukZin, verhaalDatum: verhaalDatum, verhaalKop: verhaalKop, ritRegel: ritRegel, kantelKant: kantelKant, verhalenVanPlek: verhalenVanPlek, dagLabel: dagLabel, plekPeriode: plekPeriode, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
+  window.Opmaak = { groepOp: groepOp, startRegel: startRegel, ritTekst: ritTekst, activiteitBijDag: activiteitBijDag, reisSamenvatting: reisSamenvatting, hoofdstukZin: hoofdstukZin, verhaalDatum: verhaalDatum, verhaalKop: verhaalKop, ritRegel: ritRegel, kantelKant: kantelKant, verhalenVanPlek: verhalenVanPlek, dagLabel: dagLabel, plekPeriode: plekPeriode, langeDatum: langeDatum, kortDatum: kortDatum, euro: euro, prijsTekst: prijsTekst,
     nachtenTekst: nachtenTekst, reistijd: reistijd, vervoerOpties: vervoerOpties, reistijdBereik: reistijdBereik, optieTekst: optieTekst, optiesKop: optiesKop, tekstOf: tekstOf, hartjesVan: hartjesVan, hartjesTekst: hartjesTekst, hartVorm: hartVorm, telVormen: telVormen, isIdee: isIdee, sorteerTeDoen: sorteerTeDoen, opVerlanglijst: opVerlanglijst, slaapStand: slaapStand, slaapStandTekst: slaapStandTekst, splitsMoment: splitsMoment, magAchteraf: magAchteraf, naReis: naReis, smaakprofiel: smaakprofiel, smaakScore: smaakScore, pastBijOns: pastBijOns, aankomstPlekken: aankomstPlekken, vergelijk: vergelijk, datumIn: datumIn, plusDagen: plusDagen, actieveReis: actieveReis, dagOverzicht: dagOverzicht,
     openVanGisteren: openVanGisteren, volgTijd: volgTijd, WIJZIGBAAR: WIJZIGBAAR, valideerWijziging: valideerWijziging, bewerkFase: bewerkFase, wijzigVelden: wijzigVelden, wijzigWachtrijLees: wijzigWachtrijLees, pasWijzigingenToe: pasWijzigingenToe,
     verblijfKenmerken: verblijfKenmerken, wachtrijLees: wachtrijLees, verslagDagen: verslagDagen, verslagVan: verslagVan, verslagExport: verslagExport, VERVOERNAAM: VERVOERNAAM, beoordelingTekst: beoordelingTekst, kortNaam: kortNaam,

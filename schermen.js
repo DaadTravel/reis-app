@@ -223,7 +223,8 @@
   }
 
   // ═════════════ startscherm ═════════════
-  // Groepen op het startscherm en in de vergelijkingstabel, op reizen.stemming. 'later' = idee voor een
+  // Groepen op het startscherm en in de vergelijkingstabel, op reizen.stemming. Een gekozen reis (geboekt/betaald) staat
+  // vanaf de dag na thuiskomst bij "Al gemaakt" (O.groepOp, besluit gebruiker 2026-11-27). 'later' = idee voor een
   // volgende keer (besluit gebruiker 2026-11-23: Japan en Korea bewaard, Noord-Spanje gekozen).
   var REIS_GROEPEN = [['voorpret', 'Nog te gaan'], ['later', 'Ideeën voor later'], ['herinnering', 'Al gemaakt']];
   function Startscherm(p) {
@@ -241,13 +242,14 @@
         p.data.actief ? h(NuOnderweg, { actief: p.data.actief }) : null,
         reizen.length ? null : h(Leeg, { herinnering: true, tekst: 'Er zijn nog geen reizen zichtbaar voor dit account. Is je account al toegevoegd aan de reisgids?' }),
         groepen.map(function (g) {
-          var lijst = reizen.filter(function (r) { return r.stemming === g[0]; });
+          // Groep: de stemming, maar een gekozen reis na thuiskomst bij "Al gemaakt" (O.groepOp, app.js).
+          var lijst = reizen.filter(function (r) { return ((p.data.groep && p.data.groep[r.id]) || r.stemming) === g[0]; });
           if (!lijst.length) return null;
           return h('section', { key: g[0], 'aria-label': g[1] },
             h('h2', { className: 'nv-label nv-start__groep' }, g[1]),
             h('div', { className: 'nv-reizen' }, lijst.map(function (r) {
               return h(G.TripCard, A(foto(r.kaart_foto_id || r.hero_foto_id), {
-                key: r.id, title: r.titel, year: r.jaar_label || undefined, mood: r.stemming === 'herinnering' ? 'herinnering' : 'voorpret', subtitle: r.ondertitel || undefined,
+                key: r.id, title: r.titel, year: r.jaar_label || undefined, mood: g[0] === 'herinnering' ? 'herinnering' : 'voorpret', subtitle: r.ondertitel || undefined,
                 nights: r.nachten == null ? '?' : r.nachten, status: r.status || undefined, statusLabel: r.kaart_status_label || r.status_label || undefined,
                 href: reisUrl(r.slug), extra: r.profiel ? h(ScoreBlok, { soort: 'kaart', scores: reisScores(r.profiel), tempo: r.tempo }) : undefined }));
             })));
@@ -726,12 +728,12 @@
           x.ideeen.length ? h(React.Fragment, null, h('p', { className: 'nv-muted nv-vandaag__uitleg' }, 'Niets gepland. Dit vinden jullie het leukst hier:'),
             x.ideeen.map(function (a) { return h(ActiviteitRij, { key: a.id, x: a, hart: p.hart }); }))
             : h('p', { className: 'nv-muted' }, 'Niets gepland: tijd om bij te komen.')) : null,
-        p.beheerder ? h(NieuweActiviteit, { wz: p.wz, reisId: p.reisId, datum: x.datum, plekId: x.plekId }) : null,
         h(HartMelding, { hart: p.hart, stil: true }),
         x.laatsteDag ? null : h(VandaagBlok, { titel: 'Morgen', icoon: 'clock' },
           weerMorgen ? h(WeerRegel, { weer: weerMorgen, voor: daar !== hier ? kortNaam(daar.naam) + ': ' : null, op: wm && wm.op, klein: true }) : null,
           morgen.length ? h('ul', { className: 'nv-vandaag__morgen' }, morgen.map(function (t, i) { return h('li', { key: i }, t); }))
             : h('p', { className: 'nv-muted' }, 'Nog niets gepland.')),
+        p.beheerder ? h(NieuweActiviteit, { wz: p.wz, reisId: p.reisId, datum: x.datum, plekId: x.plekId }) : null,
         x.dagNr > 0 && (p.beheerder || O.verslagVan(p.vs.rijen, x.datum, mijnId(), (p.gezin && p.gezin.leden) || []).anderen.length)
           ? h(VandaagBlok, { titel: 'Reisverslag', icoon: 'check' },
             h(VerslagDag, { key: x.datum, vs: p.vs, gezin: p.gezin, reisId: p.reisId, datum: x.datum, plek: x.plek, schrijven: p.beheerder })) : null));

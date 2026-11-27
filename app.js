@@ -238,9 +238,13 @@ async function haalReizen() {
   const v = beheerder ? await haalVergelijk(reizen) : null;
   const vergelijk = v && v.rijen, smaak = v && v.smaak;
   // Onderweg: de actieve reis (vanaf de dag vóór vertrek) bovenaan, en alvast helemaal op de telefoon.
-  const actief = Opmaak.actieveReis(reizen, vandaagIso(beheerder));
+  const vandaag = vandaagIso(beheerder);
+  const actief = Opmaak.actieveReis(reizen, vandaag);
   if (actief) voorlaadReis(actief.reis.slug);
-  return { reizen: reizen, fotos: f.fotos, fotoFout: f.fout, vergelijk: vergelijk, smaak: smaak, actief: actief, beheerder: beheerder };
+  // Groep: na thuiskomst staat een gekozen reis bij "Al gemaakt" (O.groepOp), ook in de vergelijkingstabel.
+  const groep = {}; reizen.forEach(r => { groep[r.id] = Opmaak.groepOp(r, vandaag); });
+  if (vergelijk) vergelijk.forEach(x => { if (groep[x.id]) x.stemming = groep[x.id]; });
+  return { reizen: reizen, fotos: f.fotos, fotoFout: f.fout, vergelijk: vergelijk, smaak: smaak, actief: actief, beheerder: beheerder, groep: groep };
 }
 // Plekscores en route voor de reiskaarten van het startscherm (voor iedereen). Gaat iets mis, dan null:
 // het startscherm werkt dan gewoon zonder scores.

@@ -18,6 +18,8 @@ Toestel(len): ____________  Versie (CACHE in `sw.js`): ____________
       wachtwoord: het startscherm.
 - [ ] **Startscherm** — alle reizen, gegroepeerd in "Nog te gaan" en
       "Al gemaakt", met kaartfoto. Onbekend aantal nachten = "?".
+      Een geboekte of betaalde reis staat vanaf de dag na thuiskomst bij "Al gemaakt" (lokaal:
+      `spanje-test.html`, dag na thuiskomst); een reis die nog optie/voorstel is niet.
 - [ ] **Reispagina** — tik op een reis: foto bovenaan met credit; de onderdelen wisselen om en om
       van achtergrond (papier / zand), ook met Dag voor dag, Verslag of Vandaag erbij;
       Overzicht, Route, Slapen, Doen en Kosten zijn er alle vijf (ook

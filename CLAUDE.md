@@ -187,7 +187,9 @@ Eén pagina (React 18 via cdnjs, `h = React.createElement`, geen build):
   groeperen op `reizen.stemming` (`REIS_GROEPEN`): voorpret "Nog te gaan",
   **later "Ideeën voor later"** (sinds 2026-11-23, migratie …0030; een
   bewaard idee, gedraagt zich verder als voorpret), herinnering "Al gemaakt".
-  De kaart toont bij later gewoon "Voorpret" (design-bundel kent 2 stemmingen)
+  De kaart toont bij later gewoon "Voorpret" (design-bundel kent 2 stemmingen). Een geboekte/betaalde reis staat
+  vanaf de dag na thuiskomst bij "Al gemaakt", ook als de stemming nog voorpret is (`O.groepOp`, besluit gebruiker
+  2026-11-27; de stemming in de database verandert niet).
 - `thema.css` — alle kleur- en maatvariabelen (palet Nevel; voorlopig
   alleen licht — donker is geparkeerd, besluit gebruiker 2026-09-30;
   design-check toetst tot die tijd alleen licht). `app.css` — stijl van
@@ -413,7 +415,8 @@ Werk deze lijst bij zodra er echte bestanden bijkomen.
   zonder tijd vertrekt "~09:00", gewoonte van het gezin), slapen vannacht (ontbijt, zwembad, kamers als bekend; betaald / nog betalen / "Status ?"),
   gepland (naam, tijd, ophaalpunt, contact en of er nog betaald moet
   worden; geen hartje, geen prijs) óf vrije dag (top 3 ideeën van de plek
-  op ★/♥), morgen (uitchecken, route, activiteiten), reisverslag. Bewust
+  op ★/♥), morgen (uitchecken, route, activiteiten), voor ouders "+ Activiteit toevoegen" (onder Morgen, besluit
+  gebruiker 2026-11-27), reisverslag. Bewust
   niet: kosten, beschrijving, de hele route. **Offline**: zodra een reis
   actief is, haalt de app hem met al zijn foto's op de achtergrond op
   (`voorlaadReis`). **Reisverslag** (`reis.verslagen`): per dag een eigen
